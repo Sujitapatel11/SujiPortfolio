@@ -342,6 +342,11 @@
 .admin-status-rejected { background-color: #fef2f2; color: #991b1b; }
 .admin-status-hired { background-color: #ecfdf5; color: #047857; }
 
+.admin-status-pending { background-color: #fef3c7; color: #92400e; }
+.admin-status-confirmed { background-color: #dcfce7; color: #15803d; }
+.admin-status-declined { background-color: #fef2f2; color: #991b1b; }
+.admin-status-rescheduled { background-color: #e0e7ff; color: #3730a3; }
+
 /* Modal & Slide Panel */
 .admin-modal-overlay {
   position: fixed;

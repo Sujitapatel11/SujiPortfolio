@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Inquiry, Job, Proposal
+from app.models import Inquiry, Job, Proposal, Appointment
 from app.schemas import (
     AdminLoginRequest,
     AdminLoginResponse,
@@ -19,6 +19,8 @@ from app.schemas import (
     ProposalCreate,
     ProposalUpdate,
     ProposalResponse,
+    AppointmentResponse,
+    AppointmentUpdate,
 )
 from app.admin.auth import (
     ADMIN_USERNAME,
@@ -238,5 +240,37 @@ def update_job_status(
     db.commit()
     db.refresh(job)
     return job
+
+@router.get("/appointments", response_model=List[AppointmentResponse])
+def list_admin_appointments(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    """
+    Protected endpoint to list appointment requests.
+    """
+    return db.query(Appointment).order_by(Appointment.created_at.desc()).all()
+
+@router.patch("/appointments/{appointment_id}", response_model=AppointmentResponse)
+def update_appointment_status(
+    appointment_id: int,
+    payload: AppointmentUpdate,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    """
+    Protected endpoint to update appointment status (confirmed, declined, rescheduled).
+    """
+    appt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Appointment #{appointment_id} not found"
+        )
+    appt.status = payload.status.lower()
+    db.commit()
+    db.refresh(appt)
+    return appt
+
 
 

@@ -71,4 +71,20 @@ class Proposal(Base):
 
     job = relationship("Job", back_populates="proposals")
 
+class Appointment(Base):
+    """
+    SQLAlchemy Model for appointment requests submitted by visitors.
+    Status values: "pending", "confirmed", "declined", "rescheduled".
+    """
+    __tablename__ = "appointments"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    preferred_time = Column(Text, nullable=True)
+    purpose = Column(Text, nullable=True)
+    status = Column(String(50), nullable=False, default="pending")
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+
 

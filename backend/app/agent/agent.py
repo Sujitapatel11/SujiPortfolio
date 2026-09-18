@@ -8,7 +8,14 @@ from dotenv import load_dotenv
 
 from app.database import SessionLocal
 from app.data.profile import PROFILE_DATA
-from app.agent.tools import save_client_inquiry
+from app.agent.tools import (
+    save_client_inquiry,
+    book_appointment_request,
+    trigger_job_search,
+    list_recent_inquiries,
+    get_proposal,
+    send_whatsapp_message
+)
 from app.agent.retrieval import retrieve_relevant_chunks
 from app.agent.persona import build_system_prompt, SUJI_PERSONA
 
@@ -44,17 +51,88 @@ def get_llm():
     logger.info("No active LLM API key detected. Using fallback conversational mode.")
     return None
 
-def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]]) -> str:
+def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]], is_admin_context: bool = False) -> str:
     """
     Intelligent fallback intake responder when no LLM key is set in .env.
-    NOTE: The fallback engine is a safety net when no LLM API keys (OpenAI/Anthropic) are configured.
-    It uses rule-based string matching and does NOT have vector RAG or dynamic persona behavior.
-    This is expected behavior for zero-cost offline development fallback.
+    Differentiates between Public Visitor context and Private Admin context.
     """
     msg_lower = user_msg.lower()
 
-    # Lead capture detection (if email is present)
+    if is_admin_context:
+        # ADMIN FALLBACK COMMANDS
+        if "search" in msg_lower and ("job" in msg_lower or "target" in msg_lower):
+            res = trigger_job_search.invoke({"keywords": ["python", "fastapi", "react", "ai"]})
+            return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
+
+        if "inquir" in msg_lower or "lead" in msg_lower:
+            res = list_recent_inquiries.invoke({"limit": 5})
+            return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
+
+        if "proposal" in msg_lower:
+            match = re.search(r'proposal\s+(?:for\s+)?([A-Za-z0-9_\s]+)', user_msg, re.IGNORECASE)
+            target = match.group(1).strip() if match else "1"
+            res = get_proposal.invoke({"job_title_or_id": target})
+            return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
+
+        if "whatsapp" in msg_lower or "wa.me" in msg_lower or "message" in msg_lower:
+            # Check for phone number or recipient
+            num_match = re.search(r'(\+?\d[\d\s-]{6,}\d)', user_msg)
+            if num_match:
+                recipient = num_match.group(1)
+                msg_text = "Hi! Following up on your project inquiry with Sujita."
+                if "saying" in msg_lower or "text" in msg_lower:
+                    parts = re.split(r'saying|text', user_msg, flags=re.IGNORECASE)
+                    if len(parts) > 1:
+                        msg_text = parts[1].strip(" '\"")
+                res = send_whatsapp_message.invoke({"recipient_name_or_number": recipient, "message": msg_text})
+                return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
+            else:
+                name_match = re.search(r'(?:to|send)\s+([A-Za-z]+)', user_msg, re.IGNORECASE)
+                recipient = name_match.group(1) if name_match else "Client"
+                res = send_whatsapp_message.invoke({"recipient_name_or_number": recipient, "message": "Hello"})
+                return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
+
+        return (
+            "⚡ **Suji Admin Control Assistant**\n"
+            "Available Admin Commands:\n"
+            "- 'trigger job search' / 'search for new jobs'\n"
+            "- 'list recent inquiries'\n"
+            "- 'get proposal for job #1'\n"
+            "- 'send whatsapp message to +1234567890 saying hello'"
+        )
+
+    # PUBLIC VISITOR CONTEXT FALLBACK
+    # 1. Refuse admin-style commands cleanly
+    if any(k in msg_lower for k in ["search for job", "trigger job", "list proposal", "send whatsapp", "wa.me"]):
+        return (
+            "I am Sujita's public visitor assistant and do not have permission to execute internal administrative commands. "
+            "If you would like to discuss a project or schedule a call with Sujita, I'd be happy to assist you!"
+        )
+
+    # 2. Appointment Booking Detection (if email + appointment keywords are present)
+    is_appointment_intent = any(k in msg_lower for k in ["book", "appointment", "schedule", "meet", "call", "talk"])
     email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', user_msg)
+
+    if is_appointment_intent and email_match:
+        email = email_match.group(0)
+        name_match = re.search(r'(?:name is|i am|i\'m)\s+([A-Za-z\s]+?)(?:,|\.|\s+email|$)', user_msg, re.IGNORECASE)
+        name = name_match.group(1).strip() if name_match else "Visitor"
+
+        time_match = re.search(r'(?:at|on|for|time)\s+([A-Za-z0-9\s:]+?)(?:,|\.|\s+purpose|$)', user_msg, re.IGNORECASE)
+        preferred_time = time_match.group(1).strip() if time_match else "Tomorrow afternoon"
+
+        res = book_appointment_request.invoke({
+            "name": name,
+            "email": email,
+            "preferred_time": preferred_time,
+            "purpose": user_msg
+        })
+        return (
+            f"Thank you, {name}! I have submitted your appointment request for **{preferred_time}**. "
+            f"Sujita has received your request ({email}) and will confirm within 24 hours via email!"
+        )
+
+    # 3. Lead capture detection (if email is present)
     if email_match:
         email = email_match.group(0)
         name_match = re.search(r'(?:name is|i am|i\'m)\s+([A-Za-z\s]+?)(?:,|\.|\s+email|$)', user_msg, re.IGNORECASE)
@@ -89,19 +167,19 @@ def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]
             "Sujita has built two featured platforms:\n"
             "1. **SoulCare**: Private journaling with AI mood insights and an anonymous community with trust-based identity reveal.\n"
             "2. **AIEC**: Education consultancy platform featuring an admin panel, student inquiry management, counsellor matching, application tracking, and university recommendations.\n\n"
-            "Would you like to discuss building a project with similar features?"
+            "Would you like to discuss building a project with similar features or schedule a consultation call?"
         )
 
-    # Check for services or pricing query
-    if any(k in msg_lower for k in ["service", "pricing", "cost", "price", "rate", "budget", "mvp", "backend"]):
+    # Check for services, pricing, or appointment query
+    if any(k in msg_lower for k in ["service", "pricing", "cost", "price", "rate", "budget", "mvp", "backend", "meet", "call"]):
         return (
             "Sujita offers 4 main services:\n"
             "- **Full-Stack Web Apps**\n"
             "- **Backend/API Development**\n"
             "- **SaaS/MVP Building**\n"
             "- **AI/ML Integration**\n\n"
-            "Pricing ranges from Starter MVPs ($2,500 - $5,000) to Growth platforms ($5,000 - $10,000) and Enterprise systems ($10,000+). "
-            "What kind of project are you planning, and what is your estimated budget?"
+            "Would you like to submit a project inquiry or book a 1-on-1 appointment call with Sujita? "
+            "Just share your name, email, and preferred date/time to book a call!"
         )
 
     # Check for skills query
@@ -114,21 +192,22 @@ def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]
 
     return (
         "Hi! I'm Ask Suji, Sujita's AI assistant. Sujita builds Full-Stack Web Apps, custom FastAPI backends, "
-        "and AI agents (like SoulCare & AIEC). Are you looking to build a project or consult with Sujita? "
-        "Feel free to share your name, email, project type, and budget to get started!"
+        "and AI agents (like SoulCare & AIEC). Are you looking to build a project or book a consultation call with Sujita? "
+        "Feel free to share your name, email, and preferred date/time to get started!"
     )
 
 def run_agent_message(
     user_message: str,
     conversation_id: Optional[str] = None,
-    db: Optional[Session] = None
+    db: Optional[Session] = None,
+    is_admin_context: bool = False
 ) -> Tuple[str, str]:
     """
     Process a user message through the RAG + Persona LangChain agent, maintaining chat history.
-    1. Retrieves relevant knowledge_chunks using pgvector similarity search.
-    2. Builds dynamic system prompt with Jarvis-inspired persona + retrieved chunks.
-    3. Invokes LLM agent with tools (save_client_inquiry).
-    Returns (reply_text, conversation_id).
+    Strictly separates Public Visitor tools from Private Admin tools.
+
+    - is_admin_context = False (Public): tools = [save_client_inquiry, book_appointment_request]
+    - is_admin_context = True (Admin): tools = [trigger_job_search, list_recent_inquiries, get_proposal, send_whatsapp_message]
     """
     cid = conversation_id or str(uuid.uuid4())
     if cid not in CONVERSATION_STORE:
@@ -138,7 +217,7 @@ def run_agent_message(
     llm = get_llm()
 
     if llm is None:
-        reply = fallback_conversational_response(user_message, history)
+        reply = fallback_conversational_response(user_message, history, is_admin_context=is_admin_context)
         history.append({"role": "user", "content": user_message})
         history.append({"role": "assistant", "content": reply})
         return reply, cid
@@ -146,13 +225,21 @@ def run_agent_message(
     try:
         # Step 1 & 2: RAG retrieval & dynamic prompt construction
         retrieved_chunks = retrieve_relevant_chunks(query=user_message, top_k=5, db=db)
-        system_prompt = build_system_prompt(retrieved_chunks=retrieved_chunks, persona=SUJI_PERSONA)
+        system_prompt = build_system_prompt(
+            retrieved_chunks=retrieved_chunks,
+            persona=SUJI_PERSONA,
+            is_admin_context=is_admin_context
+        )
 
-        # Step 3: Agent initialization with LangChain
+        # Step 3: Agent initialization with LangChain and context-isolated tools
         from langchain.agents import create_agent
         from langchain_core.messages import HumanMessage, AIMessage
 
-        tools = [save_client_inquiry]
+        if is_admin_context:
+            tools = [trigger_job_search, list_recent_inquiries, get_proposal, send_whatsapp_message]
+        else:
+            tools = [save_client_inquiry, book_appointment_request]
+
         agent_graph = create_agent(model=llm, tools=tools, system_prompt=system_prompt)
 
         messages = []
@@ -173,7 +260,7 @@ def run_agent_message(
             reply = str(res)
 
         if not reply:
-            reply = "I'm here to help answer questions about Sujita's services and past projects!"
+            reply = "I'm here to assist you!"
 
         history.append({"role": "user", "content": user_message})
         history.append({"role": "assistant", "content": reply})
@@ -182,7 +269,7 @@ def run_agent_message(
 
     except Exception as e:
         logger.error(f"Error executing RAG LangChain agent: {e}", exc_info=True)
-        reply = fallback_conversational_response(user_message, history)
+        reply = fallback_conversational_response(user_message, history, is_admin_context=is_admin_context)
         history.append({"role": "user", "content": user_message})
         history.append({"role": "assistant", "content": reply})
         return reply, cid

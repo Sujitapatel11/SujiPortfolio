@@ -137,4 +137,27 @@ class JobPasteResponse(BaseModel):
 class JobStatusUpdate(BaseModel):
     status: str = Field(..., example="applied", description="New status: new, applied, rejected, hired")
 
+# Appointment Schemas
+class AppointmentCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255, example="Jane Doe")
+    email: EmailStr = Field(..., example="jane@example.com")
+    preferred_time: Optional[str] = Field(None, example="Tomorrow 2pm")
+    purpose: Optional[str] = Field(None, example="Discussing a new SaaS MVP")
+
+class AppointmentUpdate(BaseModel):
+    status: str = Field(..., example="confirmed", description="New status: pending, confirmed, declined, rescheduled")
+
+class AppointmentResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    preferred_time: Optional[str]
+    purpose: Optional[str]
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 

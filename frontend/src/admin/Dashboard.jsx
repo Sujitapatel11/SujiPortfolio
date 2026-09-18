@@ -13,7 +13,20 @@ export const Dashboard = () => {
   const [inquiries, setInquiries] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [proposals, setProposals] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  // Admin AI Chat State
+  const [adminChatMessages, setAdminChatMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Hello Sujita! I am your Admin AI Assistant. How can I help you today? You can command me to search for new jobs, list client inquiries, fetch proposal drafts, or prepare WhatsApp message links.",
+    },
+  ]);
+  const [adminChatInput, setAdminChatInput] = useState("");
+  const [adminChatLoading, setAdminChatLoading] = useState(false);
+  const [adminConvId, setAdminConvId] = useState(null);
 
   // Filters & Search for Jobs
   const [platformFilter, setPlatformFilter] = useState("all");
@@ -61,15 +74,17 @@ export const Dashboard = () => {
     try {
       const headers = { Authorization: `Bearer ${adminToken}` };
 
-      const [inqRes, jobsRes, propRes] = await Promise.all([
+      const [inqRes, jobsRes, propRes, apptRes] = await Promise.all([
         fetch(`${API_BASE}/admin/inquiries`, { headers }).catch(() => null),
         fetch(`${API_BASE}/admin/jobs`, { headers }).catch(() => null),
         fetch(`${API_BASE}/admin/proposals`, { headers }).catch(() => null),
+        fetch(`${API_BASE}/admin/appointments`, { headers }).catch(() => null),
       ]);
 
       if (inqRes && inqRes.ok) setInquiries(await inqRes.json());
       if (jobsRes && jobsRes.ok) setJobs(await jobsRes.json());
       if (propRes && propRes.ok) setProposals(await propRes.json());
+      if (apptRes && apptRes.ok) setAppointments(await apptRes.json());
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     } finally {
@@ -184,7 +199,6 @@ export const Dashboard = () => {
   };
 
   // Update Job Status (PATCH /admin/jobs/{id}/status)
-  // Action: Mark as Submitted (status="applied") or Skip (status="rejected")
   const handleUpdateStatus = async (newStatus) => {
     if (!selectedJob) return;
 
@@ -202,12 +216,10 @@ export const Dashboard = () => {
 
       const updatedJob = await res.json();
 
-      // Update state locally
       setJobs((prev) =>
         prev.map((j) => (j.id === updatedJob.id ? updatedJob : j))
       );
 
-      // Re-fetch proposals to synchronize status if applied
       if (newStatus === "applied") {
         fetchDashboardData();
       }
@@ -218,6 +230,113 @@ export const Dashboard = () => {
     } catch (err) {
       showToast(`Error: ${err.message}`);
     }
+  };
+
+  // Update Appointment Status (PATCH /admin/appointments/{id})
+  const handleUpdateAppointmentStatus = async (apptId, newStatus) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/appointments/${apptId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update appointment status.");
+
+      const updated = await res.json();
+      setAppointments((prev) =>
+        prev.map((a) => (a.id === updated.id ? updated : a))
+      );
+      showToast(`Appointment status updated to ${newStatus}!`);
+    } catch (err) {
+      showToast(`Error: ${err.message}`);
+    }
+  };
+
+  // Admin Chat Submission
+  const handleSendAdminChatMessage = async (e, customPrompt = null) => {
+    if (e) e.preventDefault();
+    const promptToSend = customPrompt || adminChatInput;
+    if (!promptToSend.trim() || adminChatLoading) return;
+
+    const userMsg = promptToSend.trim();
+    if (!customPrompt) setAdminChatInput("");
+
+    setAdminChatMessages((prev) => [...prev, { role: "user", content: userMsg }]);
+    setAdminChatLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({
+          message: userMsg,
+          conversation_id: adminConvId,
+          is_admin_context: true,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Admin chat request failed.");
+
+      const data = await res.json();
+      setAdminConvId(data.conversation_id);
+      setAdminChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply },
+      ]);
+
+      fetchDashboardData();
+    } catch (err) {
+      setAdminChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `Error executing admin command: ${err.message}` },
+      ]);
+    } finally {
+      setAdminChatLoading(false);
+    }
+  };
+
+  // Render markdown links in chat responses cleanly
+  const renderChatMessageContent = (text) => {
+    const markdownLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = markdownLinkRegex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.substring(lastIndex, match.index));
+      }
+      parts.push(
+        <a
+          key={match.index}
+          href={match[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: "#2563eb",
+            textDecoration: "underline",
+            fontWeight: "bold",
+            margin: "0 2px",
+          }}
+        >
+          {match[1]} ↗
+        </a>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return <span style={{ whiteSpace: "pre-wrap" }}>{parts}</span>;
   };
 
   // Helper badge styles
@@ -240,24 +359,25 @@ export const Dashboard = () => {
     if (s === "applied" || s === "submitted") return "admin-status-applied";
     if (s === "rejected") return "admin-status-rejected";
     if (s === "hired") return "admin-status-hired";
+    if (s === "pending") return "admin-status-pending";
+    if (s === "confirmed") return "admin-status-confirmed";
+    if (s === "declined") return "admin-status-declined";
+    if (s === "rescheduled") return "admin-status-rescheduled";
     return "admin-status-new";
   };
 
   // Filtered & Sorted Jobs List
   const filteredJobs = jobs
     .filter((job) => {
-      // Platform Filter
       if (platformFilter !== "all" && job.platform.toLowerCase() !== platformFilter.toLowerCase()) {
         return false;
       }
-      // Status Filter
       if (statusFilter === "hide_rejected" && job.status === "rejected") {
         return false;
       }
       if (statusFilter !== "all" && statusFilter !== "hide_rejected" && job.status !== statusFilter) {
         return false;
       }
-      // Keyword Search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchTitle = (job.title || "").toLowerCase().includes(q);
@@ -305,6 +425,18 @@ export const Dashboard = () => {
               📥 Client Leads ({inquiries.length})
             </button>
             <button
+              className={`admin-nav-item ${activeTab === "appointments" ? "active" : ""}`}
+              onClick={() => setActiveTab("appointments")}
+            >
+              📅 Appointments ({appointments.length})
+            </button>
+            <button
+              className={`admin-nav-item ${activeTab === "admin_chat" ? "active" : ""}`}
+              onClick={() => setActiveTab("admin_chat")}
+            >
+              💬 Admin AI Assistant
+            </button>
+            <button
               className={`admin-nav-item ${activeTab === "settings" ? "active" : ""}`}
               onClick={() => setActiveTab("settings")}
             >
@@ -321,6 +453,8 @@ export const Dashboard = () => {
               {activeTab === "jobs" && "Job Target Search & Manual Submissions"}
               {activeTab === "proposals" && "AI Proposal Review Workspace"}
               {activeTab === "inquiries" && "Client Leads & Inquiries"}
+              {activeTab === "appointments" && "Visitor Appointment Requests"}
+              {activeTab === "admin_chat" && "Admin AI Assistant Command Panel"}
               {activeTab === "settings" && "Admin Portal Settings"}
             </h1>
 
@@ -360,15 +494,13 @@ export const Dashboard = () => {
               </div>
 
               <div className="admin-card">
-                <div className="admin-card-header">Proposals Submitted</div>
-                <div className="admin-card-value">
-                  {proposals.filter((p) => p.status === "submitted").length}
-                </div>
+                <div className="admin-card-header">Client Inquiries</div>
+                <div className="admin-card-value">{inquiries.length}</div>
               </div>
 
               <div className="admin-card">
-                <div className="admin-card-header">Client Inquiries</div>
-                <div className="admin-card-value">{inquiries.length}</div>
+                <div className="admin-card-header">Appointments</div>
+                <div className="admin-card-value">{appointments.length}</div>
               </div>
             </div>
 
@@ -435,7 +567,7 @@ export const Dashboard = () => {
                     {/* Jobs Table */}
                     {filteredJobs.length === 0 ? (
                       <p style={{ color: "#64748b", padding: "20px 0" }}>
-                        No jobs match the active filters. Click "Paste New Job" to add a job manually from Upwork, Fiverr, or direct reachout.
+                        No jobs match the active filters. Click "Paste New Job" to add a job manually.
                       </p>
                     ) : (
                       <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
@@ -579,6 +711,164 @@ export const Dashboard = () => {
                         </tbody>
                       </table>
                     )}
+                  </div>
+                )}
+
+                {/* APPOINTMENTS TAB */}
+                {activeTab === "appointments" && (
+                  <div className="admin-card">
+                    <h3 style={{ marginTop: 0 }}>Visitor Appointment Requests ({appointments.length})</h3>
+                    {appointments.length === 0 ? (
+                      <p style={{ color: "#64748b" }}>No appointment requests submitted yet.</p>
+                    ) : (
+                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "2px solid #e2e8f0" }}>
+                            <th style={{ padding: "10px" }}>Visitor Name</th>
+                            <th style={{ padding: "10px" }}>Email</th>
+                            <th style={{ padding: "10px" }}>Preferred Time</th>
+                            <th style={{ padding: "10px" }}>Purpose</th>
+                            <th style={{ padding: "10px" }}>Status</th>
+                            <th style={{ padding: "10px" }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {appointments.map((appt) => (
+                            <tr key={appt.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                              <td style={{ padding: "12px 10px", fontWeight: "600" }}>{appt.name}</td>
+                              <td style={{ padding: "12px 10px" }}>{appt.email}</td>
+                              <td style={{ padding: "12px 10px", color: "#0f172a", fontWeight: "500" }}>
+                                {appt.preferred_time || "Flexible"}
+                              </td>
+                              <td style={{ padding: "12px 10px", color: "#475569", fontSize: "13px" }}>
+                                {appt.purpose || "N/A"}
+                              </td>
+                              <td style={{ padding: "12px 10px" }}>
+                                <span className={`admin-badge ${getStatusBadge(appt.status)}`}>
+                                  {appt.status}
+                                </span>
+                              </td>
+                              <td style={{ padding: "12px 10px" }}>
+                                <div style={{ display: "flex", gap: "6px" }}>
+                                  <button
+                                    className="admin-btn-success"
+                                    style={{ padding: "3px 8px", fontSize: "11px" }}
+                                    onClick={() => handleUpdateAppointmentStatus(appt.id, "confirmed")}
+                                  >
+                                    Confirm
+                                  </button>
+                                  <button
+                                    className="admin-btn-secondary"
+                                    style={{ padding: "3px 8px", fontSize: "11px" }}
+                                    onClick={() => handleUpdateAppointmentStatus(appt.id, "rescheduled")}
+                                  >
+                                    Reschedule
+                                  </button>
+                                  <button
+                                    className="admin-btn-danger"
+                                    style={{ padding: "3px 8px", fontSize: "11px" }}
+                                    onClick={() => handleUpdateAppointmentStatus(appt.id, "declined")}
+                                  >
+                                    Decline
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
+                {/* ADMIN AI CHAT TAB */}
+                {activeTab === "admin_chat" && (
+                  <div className="admin-card" style={{ display: "flex", flexDirection: "column", height: "650px", padding: 0 }}>
+                    <div style={{ padding: "16px 24px", borderBottom: "1px solid #e2e8f0", background: "#f8fafc", borderRadius: "10px 10px 0 0" }}>
+                      <h3 style={{ margin: 0, fontSize: "16px", color: "#0f172a" }}>
+                        💬 Suji Admin AI Assistant (Command Panel)
+                      </h3>
+                      <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#64748b" }}>
+                        Authenticated Admin Session — Command tools enabled (`trigger_job_search`, `list_recent_inquiries`, `get_proposal`, `send_whatsapp_message`)
+                      </p>
+                    </div>
+
+                    {/* Quick Suggestion Chips */}
+                    <div style={{ padding: "10px 20px", background: "#ffffff", borderBottom: "1px solid #f1f5f9", display: "flex", gap: "8px", overflowX: "auto" }}>
+                      <button
+                        className="admin-btn-secondary"
+                        style={{ padding: "4px 10px", fontSize: "12px", whiteSpace: "nowrap" }}
+                        onClick={() => handleSendAdminChatMessage(null, "search for new python and ai jobs")}
+                      >
+                        🎯 Trigger Job Search
+                      </button>
+                      <button
+                        className="admin-btn-secondary"
+                        style={{ padding: "4px 10px", fontSize: "12px", whiteSpace: "nowrap" }}
+                        onClick={() => handleSendAdminChatMessage(null, "list recent client inquiries")}
+                      >
+                        📥 List Recent Inquiries
+                      </button>
+                      <button
+                        className="admin-btn-secondary"
+                        style={{ padding: "4px 10px", fontSize: "12px", whiteSpace: "nowrap" }}
+                        onClick={() => handleSendAdminChatMessage(null, "get proposal for job #1")}
+                      >
+                        📝 Get Proposal Draft
+                      </button>
+                      <button
+                        className="admin-btn-secondary"
+                        style={{ padding: "4px 10px", fontSize: "12px", whiteSpace: "nowrap" }}
+                        onClick={() => handleSendAdminChatMessage(null, "send a whatsapp message to +1234567890 saying Hi Sujita")}
+                      >
+                        📱 Send WhatsApp Link
+                      </button>
+                    </div>
+
+                    {/* Chat Messages Log */}
+                    <div style={{ flex: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px", background: "#fdfdfd" }}>
+                      {adminChatMessages.map((msg, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+                            maxWidth: "80%",
+                            padding: "12px 16px",
+                            borderRadius: msg.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                            background: msg.role === "user" ? "#2563eb" : "#f1f5f9",
+                            color: msg.role === "user" ? "#ffffff" : "#0f172a",
+                            fontSize: "14px",
+                            lineHeight: "1.5",
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+                          }}
+                        >
+                          {msg.role === "assistant" ? renderChatMessageContent(msg.content) : msg.content}
+                        </div>
+                      ))}
+                      {adminChatLoading && (
+                        <div style={{ alignSelf: "flex-start", padding: "10px 14px", background: "#f1f5f9", borderRadius: "8px", fontSize: "13px", color: "#64748b" }}>
+                          ⚡ Executing admin command...
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Chat Form */}
+                    <form
+                      onSubmit={(e) => handleSendAdminChatMessage(e)}
+                      style={{ padding: "16px 20px", borderTop: "1px solid #e2e8f0", display: "flex", gap: "10px", background: "#ffffff", borderRadius: "0 0 10px 10px" }}
+                    >
+                      <input
+                        type="text"
+                        className="admin-input"
+                        placeholder="Type an admin command (e.g. 'search for new jobs', 'send whatsapp message to +1234567890 saying hello')..."
+                        value={adminChatInput}
+                        onChange={(e) => setAdminChatInput(e.target.value)}
+                        disabled={adminChatLoading}
+                      />
+                      <button type="submit" className="admin-btn-primary" disabled={adminChatLoading || !adminChatInput.trim()}>
+                        Send Command
+                      </button>
+                    </form>
                   </div>
                 )}
 
