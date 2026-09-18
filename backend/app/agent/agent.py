@@ -3,9 +3,14 @@ import uuid
 import logging
 import re
 from typing import Dict, List, Tuple, Optional
+from sqlalchemy.orm import Session
 from dotenv import load_dotenv
-from app.data.profile import PROFILE_DATA, get_profile_context_str
+
+from app.database import SessionLocal
+from app.data.profile import PROFILE_DATA
 from app.agent.tools import save_client_inquiry
+from app.agent.retrieval import retrieve_relevant_chunks
+from app.agent.persona import build_system_prompt, SUJI_PERSONA
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,33 +19,6 @@ logger = logging.getLogger("sujis_world.agent")
 
 # In-memory session store for conversation histories
 CONVERSATION_STORE: Dict[str, List[Dict[str, str]]] = {}
-
-SYSTEM_PROMPT = f"""You are "Ask Suji", the AI Intake Assistant for Sujita's portfolio site ("Suji's World").
-Your purpose is to answer visitor questions accurately and help qualify client inquiries.
-
-=== SUJITA'S PROFILE & FACTUAL BASE ===
-{get_profile_context_str()}
-
-=== STRICT RULES FOR YOUR BEHAVIOR ===
-1. FACTUAL ACCURACY: Answer visitor questions using ONLY the facts listed in Sujita's profile above (skills, projects: SoulCare & AIEC, services, pricing, availability). NEVER invent, assume, or make up facts about Sujita's background, past clients, or skills.
-2. PROJECT HIGHLIGHTS:
-   - SoulCare: Private journaling + AI mood insights + anonymous community with trust-based identity reveal.
-   - AIEC: Education consultancy platform with admin panel, student inquiry management, counsellor-student matching, document tracking, and university recommendations.
-3. SERVICES & PRICING:
-   - 4 Services offered: Full-Stack Web Apps, Backend/API Development, SaaS/MVP Building, AI/ML Integration.
-   - Pricing ranges from Starter ($2,500 - $5,000) to Growth ($5,000 - $10,000) and Enterprise ($10,000+).
-4. NATURAL INTAKE GUIDANCE:
-   - Keep a friendly, confident, non-salesy tone — helpful and professional, never pushy.
-   - If the visitor expresses interest in working with Sujita or building a project, naturally guide the conversation by asking about their project requirements, project type, and budget.
-5. TOOL INVOCATION / SAVING INQUIRIES:
-   - When you have gathered all four key pieces of information from the user:
-     1. Name
-     2. Email
-     3. Project Type
-     4. Budget
-   - Immediately call the `save_client_inquiry` tool to save the lead to the database.
-   - Once saved, confirm warmly to the user that Sujita has received their project details and will follow up with them personally via email.
-"""
 
 def get_llm():
     """Dynamically initialize OpenAI or Anthropic Chat Model based on available environment variables."""
@@ -69,7 +47,9 @@ def get_llm():
 def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]]) -> str:
     """
     Intelligent fallback intake responder when no LLM key is set in .env.
-    Answers profile queries and extracts lead info to trigger inquiry persistence.
+    NOTE: The fallback engine is a safety net when no LLM API keys (OpenAI/Anthropic) are configured.
+    It uses rule-based string matching and does NOT have vector RAG or dynamic persona behavior.
+    This is expected behavior for zero-cost offline development fallback.
     """
     msg_lower = user_msg.lower()
 
@@ -77,15 +57,12 @@ def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]
     email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', user_msg)
     if email_match:
         email = email_match.group(0)
-        # Extract name if mentioned or fallback
         name_match = re.search(r'(?:name is|i am|i\'m)\s+([A-Za-z\s]+?)(?:,|\.|\s+email|$)', user_msg, re.IGNORECASE)
         name = name_match.group(1).strip() if name_match else "Interested Client"
         
-        # Extract budget if mentioned or fallback
         budget_match = re.search(r'(\$\d+[\d,]*|\d+\s*(?:k|thousand|dollars))', user_msg, re.IGNORECASE)
         budget = budget_match.group(0) if budget_match else "$5,000"
 
-        # Determine project type
         project_type = "Full-Stack Web App"
         if "backend" in msg_lower or "api" in msg_lower:
             project_type = "Backend/API Development"
@@ -141,9 +118,16 @@ def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]
         "Feel free to share your name, email, project type, and budget to get started!"
     )
 
-def run_agent_message(user_message: str, conversation_id: Optional[str] = None) -> Tuple[str, str]:
+def run_agent_message(
+    user_message: str,
+    conversation_id: Optional[str] = None,
+    db: Optional[Session] = None
+) -> Tuple[str, str]:
     """
-    Process a user message through the LangChain agent, maintaining chat history.
+    Process a user message through the RAG + Persona LangChain agent, maintaining chat history.
+    1. Retrieves relevant knowledge_chunks using pgvector similarity search.
+    2. Builds dynamic system prompt with Jarvis-inspired persona + retrieved chunks.
+    3. Invokes LLM agent with tools (save_client_inquiry).
     Returns (reply_text, conversation_id).
     """
     cid = conversation_id or str(uuid.uuid4())
@@ -160,11 +144,16 @@ def run_agent_message(user_message: str, conversation_id: Optional[str] = None) 
         return reply, cid
 
     try:
+        # Step 1 & 2: RAG retrieval & dynamic prompt construction
+        retrieved_chunks = retrieve_relevant_chunks(query=user_message, top_k=5, db=db)
+        system_prompt = build_system_prompt(retrieved_chunks=retrieved_chunks, persona=SUJI_PERSONA)
+
+        # Step 3: Agent initialization with LangChain
         from langchain.agents import create_agent
         from langchain_core.messages import HumanMessage, AIMessage
 
         tools = [save_client_inquiry]
-        agent_graph = create_agent(model=llm, tools=tools, system_prompt=SYSTEM_PROMPT)
+        agent_graph = create_agent(model=llm, tools=tools, system_prompt=system_prompt)
 
         messages = []
         for h in history[-10:]:
@@ -192,7 +181,7 @@ def run_agent_message(user_message: str, conversation_id: Optional[str] = None) 
         return reply, cid
 
     except Exception as e:
-        logger.error(f"Error executing LangChain agent: {e}", exc_info=True)
+        logger.error(f"Error executing RAG LangChain agent: {e}", exc_info=True)
         reply = fallback_conversational_response(user_message, history)
         history.append({"role": "user", "content": user_message})
         history.append({"role": "assistant", "content": reply})

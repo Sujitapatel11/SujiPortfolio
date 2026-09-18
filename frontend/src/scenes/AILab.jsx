@@ -1,7 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text, Float, Points, PointMaterial } from '@react-three/drei';
-import * as THREE from 'three';
 
 export default function AILab() {
   const torusRef = useRef();
@@ -59,7 +58,6 @@ export default function AILab() {
         position={[0, 2.2, 0]}
         fontSize={0.5}
         color="#c084fc"
-        font="https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoBoA4D4g30yX28oe9_z55Y7q0r9.woff"
         anchorX="center"
         anchorY="middle"
       >

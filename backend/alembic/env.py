@@ -11,7 +11,7 @@ from alembic import context
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.database import Base, DATABASE_URL
-from app.models import Inquiry, Job, Proposal  # ensure all models are registered
+from app.models import Inquiry, Job, Proposal, KnowledgeChunk  # ensure all models are registered
 
 # this is the Alembic Config object
 config = context.config
@@ -21,10 +21,8 @@ if config.config_file_name:
     fileConfig(config.config_file_name)
 
 # Set database URL dynamically from app database settings / environment
-target_url = os.getenv("DATABASE_URL", DATABASE_URL)
-if not target_url or "db:5432" in target_url:
-    target_url = "postgresql://suji_user:suji_password@localhost:5432/sujis_world_db"
-
+from app.database import engine
+target_url = str(engine.url)
 config.set_main_option("sqlalchemy.url", target_url)
 
 target_metadata = Base.metadata

@@ -1,20 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { JourneyProvider } from './lib/JourneyController';
-import SceneCanvas from './components/SceneCanvas';
-import UIOverlay from './components/UIOverlay';
+import Navbar from './components/Navbar';
+import Sections from './components/Sections';
+import ChatDrawer from './components/ChatDrawer';
 import { AdminAuthProvider } from './admin/AdminAuthContext';
 import Login from './admin/Login';
 import Dashboard from './admin/Dashboard';
 
 function PublicPortfolio() {
+  const [chatOpen, setChatOpen] = useState(false);
+
   return (
-    <JourneyProvider>
-      <main className="app-container">
-        <SceneCanvas />
-        <UIOverlay />
-      </main>
-    </JourneyProvider>
+    <div className="single-page-layout">
+      <Navbar onOpenChat={() => setChatOpen(true)} />
+      <Sections onOpenChat={() => setChatOpen(true)} />
+      <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+    </div>
   );
 }
 
@@ -23,7 +24,7 @@ export default function App() {
     <AdminAuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public 3D Interactive Portfolio */}
+          {/* Public Single-Page Continuous-Scroll Portfolio */}
           <Route path="/" element={<PublicPortfolio />} />
 
           {/* Private Admin Module */}

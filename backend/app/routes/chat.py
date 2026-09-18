@@ -1,6 +1,8 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+from app.database import get_db
 from app.agent import run_agent_message
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
@@ -14,16 +16,18 @@ class ChatResponse(BaseModel):
     conversation_id: str
 
 @router.post("", response_model=ChatResponse, status_code=status.HTTP_200_OK)
-def chat_with_agent(req: ChatRequest):
+def chat_with_agent(req: ChatRequest, db: Session = Depends(get_db)):
     """
-    Conversational AI Agent endpoint ("Ask Suji").
+    Conversational RAG AI Agent endpoint ("Ask Suji").
     Answers questions about Sujita's profile, skills, projects (SoulCare & AIEC), and services.
+    Uses pgvector similarity search + Jarvis persona prompting.
     Guides project inquiries and saves qualified leads to database.
     """
     try:
         reply, cid = run_agent_message(
             user_message=req.message,
-            conversation_id=req.conversation_id
+            conversation_id=req.conversation_id,
+            db=db
         )
         return ChatResponse(reply=reply, conversation_id=cid)
     except Exception as e:
@@ -31,3 +35,4 @@ def chat_with_agent(req: ChatRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Chat agent error: {str(e)}"
         )
+

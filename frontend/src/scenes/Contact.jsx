@@ -36,7 +36,6 @@ export default function Contact() {
         position={[0, 2.2, 0]}
         fontSize={0.5}
         color="#f472b6"
-        font="https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoBoA4D4g30yX28oe9_z55Y7q0r9.woff"
         anchorX="center"
         anchorY="middle"
       >

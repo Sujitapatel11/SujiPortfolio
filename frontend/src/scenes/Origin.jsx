@@ -4,7 +4,7 @@ import AvatarCore from '../components/AvatarCore';
 
 function AvatarFallback() {
   return (
-    <mesh position={[0, 0, 0]}>
+    <mesh position={[0, 0.2, 0]}>
       <sphereGeometry args={[1, 32, 32]} />
       <meshStandardMaterial color="#00f2fe" wireframe />
     </mesh>
@@ -24,7 +24,6 @@ export default function Origin() {
         position={[0, 2.4, 0]}
         fontSize={0.55}
         color="#ffffff"
-        font="https://fonts.gstatic.com/s/spacegrotesk/v16/V8mQoBoA4D4g30yX28oe9_z55Y7q0r9.woff"
         anchorX="center"
         anchorY="middle"
       >

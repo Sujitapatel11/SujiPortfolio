@@ -1,10 +1,24 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON
 from sqlalchemy.orm import relationship
+from pgvector.sqlalchemy import Vector
 from app.database import Base
 
 def utc_now():
     return datetime.now(timezone.utc)
+
+class KnowledgeChunk(Base):
+    """
+    SQLAlchemy Model for vector knowledge chunks (pgvector).
+    Stores profile data chunks and their 384-dimensional sentence-transformers embeddings.
+    """
+    __tablename__ = "knowledge_chunks"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    source = Column(String(255), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    embedding = Column(Vector(384).with_variant(JSON, "sqlite"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 class Inquiry(Base):
     """
@@ -30,6 +44,7 @@ class Job(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     platform = Column(String(100), nullable=False, default="Direct")
+    external_id = Column(String(255), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     url = Column(String(500), nullable=True)
@@ -55,4 +70,5 @@ class Proposal(Base):
     generated_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     job = relationship("Job", back_populates="proposals")
+
 

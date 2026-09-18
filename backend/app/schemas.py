@@ -64,6 +64,7 @@ class AdminUserResponse(BaseModel):
 # Job Schemas
 class JobCreate(BaseModel):
     platform: Optional[str] = "Direct"
+    external_id: Optional[str] = None
     title: str
     description: Optional[str] = None
     url: Optional[str] = None
@@ -75,6 +76,7 @@ class JobCreate(BaseModel):
 class JobResponse(BaseModel):
     id: int
     platform: str
+    external_id: Optional[str] = None
     title: str
     description: Optional[str]
     url: Optional[str]
@@ -87,12 +89,27 @@ class JobResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class JobSearchRequest(BaseModel):
+    keywords: Optional[List[str]] = Field(default_factory=lambda: ["python", "fastapi", "react", "ai"])
+
+class JobSearchStats(BaseModel):
+    fetched: int
+    matched: int
+    drafted: int
+
+class JobSearchResponse(BaseModel):
+    summary: dict
+
 # Proposal Schemas
 class ProposalCreate(BaseModel):
     job_id: int
     draft_text: str
     edited_text: Optional[str] = None
     status: Optional[str] = "draft"
+
+class ProposalUpdate(BaseModel):
+    edited_text: Optional[str] = None
+    status: Optional[str] = None
 
 class ProposalResponse(BaseModel):
     id: int
@@ -104,4 +121,20 @@ class ProposalResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Manual Paste Job Schemas
+class JobPasteRequest(BaseModel):
+    platform: str = Field(..., description="Platform name e.g. Upwork, Fiverr, Other")
+    title: str = Field(..., min_length=2, example="Full-Stack Developer for FastAPI & React Platform")
+    description: str = Field(..., min_length=5, example="Looking for a Python/FastAPI backend engineer with React skills.")
+    url: Optional[str] = Field(None, example="https://www.upwork.com/jobs/~0123456789")
+    budget: Optional[str] = Field(None, example="$3,000")
+
+class JobPasteResponse(BaseModel):
+    job: JobResponse
+    proposal: ProposalResponse
+
+class JobStatusUpdate(BaseModel):
+    status: str = Field(..., example="applied", description="New status: new, applied, rejected, hired")
+
 
