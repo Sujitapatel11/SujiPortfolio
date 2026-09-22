@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, EmailStr, Field
 
 class InquiryCreate(BaseModel):
@@ -145,7 +145,11 @@ class AppointmentCreate(BaseModel):
     purpose: Optional[str] = Field(None, example="Discussing a new SaaS MVP")
 
 class AppointmentUpdate(BaseModel):
-    status: str = Field(..., example="confirmed", description="New status: pending, confirmed, declined, rescheduled")
+    status: Literal["confirmed", "declined", "rescheduled"] = Field(
+        ...,
+        example="confirmed",
+        description="New status: confirmed, declined, or rescheduled",
+    )
 
 class AppointmentResponse(BaseModel):
     id: int
@@ -158,6 +162,5 @@ class AppointmentResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
 
 

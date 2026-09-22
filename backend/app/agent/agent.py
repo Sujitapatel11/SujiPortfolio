@@ -57,6 +57,11 @@ def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]
     Differentiates between Public Visitor context and Private Admin context.
     """
     msg_lower = user_msg.lower()
+    prior_user_messages = " ".join(
+        item["content"] for item in history if item["role"] == "user"
+    )
+    conversation_text = f"{prior_user_messages} {user_msg}".strip()
+    conversation_lower = conversation_text.lower()
 
     if is_admin_context:
         # ADMIN FALLBACK COMMANDS
@@ -110,22 +115,48 @@ def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]
         )
 
     # 2. Appointment Booking Detection (if email + appointment keywords are present)
-    is_appointment_intent = any(k in msg_lower for k in ["book", "appointment", "schedule", "meet", "call", "talk"])
-    email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', user_msg)
+    is_appointment_intent = any(
+        k in conversation_lower
+        for k in [
+            "book",
+            "appointment",
+            "schedule",
+            "meet",
+            "call",
+            "talk",
+            "discuss",
+            "consultation",
+        ]
+    )
+    email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', conversation_text)
 
-    if is_appointment_intent and email_match:
+    already_booked = any(
+        item["role"] == "assistant"
+        and "SUCCESS: Appointment request #" in item["content"]
+        for item in history
+    )
+
+    if is_appointment_intent and email_match and not already_booked:
         email = email_match.group(0)
-        name_match = re.search(r'(?:name is|i am|i\'m)\s+([A-Za-z\s]+?)(?:,|\.|\s+email|$)', user_msg, re.IGNORECASE)
+        name_match = re.search(
+            r'(?:name is|i am|i\'m)\s+([A-Za-z\s]+?)(?:,|\.|\s+email|$)',
+            conversation_text,
+            re.IGNORECASE,
+        )
         name = name_match.group(1).strip() if name_match else "Visitor"
 
-        time_match = re.search(r'(?:at|on|for|time)\s+([A-Za-z0-9\s:]+?)(?:,|\.|\s+purpose|$)', user_msg, re.IGNORECASE)
+        time_match = re.search(
+            r'(?:at|on|for|time)\s+([A-Za-z0-9\s:]+?)(?:,|\.|\s+purpose|$)',
+            conversation_text,
+            re.IGNORECASE,
+        )
         preferred_time = time_match.group(1).strip() if time_match else "Tomorrow afternoon"
 
         res = book_appointment_request.invoke({
             "name": name,
             "email": email,
             "preferred_time": preferred_time,
-            "purpose": user_msg
+            "purpose": conversation_text
         })
         return (
             f"Thank you, {name}! I have submitted your appointment request for **{preferred_time}**. "
