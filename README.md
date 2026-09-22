@@ -66,6 +66,51 @@ Visitors explore Sujita's technical universe across interactive 3D zones while e
 
 ## 🛠️ Tech Stack Overview
 
+### WhatsApp notifications with Twilio
+
+The backend can notify the admin through the Twilio WhatsApp Sandbox when a
+matched job has a proposal ready or a visitor submits an appointment request.
+Notifications are best-effort: missing credentials, Twilio errors, and the
+one-message-per-minute safeguard are logged and never interrupt the job or
+appointment flow. A discovery run with multiple matches sends one summary
+message. The latest successfully sent job notification is correlated with an
+inbound reply.
+
+#### Free local setup
+
+1. Create a free account at [twilio.com/try-twilio](https://www.twilio.com/try-twilio)
+   and verify an email address and phone number.
+2. In the Twilio Console, open **Messaging > Try it out > Send a WhatsApp
+   message** (WhatsApp Sandbox). Note the Sandbox join code and send
+   `join <code>` from the admin phone to the displayed Twilio WhatsApp number.
+3. Copy the **Account SID** and **Auth Token** from the Twilio Console and set
+   these values in `backend/.env` (use `backend/.env.example` as a template):
+
+   ```dotenv
+   TWILIO_ACCOUNT_SID=AC...
+   TWILIO_AUTH_TOKEN=...
+   TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+   ADMIN_WHATSAPP_NUMBER=+9779815280946
+   ADMIN_DASHBOARD_URL=http://localhost:5173/admin
+   ```
+
+4. Install the backend dependencies with `pip install -r backend/requirements.txt`
+   and restart the FastAPI server.
+5. For inbound replies, expose the local backend with a tunnel such as
+   `ngrok http 8000`. In the Twilio Sandbox settings, set **When a message
+   comes in** to:
+   `https://<your-tunnel>/admin/whatsapp/webhook` using HTTP POST.
+
+#### Testing approve/skip replies
+
+Trigger an authenticated job search from the admin chat or call
+`POST /admin/jobs/search-now` with keywords that match a connector result. The
+backend sends one message containing the matched jobs and dashboard links.
+Reply `yes` or `approve` to apply the latest successfully notified job, or
+reply `skip` or `no` to reject it. The webhook returns the updated job id and
+status. Any ambiguous reply, missing pending notification, or notification
+that was rate-limited is logged and ignored.
+
 | Category | Technologies & Tools |
 | :--- | :--- |
 | **Backend Core** | Python 3.10+, FastAPI, Uvicorn, Pydantic v2 |

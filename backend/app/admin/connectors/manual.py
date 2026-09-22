@@ -48,6 +48,7 @@ def process_pasted_job(
     Returns (db_job, proposal).
     """
     from app.admin.orchestrator import JobDiscoveryOrchestrator
+    from app.admin.whatsapp import notify_job_match
 
     external_id = f"manual_{uuid.uuid4().hex[:10]}"
     norm_job = NormalizedJob(
@@ -92,5 +93,6 @@ def process_pasted_job(
     db.commit()
     db.refresh(proposal)
 
+    notify_job_match(db_job)
     logger.info(f"Successfully processed manual job paste (ID {db_job.id}, Score: {match_score}) from platform {platform}")
     return db_job, proposal

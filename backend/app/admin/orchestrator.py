@@ -5,6 +5,7 @@ from app.models import Job, Proposal
 from app.admin.connectors.base import BaseConnector, NormalizedJob
 from app.admin.connectors.freelancer import FreelancerConnector
 from app.admin.proposal_drafter import generate_proposal_draft
+from app.admin.whatsapp import notify_job_matches
 
 logger = logging.getLogger("sujis_world.orchestrator")
 
@@ -58,6 +59,7 @@ class JobDiscoveryOrchestrator:
         """
         search_keywords = keywords or ["python", "fastapi", "react", "ai"]
         summary: Dict[str, Dict[str, Any]] = {}
+        matched_jobs: List[Job] = []
 
         for connector in self.connectors:
             platform_name = connector.platform_name
@@ -105,6 +107,7 @@ class JobDiscoveryOrchestrator:
                         db.add(db_job)
                         db.commit()
                         db.refresh(db_job)
+                        matched_jobs.append(db_job)
                         matched_count += 1
 
                         # 5. Draft proposal reusing proposal_drafter module
@@ -134,4 +137,6 @@ class JobDiscoveryOrchestrator:
                     "error": str(e)
                 }
 
+        if matched_jobs:
+            notify_job_matches(matched_jobs)
         return summary

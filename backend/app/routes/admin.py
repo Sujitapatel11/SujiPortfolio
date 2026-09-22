@@ -1,5 +1,8 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+import logging
+import re
+from urllib.parse import parse_qs
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -31,9 +34,12 @@ from app.admin.auth import (
 )
 from app.admin.orchestrator import JobDiscoveryOrchestrator
 from app.admin.connectors.manual import process_pasted_job
+from app.admin.whatsapp import clear_pending_job, get_pending_job_id, parse_job_reply
+from app.admin.whatsapp import ADMIN_WHATSAPP_NUMBER
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+logger = logging.getLogger("sujis_world.admin")
 
 @router.post("/login", response_model=AdminLoginResponse)
 def admin_login(payload: AdminLoginRequest):
@@ -225,21 +231,53 @@ def update_job_status(
             detail=f"Job #{job_id} not found"
         )
     
-    new_status = payload.status.lower()
-    job.status = new_status
+    return _apply_job_status(db, job, payload.status)
 
-    # Synchronize linked proposal status if applicable
-    linked_proposal = db.query(Proposal).filter(Proposal.job_id == job_id).first()
+
+def _apply_job_status(db: Session, job: Job, new_status: str) -> Job:
+    job.status = new_status.lower()
+    linked_proposal = db.query(Proposal).filter(Proposal.job_id == job.id).first()
     if linked_proposal:
-        if new_status in ["applied", "submitted"]:
+        if job.status in ["applied", "submitted"]:
             linked_proposal.status = "submitted"
-        elif new_status == "hired":
+        elif job.status == "hired":
             linked_proposal.status = "accepted"
-        # If new_status == "rejected" (Skip action), leave proposal status as-is ("draft")
-
     db.commit()
     db.refresh(job)
     return job
+
+
+@router.post("/whatsapp/webhook")
+async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Twilio inbound WhatsApp webhook. Only an unambiguous reply to the latest
+    tracked job notification can change a job status.
+    """
+    raw_body = (await request.body()).decode("utf-8", errors="replace")
+    form = parse_qs(raw_body)
+    body = form.get("Body", [""])[0]
+    sender = form.get("From", [""])[0]
+    configured_sender = re.sub(r"\D", "", ADMIN_WHATSAPP_NUMBER)
+    inbound_sender = re.sub(r"\D", "", sender)
+    if inbound_sender and configured_sender and inbound_sender != configured_sender:
+        logger.warning("Ignoring WhatsApp reply from unauthorized number: %s", sender)
+        return {"status": "ignored"}
+    status_intent = parse_job_reply(body)
+    pending_job_id = get_pending_job_id()
+
+    if not status_intent or pending_job_id is None:
+        logger.info("Ignoring unclear WhatsApp reply: %s", body)
+        return {"status": "ignored"}
+
+    job = db.query(Job).filter(Job.id == pending_job_id).first()
+    if not job:
+        logger.warning("Pending WhatsApp job #%s no longer exists", pending_job_id)
+        clear_pending_job()
+        return {"status": "ignored"}
+
+    _apply_job_status(db, job, status_intent)
+    clear_pending_job()
+    return {"status": "updated", "job_id": job.id, "job_status": job.status}
 
 @router.get("/appointments", response_model=List[AppointmentResponse])
 def list_admin_appointments(
@@ -271,6 +309,3 @@ def update_appointment_status(
     db.commit()
     db.refresh(appt)
     return appt
-
-
-

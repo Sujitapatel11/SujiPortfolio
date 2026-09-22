@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from langchain_core.tools import tool
 from app.database import SessionLocal
 from app.models import Inquiry, Appointment, Job, Proposal
+from app.admin.whatsapp import ADMIN_DASHBOARD_URL, send_whatsapp_notification
 
 logger = logging.getLogger("sujis_world.agent.tools")
 
@@ -72,9 +73,13 @@ def book_appointment_request(name: str, email: str, preferred_time: str, purpose
         db.commit()
         db.refresh(appt)
         
-        # Log notification clearly
-        logger.info(f"NOTIFICATION: New appointment requested by {name} ({email}) for '{preferred_time}'. Purpose: {purpose}")
-        # TODO: Wire notification to email/WhatsApp service once available
+        notification = (
+            f"New appointment request from {name} ({email})\n"
+            f"Preferred time: {preferred_time}\n"
+            f"Purpose: {purpose or 'General Consultation / Project Discussion'}\n"
+            f"Review: {ADMIN_DASHBOARD_URL}/appointments"
+        )
+        send_whatsapp_notification(notification)
         
         return f"SUCCESS: Appointment request #{appt.id} received for {name} ({email}). Sujita has been notified and will confirm within 24 hours via email."
     except Exception as e:
