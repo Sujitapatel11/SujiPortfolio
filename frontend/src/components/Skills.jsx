@@ -133,7 +133,7 @@ export default function Skills() {
                         ? 'border-brand-pink/70 bg-bg-card shadow-[0_0_35px_rgba(168,85,247,0.28),0_0_12px_rgba(255,46,147,0.2)]'
                         : 'border-border bg-bg-card/85 shadow-xl'
                     }`}
-                    style={{ transformStyle: 'preserve-3d', translateX: '-50%', translateY: '-50%' }}
+                    style={{ transformStyle: 'preserve-3d', translate: '-50% -50%' }}
                     onClick={() => {
                       if (!isActive) setActiveIndex(index);
                     }}
