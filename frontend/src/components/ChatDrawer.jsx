@@ -3,6 +3,7 @@ import { X, Send, Bot, MessageSquare, Phone, CheckCircle2, Loader2, Sparkles } f
 import { sendChatMessage } from '../api/chat';
 import { submitInquiry } from '../api/inquiries';
 import { personalInfo } from '../data/portfolio';
+import { useAdminAuth } from '../admin/AdminAuthContext';
 
 export default function ChatDrawer({ isOpen, onClose }) {
   const [messages, setMessages] = useState([
@@ -15,6 +16,13 @@ export default function ChatDrawer({ isOpen, onClose }) {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const { login: adminLogin, adminToken, adminUser, isAuthenticated } = useAdminAuth();
+  const [ownerMode, setOwnerMode] = useState(false);
+  const [ownerLoginOpen, setOwnerLoginOpen] = useState(false);
+  const [ownerUsername, setOwnerUsername] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
+  const [ownerLoginError, setOwnerLoginError] = useState('');
+  const [ownerLoginLoading, setOwnerLoginLoading] = useState(false);
 
   // Appointment collection state
   const [appointmentMode, setAppointmentMode] = useState(false);
@@ -46,7 +54,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
     setIsLoading(true);
 
     try {
-      const data = await sendChatMessage(text, conversationId);
+      const data = await sendChatMessage(text, conversationId, ownerMode && isAuthenticated ? adminToken : null);
       if (data.conversation_id) setConversationId(data.conversation_id);
       setMessages((prev) => [
         ...prev,
@@ -63,6 +71,23 @@ export default function ChatDrawer({ isOpen, onClose }) {
       ]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleOwnerLogin = async (e) => {
+    e.preventDefault();
+    setOwnerLoginError('');
+    setOwnerLoginLoading(true);
+    try {
+      await adminLogin(ownerUsername.trim(), ownerPassword);
+      setOwnerMode(true);
+      setOwnerLoginOpen(false);
+      setOwnerPassword('');
+      setMessages((prev) => [...prev, { id: `${Date.now()}-owner`, role: 'assistant', text: 'Private Job Hunter mode is active. You can now ask me to find jobs, rank matches, or draft proposals. I will not submit applications without your approval.' }]);
+    } catch (err) {
+      setOwnerLoginError(err.message || 'Owner authentication failed.');
+    } finally {
+      setOwnerLoginLoading(false);
     }
   };
 
@@ -302,7 +327,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
         <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-bg-card">
           <input
             className="flex-1 px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-text-main text-xs sm:text-sm placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
-            placeholder="Ask about systems, stack, projects..."
+            placeholder={ownerMode ? 'Ask Job Hunter to find and rank opportunities…' : 'Ask about systems, stack, projects...'}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
