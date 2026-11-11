@@ -16,7 +16,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
-  const { login: adminLogin, adminToken, adminUser, isAuthenticated } = useAdminAuth();
+  const { login: adminLogin, logout: adminLogout, adminToken, adminUser, isAuthenticated } = useAdminAuth();
   const [ownerMode, setOwnerMode] = useState(false);
   const [ownerLoginOpen, setOwnerLoginOpen] = useState(false);
   const [ownerUsername, setOwnerUsername] = useState('');
@@ -66,7 +66,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          text: `AI backend is currently offline. You can chat directly with Sujita on WhatsApp (${personalInfo.phoneDisplay}) or email sujitapatel787@gmail.com!`,
+          text: 'The AI service could not be reached. Check that the backend is running and try again.',
         },
       ]);
     } finally {
@@ -171,14 +171,65 @@ export default function ChatDrawer({ isOpen, onClose }) {
               </div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-bg-card transition-all"
-            aria-label="Close chat"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (ownerMode) {
+                  setOwnerMode(false);
+                  adminLogout();
+                } else if (isAuthenticated) {
+                  setOwnerMode(true);
+                  setOwnerLoginOpen(false);
+                } else {
+                  setOwnerLoginOpen((open) => !open);
+                }
+              }}
+              className={`px-2.5 py-1.5 rounded-lg border font-mono text-[10px] font-semibold transition-all ${ownerMode ? 'border-emerald-400/50 text-emerald-400 bg-emerald-400/10' : 'border-brand-pink/40 text-brand-pink hover:bg-brand-pink/10'}`}
+              aria-label={ownerMode ? 'Exit Job Hunter mode' : 'Open private Job Hunter login'}
+            >
+              {ownerMode ? 'EXIT JOB HUNTER' : 'JOB HUNTER'}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-bg-card transition-all"
+              aria-label="Close chat"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
+
+        {ownerLoginOpen && !ownerMode && (
+          <form onSubmit={handleOwnerLogin} className="px-4 py-3 space-y-2 bg-bg-card border-b border-border">
+            <div className="font-mono text-[10px] text-brand-pink font-semibold">PRIVATE OWNER ACCESS</div>
+            <input
+              autoComplete="username"
+              value={ownerUsername}
+              onChange={(e) => setOwnerUsername(e.target.value)}
+              placeholder="Admin username"
+              required
+              className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs focus:border-brand-pink focus:outline-none"
+            />
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={ownerPassword}
+              onChange={(e) => setOwnerPassword(e.target.value)}
+              placeholder="Admin password"
+              required
+              className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs focus:border-brand-pink focus:outline-none"
+            />
+            {ownerLoginError && <p role="alert" className="text-xs text-red-400">{ownerLoginError}</p>}
+            <button type="submit" disabled={ownerLoginLoading} className="w-full py-2 rounded-lg text-white text-xs font-semibold btn-primary disabled:opacity-50">
+              {ownerLoginLoading ? 'Signing in…' : 'Unlock Job Hunter'}
+            </button>
+          </form>
+        )}
+        {ownerMode && (
+          <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/20 text-emerald-400 font-mono text-[10px]">
+            PRIVATE JOB HUNTER ACTIVE{adminUser?.username ? ` · ${adminUser.username}` : ''}
+          </div>
+        )}
 
         {/* Messages Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5 no-scrollbar bg-bg-primary/60">
