@@ -145,12 +145,12 @@ class ArbeitnowRemoteConnector(BaseConnector):
             if terms and not any(term in searchable for term in terms):
                 continue
             jobs.append(NormalizedJob(
-                platform="Arbeitnow (remote)",
+                platform="Arbeitnow",
                 external_id=_identity("Arbeitnow", item.get("slug"), title, company, url),
                 title=title,
                 description=(f"Company: {company}\n\n{description}\n\nSource: Arbeitnow." if company else description + "\n\nSource: Arbeitnow."),
                 url=url,
                 posted_at=_parse_date(item.get("created_at")),
-                raw_metadata={"company": company, "source": "Arbeitnow", "location": item.get("location"), "tags": item.get("tags") or []},
+                raw_metadata={"company": company, "source": "Arbeitnow", "location": item.get("location"), "remote": bool(item.get("remote")), "tags": item.get("tags") or [], "job_type": item.get("job_type")},
             ))
         return jobs
