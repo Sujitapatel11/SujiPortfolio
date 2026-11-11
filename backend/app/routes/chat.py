@@ -7,6 +7,7 @@ import jwt
 from app.database import get_db
 from app.agent import run_agent_message
 from app.admin.auth import JWT_ALGORITHM, ADMIN_USERNAME, _get_effective_jwt_secret
+from app.routes.jobs_public import perform_public_search
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -41,7 +42,40 @@ def chat_with_agent(req: ChatRequest, request: Request, db: Session = Depends(ge
     - Admin context (requires valid JWT token): Enables command tools (job search, inquiries list, proposal retrieval, WhatsApp link generation).
     """
     is_admin = check_is_admin(request)
-    
+
+    # Public read-only job discovery does not require owner credentials.
+    # Sensitive admin operations (proposals, inquiries, scheduler) remain protected.
+    message_lower = req.message.lower().strip()
+    job_intent = any(term in message_lower for term in ["job", "jobs", "internship", "internships", "naukri", "नौकरी"])
+    search_intent = (
+        message_lower in {"job khojo", "jobs khojo", "naukri khojo", "find jobs", "search jobs", "job search"}
+        or any(term in message_lower for term in ["find", "search", "khoj", "khojo", "dhund", "ढूंढ", "खोज", "show me"])
+    )
+    if job_intent and search_intent:
+        try:
+            available_terms = ["python", "fastapi", "django", "backend", "frontend", "react", "javascript", "typescript", "java", "spring", "machine learning", "ai", "data science", "full stack", "internship"]
+            keywords = [term for term in available_terms if term in message_lower]
+            if not keywords:
+                keywords = ["python", "backend", "fastapi", "react", "javascript"]
+            results = perform_public_search(keywords)
+            lines = [
+                f"Found {results['count']} global-remote opportunities from free public sources.",
+                "Sources: " + (", ".join(f"{s['source']} ({s['fetched']} fetched)" for s in results["sources"]) or "No source returned data."),
+            ]
+            for index, job in enumerate(results["jobs"], 1):
+                salary = f" | Salary: {job['salary']}" if job.get("salary") else ""
+                company = f" at {job['company']}" if job.get("company") else ""
+                lines.append(f"{index}. {job['title']}{company} | {job['source']} | Match {round(job['match_score'] * 100)}%{salary}\nApply: {job['url']}")
+            if results["warnings"]:
+                lines.append("Some sources were temporarily unavailable: " + ", ".join(w["source"] for w in results["warnings"]))
+            if not results["jobs"]:
+                lines.append("No matching listings were returned this time. Try a different skill or role keyword.")
+            return ChatResponse(reply="\n\n".join(lines), conversation_id=req.conversation_id or "public-job-search")
+        except Exception as e:
+            logger = __import__("logging").getLogger("sujis_world.chat")
+            logger.exception("Public job search failed")
+            raise HTTPException(status_code=502, detail="Job sources are temporarily unavailable. Please try again shortly.")
+
     try:
         reply, cid = run_agent_message(
             user_message=req.message,
