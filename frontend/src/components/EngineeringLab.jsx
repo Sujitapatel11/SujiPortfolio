@@ -57,7 +57,7 @@ export default function EngineeringLab() {
             Architecture, Patterns & <span className="text-gradient">Systems Engineering</span>
           </h2>
           <p className="text-sm sm:text-base text-text-secondary mt-2 max-w-2xl">
-            Core distributed patterns, asynchronous APIs, vector RAG retrieval, and containerized deployment foundations.
+            A closer look at the backend, data, API, and AI concepts I explore and apply in my projects.
           </p>
         </motion.div>
 
@@ -72,10 +72,10 @@ export default function EngineeringLab() {
           <div className="flex items-center justify-between mb-6">
             <p className="font-mono text-xs text-brand-pink flex items-center gap-2 font-semibold">
               <Terminal size={14} className="text-brand-violet" />
-              SYSTEM_ARCHITECTURE.flow
+              ARCHITECTURE_OVERVIEW
             </p>
             <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30">
-              High-Throughput Production Pattern
+              Illustrative architecture
             </span>
           </div>
 
@@ -106,13 +106,13 @@ export default function EngineeringLab() {
               <Layers size={11} className="mr-1 text-brand-pink" /> Redis In-Memory Cache
             </span>
             <span className="tech-badge">
-              <Brain size={11} className="mr-1 text-brand-violet" /> pgvector 384-d Embeddings
+              <Brain size={11} className="mr-1 text-brand-violet" /> Vector search concepts
             </span>
             <span className="tech-badge">
-              <Container size={11} className="mr-1 text-emerald-400" /> Docker Compose Services
+              <Container size={11} className="mr-1 text-emerald-400" /> Containerized development
             </span>
             <span className="tech-badge">
-              <Radio size={11} className="mr-1 text-blue-400" /> WebSocket Push Pipeline
+              <Radio size={11} className="mr-1 text-blue-400" /> Real-time communication
             </span>
           </div>
         </motion.div>
