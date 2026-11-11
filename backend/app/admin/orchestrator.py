@@ -160,4 +160,27 @@ class JobDiscoveryOrchestrator:
 
         if matched_jobs:
             notify_job_matches(matched_jobs)
+
+        # Return real persisted matches, including previous discoveries on repeated searches.
+        candidates = db.query(Job).filter(Job.status == "new").order_by(
+            Job.created_at.desc()
+        ).limit(200).all()
+        ranked = [(self.score_job(candidate, search_keywords), candidate) for candidate in candidates]
+        ranked = sorted(
+            ((score, candidate) for score, candidate in ranked if score >= score_threshold),
+            key=lambda pair: (pair[0], pair[1].created_at),
+            reverse=True,
+        )[:10]
+        summary["_top_matches"] = [
+            {
+                "id": candidate.id,
+                "title": candidate.title,
+                "platform": candidate.platform,
+                "url": candidate.url,
+                "match_score": score,
+                "salary": candidate.budget,
+                "posted_at": candidate.posted_at.isoformat() if candidate.posted_at else None,
+            }
+            for score, candidate in ranked
+        ]
         return summary
