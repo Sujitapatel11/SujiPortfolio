@@ -112,7 +112,7 @@ def trigger_job_search(
     """
     Trigger multi-platform automated job discovery, deduplication, scoring, and proposal drafting.
     """
-    keywords = payload.keywords if payload and payload.keywords else ["python", "fastapi", "react", "ai"]
+    keywords = payload.keywords if payload and payload.keywords else ["python", "backend", "fastapi", "react", "javascript"]
     orchestrator = JobDiscoveryOrchestrator()
     summary = orchestrator.run_discovery(db=db, keywords=keywords)
     return JobSearchResponse(summary=summary)
