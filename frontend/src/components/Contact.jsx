@@ -112,29 +112,29 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-      <div className="max-w-5xl mx-auto relative z-10">
+    <section id="contact" className="relative overflow-hidden py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto w-full max-w-6xl">
         {/* Section Heading */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45 }}
-          className="text-center mb-12 sm:mb-14"
+          className="mx-auto mb-9 max-w-4xl text-center sm:mb-12"
         >
           <div className="flex items-center justify-center gap-2 mb-2">
             <span className="section-label">/ Contact & Intake</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-main mb-3">
+          <h2 className="mb-3 text-[clamp(1.85rem,4.2vw,3.25rem)] font-extrabold leading-[1.12] tracking-tight text-text-main">
             Let's Engineer Something <span className="text-gradient">Impactful.</span>
           </h2>
-          <p className="text-sm sm:text-base text-text-secondary max-w-xl mx-auto">
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">
             For project enquiries, collaboration, or a conversation about the systems I’m building, you can reach me here.
           </p>
         </motion.div>
 
         {/* Action / Contact Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-12">
+        <div className="mx-auto mb-10 grid w-full max-w-[940px] grid-cols-2 gap-3 sm:mb-12 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
           {contactCards.map((card, i) => {
             const Icon = card.icon;
             return (
@@ -148,7 +148,7 @@ export default function Contact() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.35, delay: i * 0.04 }}
-                className="rounded-2xl p-3.5 flex flex-col items-center text-center gap-2 bg-bg-card border border-border hover:border-brand-pink/50 transition-all duration-200 group hover:-translate-y-1 shadow-md"
+                className="flex min-h-[126px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-bg-card px-2.5 py-4 text-center shadow-md transition-all duration-200 group hover:-translate-y-1 hover:border-brand-pink/50 sm:min-h-[136px] sm:px-3.5"
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-bg-secondary border border-border group-hover:scale-110 transition-transform">
                   <Icon size={18} className={card.accentClass} />
@@ -174,7 +174,7 @@ export default function Contact() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45 }}
-          className="rounded-3xl p-6 sm:p-10 max-w-2xl mx-auto bg-bg-card/90 border border-border-accent shadow-2xl backdrop-blur-xl relative overflow-hidden"
+          className="relative mx-auto w-full max-w-[760px] overflow-hidden rounded-3xl border border-border-accent bg-bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10"
         >
           {/* Ambient card accent */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-brand-pink/15 via-brand-violet/10 to-transparent pointer-events-none rounded-full blur-2xl" />
