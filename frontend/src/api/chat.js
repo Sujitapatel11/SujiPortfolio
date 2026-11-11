@@ -14,6 +14,7 @@ export async function sendChatMessage(message, conversationId = null, accessToke
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
     body: JSON.stringify(payload),
   });
