@@ -58,20 +58,21 @@ class JobicyRemoteConnector(BaseConnector):
     def fetch_jobs(self, keywords: List[str]) -> List[NormalizedJob]:
         jobs: List[NormalizedJob] = []
         for keyword in [k for k in (keywords or ["software engineer"]) if len(k.strip()) >= 3][:4]:
-            params = urllib.parse.urlencode({"count": 50, "geo": "anywhere", "tag": keyword})
+            params = urllib.parse.urlencode({"count": 100, "tag": keyword})
             payload = _get_json(f"https://jobicy.com/api/jobs?{params}")
             for item in payload.get("jobs", []) if isinstance(payload, dict) else []:
                 title = (item.get("jobTitle") or item.get("title") or "").strip()
                 company = (item.get("companyName") or item.get("company") or "").strip()
                 url = item.get("url") or item.get("jobUrl") or ""
-                if not title or not url:
+                remote_scope = (item.get("jobGeo") or "").strip().lower()
+                if not title or not url or remote_scope not in {"anywhere", "worldwide", "global", "work from anywhere"}:
                     continue
                 description = item.get("jobDescription") or item.get("jobExcerpt") or item.get("description") or ""
                 jobs.append(NormalizedJob(
                     platform="Jobicy",
                     external_id=_identity("Jobicy", item.get("id"), title, company, url),
                     title=title,
-                    description=(f"Company: {company}\n\n{description}" if company else description),
+                    description=(f"Company: {company}\n\n{description}\n\nSource: Jobicy." if company else description + "\n\nSource: Jobicy."),
                     url=url,
                     budget=(item.get("salary") or ((str(item.get("salaryCurrency") or "") + " " + str(item.get("salaryMin") or "") + "–" + str(item.get("salaryMax") or "") + " " + str(item.get("salaryPeriod") or "")).strip() if (item.get("salaryMin") or item.get("salaryMax")) else None)),
                     posted_at=_parse_date(item.get("pubDate") or item.get("publishedAt")),
