@@ -44,14 +44,29 @@ class JobDiscoveryOrchestrator:
         if not keywords:
             return 0.85
 
-        text_to_search = f"{job.title} {job.description or ''}".lower()
-        matched_count = sum(1 for kw in keywords if kw.lower() in text_to_search)
+        import re
+        title_text = (job.title or "").lower()
+        full_text = f"{title_text} {job.description or ''}".lower()
+        unique_keywords = list(dict.fromkeys(k.strip().lower() for k in keywords if k and k.strip()))
+        if not unique_keywords:
+            return 0.85
 
-        if matched_count == 0:
-            return 0.40
+        matched = []
+        title_matches = []
+        for keyword in unique_keywords:
+            # Whole-word/phrase matching avoids false positives such as 'ai' in 'email'.
+            pattern = r"(?<!\\w)" + r"\\s+".join(re.escape(part) for part in keyword.split()) + r"(?!\\w)"
+            if re.search(pattern, full_text):
+                matched.append(keyword)
+                if re.search(pattern, title_text):
+                    title_matches.append(keyword)
 
-        score = 0.60 + (matched_count / len(keywords)) * 0.40
-        return min(round(score, 2), 1.0)
+        if not matched:
+            return 0.0
+
+        coverage = len(matched) / len(unique_keywords)
+        title_bonus = min(len(title_matches) * 0.08, 0.20)
+        return min(round(0.55 + coverage * 0.35 + title_bonus, 2), 1.0)
 
     def run_discovery(
         self, db: Session, keywords: Optional[List[str]] = None, score_threshold: float = 0.50
