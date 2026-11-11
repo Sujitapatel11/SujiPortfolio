@@ -118,8 +118,8 @@ def trigger_job_search(keywords: Optional[List[str]] = None) -> str:
         ]
         return (
             f"Job search finished. Total fetched: {totals['fetched']}; "
-            f"matched: {totals['matched']}; proposal drafts: {totals['drafted']}.\\n"
-            + ("\\n".join(source_lines) if source_lines else "No source returned results.")
+            f"matched: {totals['matched']}; proposal drafts: {totals['drafted']}.\n"
+            + ("\n".join(source_lines) if source_lines else "No source returned results.")
         )
     except Exception as e:
         logger.error(f"Error in trigger_job_search tool: {e}")
