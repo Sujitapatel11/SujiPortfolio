@@ -27,7 +27,7 @@ from app.schemas import (
 )
 from app.admin.auth import (
     ADMIN_USERNAME,
-    ADMIN_PASSWORD_HASH,
+    _get_effective_password_hash,
     verify_password,
     create_access_token,
     get_current_admin,
@@ -46,7 +46,7 @@ def admin_login(payload: AdminLoginRequest):
     """
     Authenticate admin credentials and issue a JWT access token.
     """
-    if payload.username != ADMIN_USERNAME or not verify_password(payload.password, ADMIN_PASSWORD_HASH):
+    if payload.username != ADMIN_USERNAME or not verify_password(payload.password, _get_effective_password_hash()):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect admin username or password",
