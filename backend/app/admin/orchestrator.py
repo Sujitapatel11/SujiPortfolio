@@ -55,7 +55,7 @@ class JobDiscoveryOrchestrator:
         title_matches = []
         for keyword in unique_keywords:
             # Whole-word/phrase matching avoids false positives such as 'ai' in 'email'.
-            pattern = r"(?<!\\w)" + r"\\s+".join(re.escape(part) for part in keyword.split()) + r"(?!\\w)"
+            pattern = r"(?<!\w)" + r"\s+".join(re.escape(part) for part in keyword.split()) + r"(?!\w)"
             if re.search(pattern, full_text):
                 matched.append(keyword)
                 if re.search(pattern, title_text):
