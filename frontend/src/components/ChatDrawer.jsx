@@ -53,13 +53,14 @@ export default function ChatDrawer({ isOpen, onClose }) {
         ...prev,
         { id: (Date.now() + 1).toString(), role: 'assistant', text: data.reply },
       ]);
-    } catch {
+    } catch (error) {
+      console.error('Ask Suji chat request failed:', error);
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          text: 'The AI service could not be reached. Check that the backend is running and try again.',
+          text: error?.message || 'The AI service could not be reached. Check the backend terminal for the full error.',
         },
       ]);
     } finally {
