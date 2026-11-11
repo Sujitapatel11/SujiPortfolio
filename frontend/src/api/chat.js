@@ -4,7 +4,7 @@
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
-export async function sendChatMessage(message, conversationId = null) {
+export async function sendChatMessage(message, conversationId = null, accessToken = null) {
   const payload = { message };
   if (conversationId) {
     payload.conversation_id = conversationId;
