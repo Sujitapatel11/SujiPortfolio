@@ -56,7 +56,7 @@ class JobicyRemoteConnector(BaseConnector):
 
     def fetch_jobs(self, keywords: List[str]) -> List[NormalizedJob]:
         jobs: List[NormalizedJob] = []
-        for keyword in (keywords or ["software engineer"])[:4]:
+        for keyword in [k for k in (keywords or ["software engineer"]) if len(k.strip()) >= 3][:4]:
             params = urllib.parse.urlencode({"count": 50, "geo": "anywhere", "tag": keyword})
             payload = _get_json(f"https://jobicy.com/api/jobs?{params}")
             for item in payload.get("jobs", []) if isinstance(payload, dict) else []:
@@ -72,7 +72,7 @@ class JobicyRemoteConnector(BaseConnector):
                     title=title,
                     description=(f"Company: {company}\n\n{description}" if company else description),
                     url=url,
-                    budget=item.get("salary") or (str(item.get("salaryCurrency") or "") + " " + str(item.get("salaryMin") or "") + "–" + str(item.get("salaryMax") or "") + " " + str(item.get("salaryPeriod") or "")).strip() if (item.get("salaryMin") or item.get("salaryMax")) else None,
+                    budget=(item.get("salary") or ((str(item.get("salaryCurrency") or "") + " " + str(item.get("salaryMin") or "") + "–" + str(item.get("salaryMax") or "") + " " + str(item.get("salaryPeriod") or "")).strip() if (item.get("salaryMin") or item.get("salaryMax")) else None)),
                     posted_at=_parse_date(item.get("pubDate") or item.get("publishedAt")),
                     raw_metadata={"company": company, "source": "Jobicy", "remote_scope": item.get("jobGeo"), "job_type": item.get("jobType"), "job_level": item.get("jobLevel") },
                 ))
