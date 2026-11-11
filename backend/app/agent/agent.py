@@ -69,7 +69,7 @@ def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]
             any(term in msg_lower for term in ["search", "find", "look for", "khoj", "dhund", "ढूंढ", "खोज"])
             and any(term in msg_lower for term in ["job", "jobs", "internship", "internships", "role", "roles", "naukri", "काम", "नौकरी"])
         ) or msg_lower.strip() in {"job khojo", "jobs khojo", "naukri khojo", "find jobs"}:
-            res = trigger_job_search.invoke({"keywords": ["python", "fastapi", "react", "ai"]})
+            res = trigger_job_search.invoke({"keywords": ["python", "backend", "fastapi", "react", "javascript"]})
             return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
 
         if "inquir" in msg_lower or "lead" in msg_lower:
