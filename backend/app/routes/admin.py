@@ -117,6 +117,23 @@ def trigger_job_search(
     summary = orchestrator.run_discovery(db=db, keywords=keywords)
     return JobSearchResponse(summary=summary)
 
+@router.get("/jobs/agent/status")
+def job_agent_status(current_admin: dict = Depends(get_current_admin)):
+    from app.admin.job_scheduler import scheduler_status
+    return scheduler_status()
+
+@router.post("/jobs/agent/start")
+def start_job_agent(current_admin: dict = Depends(get_current_admin)):
+    from app.admin.job_scheduler import start_scheduler, scheduler_status
+    start_scheduler(force=True)
+    return scheduler_status()
+
+@router.post("/jobs/agent/stop")
+def stop_job_agent(current_admin: dict = Depends(get_current_admin)):
+    from app.admin.job_scheduler import stop_scheduler, scheduler_status
+    stop_scheduler()
+    return scheduler_status()
+
 @router.get("/proposals", response_model=List[ProposalResponse])
 def list_admin_proposals(
     db: Session = Depends(get_db),

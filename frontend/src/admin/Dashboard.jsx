@@ -189,6 +189,7 @@ export const Dashboard = () => {
   // Helpers
   const getPlatformBadge = (platform) => {
     const p = (platform || "").toLowerCase();
+    if (p.includes("linkedin")) return "admin-badge-default";
     if (p.includes("upwork")) return "admin-badge-upwork";
     if (p.includes("fiverr")) return "admin-badge-fiverr";
     if (p.includes("freelancer")) return "admin-badge-freelancer";
@@ -361,12 +362,45 @@ export const Dashboard = () => {
 
                 {/* ═══ JOBS ═══ */}
                 {activeTab === "jobs" && (
+                  <>
+                  <section style={{ background: "linear-gradient(135deg, rgba(151,71,255,.12), rgba(255,45,149,.07))", border: "1px solid var(--bp-grid-line)", borderRadius: "16px", padding: "1.2rem", marginBottom: "1rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+                      <div>
+                        <div style={{ fontFamily: "var(--bp-font-mono)", fontSize: ".68rem", color: "var(--bp-orange)", letterSpacing: ".12em" }}>AUTONOMOUS OPPORTUNITY SCOUT</div>
+                        <h2 style={{ margin: ".35rem 0", fontSize: "1.2rem" }}>Job Hunter Agent</h2>
+                        <p style={{ margin: 0, color: "var(--bp-grey)", fontSize: ".82rem" }}>Discover jobs, score relevance and prepare proposal drafts. Applications are never submitted automatically.</p>
+                      </div>
+                      <span className="admin-badge" style={{ background: agentStatus?.enabled ? "rgba(16,185,129,.14)" : "rgba(148,163,184,.14)", color: agentStatus?.enabled ? "#10b981" : "var(--bp-grey)" }}>{agentStatus?.enabled ? "● SCHEDULER RUNNING" : "○ SCHEDULER STOPPED"}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: ".6rem", flexWrap: "wrap", marginTop: "1rem" }}>
+                      <button className="admin-btn-primary" disabled={agentBusy} onClick={() => controlAgent("start")}>{agentBusy ? "Please wait…" : "Start scheduled agent"}</button>
+                      <button className="admin-btn-secondary" disabled={agentBusy || !agentStatus?.enabled} onClick={() => controlAgent("stop")}>Stop agent</button>
+                      <button className="admin-btn-secondary" disabled={agentSearchBusy} onClick={runAgentSearch}>{agentSearchBusy ? "Scanning…" : "↻ Scan now"}</button>
+                    </div>
+                    <div style={{ marginTop: "1rem" }}>
+                      <label className="admin-label" htmlFor="job-agent-keywords">Search keywords (comma separated)</label>
+                      <input id="job-agent-keywords" className="admin-input" style={{ width: "100%", marginTop: ".35rem" }} value={agentKeywords} onChange={(e) => setAgentKeywords(e.target.value)} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))", gap: ".7rem", marginTop: "1rem" }}>
+                      <div className="admin-card"><div className="admin-card-header">Scan interval</div><div style={{ fontSize: "1.15rem", fontWeight: 700 }}>{agentStatus?.interval_hours || 6}h</div></div>
+                      <div className="admin-card"><div className="admin-card-header">Last scan</div><div style={{ fontSize: ".78rem" }}>{agentStatus?.last_run_at ? new Date(agentStatus.last_run_at).toLocaleString() : "Not run yet"}</div></div>
+                      <div className="admin-card"><div className="admin-card-header">Next scan</div><div style={{ fontSize: ".78rem" }}>{agentStatus?.next_run_at ? new Date(agentStatus.next_run_at).toLocaleString() : "Not scheduled"}</div></div>
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: ".5rem", marginTop: ".9rem" }}>
+                      {Object.entries(agentStatus?.providers || { freelancer_com: true, google_jobs_search: false, direct_linkedin_api: false, direct_upwork_api: false, direct_fiverr_api: false }).map(([key, enabled]) => (
+                        <span key={key} className="admin-badge" style={{ color: enabled ? "#10b981" : "var(--bp-grey)" }}>{enabled ? "●" : "○"} {key.replaceAll("_", " ")}</span>
+                      ))}
+                    </div>
+                    {agentStatus?.last_error && <p style={{ color: "#ef4444", fontSize: ".78rem" }}>Last error: {agentStatus.last_error}</p>}
+                    <p style={{ color: "var(--bp-grey)", fontSize: ".72rem", margin: ".8rem 0 0" }}>{agentStatus?.note || "Scheduler runs only while this API process is alive. Configure SERPAPI_API_KEY for Google Jobs results."}</p>
+                  </section>
                   <div className="admin-data-panel">
                     <div className="admin-filter-bar">
                       <div className="admin-filter-group">
                         <label className="admin-label">Platform</label>
                         <select className="admin-select" value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}>
                           <option value="all">All</option>
+                          <option value="linkedin">LinkedIn</option>
                           <option value="upwork">Upwork</option>
                           <option value="fiverr">Fiverr</option>
                           <option value="freelancer.com">Freelancer.com</option>
@@ -412,6 +446,7 @@ export const Dashboard = () => {
                       )}
                     </div>
                   </div>
+                  </>
                 )}
 
                 {/* ═══ PROPOSALS ═══ */}
@@ -582,6 +617,7 @@ export const Dashboard = () => {
                 <div className="admin-form-group">
                   <label className="admin-label">Platform</label>
                   <select className="admin-select" value={pasteForm.platform} onChange={(e) => setPasteForm({ ...pasteForm, platform: e.target.value })}>
+                    <option value="LinkedIn">LinkedIn</option>
                     <option value="Upwork">Upwork</option>
                     <option value="Fiverr">Fiverr</option>
                     <option value="Other">Other / Direct</option>

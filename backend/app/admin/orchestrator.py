@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models import Job, Proposal
 from app.admin.connectors.base import BaseConnector, NormalizedJob
 from app.admin.connectors.freelancer import FreelancerConnector
+from app.admin.connectors.search_provider import SearchProviderConnector
 from app.admin.proposal_drafter import generate_proposal_draft
 from app.admin.whatsapp import notify_job_matches
 
@@ -22,7 +23,7 @@ class JobDiscoveryOrchestrator:
         else:
             # Default registration: Freelancer.com connector
             # Upwork/Fiverr can register additional instances later via register_connector()
-            self.connectors = [FreelancerConnector()]
+            self.connectors = [FreelancerConnector(), SearchProviderConnector()]
 
     def register_connector(self, connector: BaseConnector) -> None:
         """

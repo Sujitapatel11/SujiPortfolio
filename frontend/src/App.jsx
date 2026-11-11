@@ -9,6 +9,7 @@ import About from './components/About';
 import Skills from './components/Skills';
 import Projects from './components/Projects';
 import EngineeringLab from './components/EngineeringLab';
+import JobHunter from './components/JobHunter';
 import Experience from './components/Experience';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
@@ -35,11 +36,8 @@ function PublicPortfolio() {
 
   return (
     <div className="relative min-h-screen bg-bg-primary text-text-main transition-colors duration-200">
-      {/* Ambient background glow */}
       <div className="ambient-glow" />
-
       <Navbar />
-
       <main className="relative z-10">
         <Hero />
         <Stats />
@@ -47,16 +45,12 @@ function PublicPortfolio() {
         <Skills />
         <Projects />
         <EngineeringLab />
+        <JobHunter />
         <Experience />
         <Contact />
       </main>
-
       <Footer />
-
-      {/* Chat drawer */}
       <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
-
-      {/* Floating chat button */}
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
@@ -83,10 +77,7 @@ export default function App() {
       <AdminAuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Single-Page Continuous-Scroll Portfolio */}
             <Route path="/" element={<PublicPortfolio />} />
-
-            {/* Private Admin Module with Suspense */}
             <Route
               path="/admin/login"
               element={
@@ -105,8 +96,6 @@ export default function App() {
             />
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
-
-            {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

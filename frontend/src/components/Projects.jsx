@@ -12,6 +12,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { projects } from '../data/portfolio';
+import { skillsList } from '../data/skillsData';
 import SoulCarePreview from './previews/SoulCarePreview';
 import ResumeRoastPreview from './previews/ResumeRoastPreview';
 import UrmiNexusPreview from './previews/UrmiNexusPreview';
@@ -143,11 +144,11 @@ function ProjectCard({ project, index }) {
 
         {/* Tech Badges */}
         <div className="flex flex-wrap gap-1.5 mb-5">
-          {project.tech.map((t) => (
-            <span key={t} className="tech-badge">
-              {t}
-            </span>
-          ))}
+          {project.tech.map((t) => {
+            const tech = skillsList.find((skill) => skill.name.toLowerCase() === t.toLowerCase());
+            const TechIcon = tech?.icon;
+            return <span key={t} className="tech-badge rounded-full px-3 py-1.5">{TechIcon ? <TechIcon size={14} style={{ color: tech.brandColor }} /> : <Layers size={13} />}{t}</span>;
+          })}
         </div>
 
         {/* Action Toolbar */}
@@ -226,44 +227,45 @@ function ProjectCard({ project, index }) {
 }
 
 export default function Projects() {
+  const [filter, setFilter] = useState('all');
+  const [active, setActive] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState( window.innerWidth || 1280 );
+  const showSideCards = viewportWidth >= 1180;
+  const mobile = !showSideCards;
+  const slideDistance = Math.min(590, Math.max(520, viewportWidth * 0.4));
+  const sideScale = 0.68;
+  const filters = [{ id: 'all', label: 'All Projects' }, { id: 'creator', label: 'Social & Creator' }, { id: 'education', label: 'Education' }, { id: 'engineering', label: 'AI & Engineering' }];
+  const items = projects.filter((p) => filter === 'all' || (filter === 'creator' && p.id === 'soulcare') || (filter === 'education' && p.id === 'urminexus') || (filter === 'engineering' && p.id === 'sujiportfolio'));
+  const count = items.length;
+  useEffect(() => setActive(0), [filter]);
+  useEffect(() => { const resize = () => setViewportWidth(window.innerWidth); resize(); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
+  const move = (step) => { if (count > 1) setActive((v) => (v + step + count) % count); };
+  useEffect(() => { const key = (e) => { if (e.target instanceof HTMLElement && ['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName)) return; if (e.key === 'ArrowRight') move(1); if (e.key === 'ArrowLeft') move(-1); }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [count]);
+  const offsets = showSideCards ? [-1, 0, 1] : [0];
+  const cards = offsets.map((offset) => { const index = (active + offset + count) % count; return { project: items[index], index, offset }; }).filter((item, i, arr) => item.project && arr.findIndex((x) => x.index === item.index) === i);
   return (
-    <section id="projects" className="relative py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Section Heading */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-          className="mb-10 sm:mb-14"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <span className="section-label">/ Projects</span>
-            <span className="h-px w-10 bg-border inline-block" />
-          </div>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-text-main">
-                Featured Engineering Work
-              </h2>
-              <p className="text-sm text-text-secondary mt-1.5 max-w-xl">
-                Real-world full-stack architectures, creator platforms, and applied AI applications
-                built with production-grade backend foundations.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-xs font-mono text-text-muted bg-bg-secondary/70 px-3 py-1.5 rounded-xl border border-border">
-              <Laptop size={14} className="text-brand-purple" />
-              <span>Interactive Simulations + Live Deploys</span>
-            </div>
-          </div>
+    <section id="projects" className="relative isolate overflow-hidden py-20 px-4 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_18%,rgba(216,180,254,0.24),transparent_56%),radial-gradient(ellipse_at_50%_82%,rgba(244,114,182,0.13),transparent_52%)]" />
+      <div className="mx-auto max-w-7xl">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45 }} className="mb-8 text-center sm:mb-10">
+          <div className="mb-3 flex items-center justify-center gap-2"><span className="section-label">/ My Projects</span><Sparkles size={14} className="text-brand-pink" /></div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-text-main sm:text-5xl">Real-World Projects <span className="text-gradient">I’ve Built</span></h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">A collection of full-stack, AI and product projects — from idea to implementation.</p>
         </motion.div>
-
-        {/* Project Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {projects.map((project, i) => (
-            <ProjectCard key={project.id} project={project} index={i} />
-          ))}
+        <div className="mb-8 flex flex-wrap items-center justify-center gap-2">{filters.map((f) => <button key={f.id} type="button" onClick={() => setFilter(f.id)} aria-pressed={filter === f.id} className={`rounded-full border px-4 py-2 text-xs font-semibold backdrop-blur-md transition sm:text-sm ${filter === f.id ? 'border-brand-purple/50 bg-brand-purple/15 text-text-main shadow-md' : 'border-border bg-bg-card/70 text-text-secondary hover:border-brand-pink/50'}`}>{f.label}</button>)}</div>
+        <div className="relative mx-auto max-w-6xl">
+          <div className="relative h-[650px] overflow-hidden sm:h-[660px] lg:h-[680px] [perspective:1400px]">
+            <motion.div className="relative h-full w-full cursor-grab touch-pan-y active:cursor-grabbing" drag={count > 1 ? 'x' : false} dragConstraints={{ left: 0, right: 0 }} dragElastic={0.12} onDragEnd={(_, info) => { if (info.offset.x < -Math.max(40, viewportWidth * 0.055)) move(1); if (info.offset.x > Math.max(40, viewportWidth * 0.055)) move(-1); }} role="group" aria-label="Project carousel. Drag with mouse or swipe to browse.">
+              {cards.map(({ project, index, offset }) => { const selected = offset === 0; return <motion.div key={project.id} initial={false} animate={{ x: mobile ? 0 : offset * slideDistance, scale: selected ? 1 : sideScale, opacity: selected ? 1 : 0.78, rotateY: mobile ? 0 : offset * -5, zIndex: selected ? 20 : 10 }} transition={{ type: 'spring', stiffness: 190, damping: 25 }} style={{ translate: '-50% 0', transformStyle: 'preserve-3d' }} className={`absolute left-1/2 top-0 w-[calc(100%-8px)] sm:w-[min(92%,640px)] origin-top ${selected ? 'pointer-events-auto' : 'pointer-events-auto cursor-pointer'}`} onClick={() => { if (!selected) setActive(index); }} aria-hidden={!selected}><ProjectCard project={project} index={index} /></motion.div>; })}
+            </motion.div>
+          </div>
+          <div className="relative z-30 -mt-1 flex items-center justify-center gap-5">
+            <button type="button" onClick={() => move(-1)} disabled={count < 2} aria-label="Previous project" className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-purple/40 bg-bg-card/90 text-text-main shadow-lg backdrop-blur-md transition hover:border-brand-pink hover:text-brand-pink disabled:opacity-40"><ChevronDown size={19} className="rotate-90" /></button>
+            <div className="min-w-[92px] text-center"><p className="font-mono text-xs tabular-nums text-text-secondary">{String(active + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}</p><p className="mt-1 text-[10px] text-text-muted">Drag with mouse or swipe</p></div>
+            <button type="button" onClick={() => move(1)} disabled={count < 2} aria-label="Next project" className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-purple/40 bg-bg-card/90 text-text-main shadow-lg backdrop-blur-md transition hover:border-brand-pink hover:text-brand-pink disabled:opacity-40"><ChevronDown size={19} className="-rotate-90" /></button>
+          </div>
         </div>
+        <div className="mx-auto mt-8 flex max-w-4xl flex-wrap items-center justify-center gap-x-10 gap-y-4 rounded-2xl border border-border bg-bg-card/65 px-5 py-4 text-sm text-text-secondary shadow-sm backdrop-blur-md"><div className="flex items-center gap-2"><Layers size={17} className="text-brand-pink" /><span className="font-semibold text-text-main">{projects.length} featured projects</span></div><div className="flex items-center gap-2"><Laptop size={17} className="text-brand-purple" /><span>Interactive previews</span></div><div className="flex items-center gap-2"><Compass size={17} className="text-brand-pink" /><span>Explore the builds</span></div></div>
       </div>
     </section>
   );
