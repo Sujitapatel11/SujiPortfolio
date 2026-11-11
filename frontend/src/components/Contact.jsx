@@ -55,15 +55,6 @@ const contactCards = [
     tag: 'Source Code',
   },
   {
-    label: 'LinkedIn',
-    value: 'Sujita Patel',
-    icon: Linkedin,
-    href: personalInfo.linkedin,
-    isExternal: true,
-    accentClass: 'text-blue-400',
-    tag: 'Connect',
-  },
-  {
     label: 'Resume',
     value: 'Download PDF',
     icon: Download,
@@ -73,7 +64,7 @@ const contactCards = [
     accentClass: 'text-amber-400',
     tag: 'Curriculum Vitae',
   },
-];
+].filter((card) => Boolean(card.href));
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -139,7 +130,7 @@ export default function Contact() {
             Let's Engineer Something <span className="text-gradient">Impactful.</span>
           </h2>
           <p className="text-sm sm:text-base text-text-secondary max-w-xl mx-auto">
-            Available for software engineering roles, high-throughput backend development, distributed systems, and applied AI applications.
+            For project enquiries, collaboration, or a conversation about the systems I’m building, you can reach me here.
           </p>
         </motion.div>
 
