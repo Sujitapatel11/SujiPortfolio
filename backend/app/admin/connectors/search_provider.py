@@ -8,7 +8,7 @@ class SearchProviderConnector(BaseConnector):
     """Google Jobs search through SerpAPI. Results can include listings indexed from LinkedIn and other boards."""
     def __init__(self):
         self.api_key = os.getenv("SERPAPI_API_KEY", "").strip()
-        self.location = os.getenv("JOB_SEARCH_LOCATION", "Remote").strip() or "Remote"
+        self.location = os.getenv("JOB_SEARCH_LOCATION", "").strip()
         self.country = os.getenv("JOB_SEARCH_COUNTRY", "").strip()
 
     @property
