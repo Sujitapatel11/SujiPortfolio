@@ -23,13 +23,13 @@ export default function Skills() {
           className="text-center mb-12 sm:mb-16"
         >
           <div className="flex items-center justify-center gap-2 mb-2.5">
-            <span className="section-label">/ Verified Technical Stack</span>
+            <span className="section-label">/ Tools & Technologies</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-main mb-3">
-            Official Technologies & <span className="text-gradient">Core Competencies</span>
+            Tools I Work With & <span className="text-gradient">What I’m Building</span>
           </h2>
           <p className="text-sm sm:text-base text-text-secondary max-w-2xl mx-auto leading-relaxed">
-            Every technology listed is actively utilized across production systems, high-throughput APIs, applied AI pipelines, and verified projects.
+            A practical snapshot of the languages, frameworks, and tools I’ve used while building projects and strengthening my engineering skills.
           </p>
         </motion.div>
 
@@ -135,15 +135,15 @@ export default function Skills() {
         >
           <div className="flex items-center gap-2 text-text-main">
             <Terminal size={14} className="text-brand-pink" />
-            <span className="font-semibold">{skillsList.length} Verified Production Technologies</span>
+            <span className="font-semibold">{skillsList.length} Technologies & Tools</span>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-text-muted">
             <span className="flex items-center gap-1 text-emerald-400">
               <CheckCircle2 size={12} />
-              100% Official SVG Brand Logos
+              Technology overview
             </span>
             <span>&#8226;</span>
-            <span className="text-brand-violet font-semibold">Zero Placeholders</span>
+            <span className="text-brand-violet font-semibold">Learning in progress</span>
           </div>
         </motion.div>
       </div>
