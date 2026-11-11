@@ -8,7 +8,7 @@ import jwt
 from app.database import get_db
 from app.agent import run_agent_message
 from app.admin.auth import JWT_ALGORITHM, ADMIN_USERNAME, _get_effective_jwt_secret
-from app.routes.jobs_public import perform_public_search
+from app.routes.jobs_public import perform_public_search, _extract_skills
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -48,6 +48,41 @@ def chat_with_agent(req: ChatRequest, request: Request, db: Session = Depends(ge
     message_lower = req.message.lower().strip()
     job_intent = any(term in message_lower for term in ["job", "jobs", "internship", "internships", "naukri", "नौकरी", "vacancy", "hiring", "career"])
     search_intent = any(term in message_lower for term in ["find", "search", "khoj", "khojo", "dhund", "ढूंढ", "खोज", "show me", "look for"]) or message_lower in {"job", "jobs", "job hunter"}
+    # Resume matching through the same public chat. The resume is not persisted.
+    resume_intent = any(term in message_lower for term in ["match my resume", "match resume", "check my resume", "resume match", "cv match"])
+    if resume_intent:
+        try:
+            skills = _extract_skills(req.message)
+            if not skills:
+                return ChatResponse(
+                    reply="I couldn't identify recognizable skills in that text. Paste your resume's skills and experience sections, then ask: 'Match my resume to jobs'.",
+                    conversation_id=req.conversation_id or "public-resume-match",
+                )
+            results = perform_public_search(skills[:8], limit=20)
+            lines = [
+                f"I detected these skills: {', '.join(skills)}.",
+                f"Found {results['count']} listings to compare. Ranking uses visible keyword overlap, not an AI hiring prediction.",
+            ]
+            for index, job in enumerate(results["jobs"], 1):
+                searchable = f"{job.get('title') or ''} {job.get('description') or ''}".lower()
+                matched = [skill for skill in skills if skill in searchable]
+                missing = [skill for skill in skills if skill not in searchable]
+                score = round(len(matched) / max(len(skills), 1) * 100)
+                lines.append(
+                    f"{index}. {job['title']} | {job['source']} | Resume keyword overlap: {score}%"
+                    f"\\nMatched: {', '.join(matched[:8]) or 'Not detected'}"
+                    f"\\nNot mentioned in listing: {', '.join(missing[:6]) or 'None'}"
+                    f"\\nApply: {job['url']}"
+                )
+            if results["warnings"]:
+                lines.append("Unavailable sources: " + ", ".join(w["source"] for w in results["warnings"]))
+            lines.append("Privacy: this chat endpoint does not save the pasted resume. Only extracted search terms are used to query public job feeds. Keyword overlap is not a true qualification assessment.")
+            return ChatResponse(reply="\\n\\n".join(lines), conversation_id=req.conversation_id or "public-resume-match")
+        except Exception:
+            logger = __import__("logging").getLogger("sujis_world.chat")
+            logger.exception("Public resume matching failed")
+            raise HTTPException(status_code=502, detail="Resume matching is temporarily unavailable. Please try again shortly.")
+
     if job_intent and search_intent:
         try:
             known_terms = ["python", "fastapi", "django", "backend", "frontend", "react", "javascript", "typescript", "java", "spring", "machine learning", "ai", "data science", "full stack", "software engineer", "cybersecurity", "cloud", "devops", "data analyst", "designer", "marketing"]
