@@ -56,7 +56,7 @@ export const projects = [
     github: 'https://github.com/Sujitapatel11/aiDepressionProject',
     isPrivateRepo: true,
     liveDemo: 'https://ai-depression-project.vercel.app',
-    status: 'in-development',
+    status: 'shipped',
     features: [
       'Core journaling module with personal reflection workflows',
       'Creator publishing tools and subscriber community feeds',
