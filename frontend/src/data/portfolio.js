@@ -13,12 +13,12 @@ export const personalInfo = {
   headline: 'Engineering Ideas into Experiences.',
   roles: ['Software Engineer', 'Backend Developer', 'Applied AI Engineer'],
   description:
-    'Building scalable backends, high-throughput APIs, and applied AI systems that turn complex architectural concepts into intuitive, reliable real-world experiences.',
-  availability: 'Available for Opportunities',
+    'I build full-stack products with a backend-first mindset — from API design and data modelling to practical AI features and thoughtful user experiences.',
+  availability: 'Open to selected opportunities',
   email: 'sujitapatel787@gmail.com',
   github: 'https://github.com/Sujitapatel11',
   githubUser: 'Sujitapatel11',
-  linkedin: 'https://linkedin.com',
+  linkedin: null,
   whatsapp: 'https://wa.me/9779815280946',
   phone: '+9779815280946',
   phoneDisplay: '+977 9815280946',
@@ -36,12 +36,11 @@ export const navLinks = [
   { label: 'Contact', href: '#contact' },
 ];
 
-/* Engineering statistics — verifiable repository metrics */
+/* Portfolio highlights — kept intentionally factual and modest */
 export const stats = [
-  { label: 'Core Systems', value: '3', icon: 'projects' },
-  { label: 'Technologies', value: '15+', icon: 'tech' },
-  { label: 'Docker Ready', value: '100%', icon: 'docker' },
-  { label: 'Open to Work', value: 'Available', icon: 'status', highlight: true },
+  { label: 'Featured Projects', value: '03', icon: 'projects' },
+  { label: 'Technology Areas', value: '06', icon: 'tech' },
+  { label: 'Education', value: 'B.Tech CSE', icon: 'status' },
 ];
 
 /* Projects — verified implementation data */

@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FolderGit2, Cpu, Container, CheckCircle2 } from 'lucide-react';
+import { FolderGit2, Cpu, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { stats } from '../data/portfolio';
 
 const iconMap = {
   projects: FolderGit2,
   tech: Cpu,
-  docker: Container,
+  education: GraduationCap,
   status: CheckCircle2,
 };
 
@@ -20,7 +20,7 @@ export default function Stats() {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className="max-w-5xl mx-auto rounded-2xl p-5 sm:p-7 glow-card"
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 lg:gap-8">
           {stats.map((stat, i) => {
             const Icon = iconMap[stat.icon] || CheckCircle2;
             return (
@@ -31,13 +31,13 @@ export default function Stats() {
                   >
                     <Icon
                       size={18}
-                      className={stat.highlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-brand-purple'}
+                      className="text-brand-purple"
                     />
                   </div>
                   <div>
                     <div
                       className={`text-xl sm:text-2xl font-bold tracking-tight ${
-                        stat.highlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-text-main'
+                        'text-text-main'
                       }`}
                     >
                       {stat.value}

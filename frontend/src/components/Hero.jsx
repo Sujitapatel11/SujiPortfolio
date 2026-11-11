@@ -115,13 +115,13 @@ export default function Hero() {
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   <span className="ml-1 text-text-secondary">suji-core ~ status</span>
                 </span>
-                <span className="text-brand-violet text-[10px]">v2.6-prod</span>
+                <span className="text-brand-violet text-[10px]">PORTFOLIO</span>
               </div>
               <div className="text-text-secondary">
                 <span className="text-brand-pink">$</span> suji.inspect()
               </div>
               <div className="text-text-muted pl-3 text-[11px] leading-relaxed">
-                &#10140; <span className="text-brand-violet font-semibold">Focus:</span> High-Throughput APIs, PostgreSQL RAG, Distributed Systems
+                &#10140; <span className="text-brand-violet font-semibold">Focus:</span> Backend development, data modelling, applied AI
                 <br />
                 &#10140; <span className="text-emerald-400 font-semibold">Integrations:</span> FastAPI &#8226; Django &#8226; LangChain &#8226; React
               </div>
@@ -181,16 +181,18 @@ export default function Hero() {
                 >
                   <Github size={16} />
                 </a>
-                <a
-                  href={personalInfo.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2.5 rounded-xl bg-bg-card border border-border text-text-secondary hover:text-text-main hover:border-brand-violet/50 transition-colors"
-                  aria-label="LinkedIn Profile"
-                  title="LinkedIn Profile"
-                >
-                  <Linkedin size={16} />
-                </a>
+                {personalInfo.linkedin && (
+                  <a
+                    href={personalInfo.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2.5 rounded-xl bg-bg-card border border-border text-text-secondary hover:text-text-main hover:border-brand-violet/50 transition-colors"
+                    aria-label="LinkedIn Profile"
+                    title="LinkedIn Profile"
+                  >
+                    <Linkedin size={16} />
+                  </a>
+                )}
               </div>
             </motion.div>
 
@@ -258,7 +260,7 @@ export default function Hero() {
                   <p className="text-xs font-bold text-text-main">FastAPI & PostgreSQL</p>
                   <p className="font-mono text-[9px] text-emerald-400 flex items-center gap-1 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                    100% Operational
+                    Backend project
                   </p>
                 </div>
               </div>
@@ -275,7 +277,7 @@ export default function Hero() {
                   <p className="text-xs font-bold text-text-main">pgvector RAG Intake</p>
                   <p className="font-mono text-[9px] text-text-muted flex items-center gap-1 mt-0.5">
                     <CheckCircle2 size={10} className="text-emerald-400" />
-                    Autonomous Qualifying
+                    AI-assisted intake
                   </p>
                 </div>
               </div>
