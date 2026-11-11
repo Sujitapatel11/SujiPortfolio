@@ -9,7 +9,7 @@ class SearchProviderConnector(BaseConnector):
     def __init__(self):
         self.api_key = os.getenv("SERPAPI_API_KEY", "").strip()
         self.location = os.getenv("JOB_SEARCH_LOCATION", "Remote").strip() or "Remote"
-        self.country = os.getenv("JOB_SEARCH_COUNTRY", "in").strip() or "in"
+        self.country = os.getenv("JOB_SEARCH_COUNTRY", "").strip()
 
     @property
     def platform_name(self): return "Google Jobs"
@@ -18,7 +18,13 @@ class SearchProviderConnector(BaseConnector):
 
     def fetch_jobs(self, keywords: List[str]) -> List[NormalizedJob]:
         if not self.api_key: return []
-        params = urllib.parse.urlencode({"engine":"google_jobs","q":" ".join(keywords or ["Python FastAPI React AI engineer"]),"location":self.location,"gl":self.country,"api_key":self.api_key})
+        query = " ".join(keywords or ["software engineer"]) + " remote worldwide"
+        search_params = {"engine": "google_jobs", "q": query, "api_key": self.api_key}
+        if self.location:
+            search_params["location"] = self.location
+        if self.country:
+            search_params["gl"] = self.country
+        params = urllib.parse.urlencode(search_params)
         request = urllib.request.Request("https://serpapi.com/search.json?"+params, headers={"Accept":"application/json","User-Agent":"SujiJobHunter/1.0"})
         with urllib.request.urlopen(request, timeout=20) as response:
             payload = json.loads(response.read().decode("utf-8"))
