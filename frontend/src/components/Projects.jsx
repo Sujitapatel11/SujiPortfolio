@@ -229,12 +229,16 @@ function ProjectCard({ project, index }) {
 export default function Projects() {
   const [filter, setFilter] = useState('all');
   const [active, setActive] = useState(0);
-  const [mobile, setMobile] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState( window.innerWidth || 1280 );
+  const mobile = viewportWidth < 640;
+  const tablet = viewportWidth >= 640 && viewportWidth < 1024;
+  const slideDistance = Math.min(465, Math.max(205, viewportWidth * (tablet ? 0.34 : 0.36)));
+  const sideScale = tablet ? 0.72 : 0.78;
   const filters = [{ id: 'all', label: 'All Projects' }, { id: 'creator', label: 'Social & Creator' }, { id: 'education', label: 'Education' }, { id: 'engineering', label: 'AI & Engineering' }];
   const items = projects.filter((p) => filter === 'all' || (filter === 'creator' && p.id === 'soulcare') || (filter === 'education' && p.id === 'urminexus') || (filter === 'engineering' && p.id === 'sujiportfolio'));
   const count = items.length;
   useEffect(() => setActive(0), [filter]);
-  useEffect(() => { const resize = () => setMobile(window.innerWidth < 768); resize(); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
+  useEffect(() => { const resize = () => setViewportWidth(window.innerWidth); resize(); window.addEventListener('resize', resize); return () => window.removeEventListener('resize', resize); }, []);
   const move = (step) => { if (count > 1) setActive((v) => (v + step + count) % count); };
   useEffect(() => { const key = (e) => { if (e.target instanceof HTMLElement && ['INPUT','TEXTAREA','SELECT','BUTTON'].includes(e.target.tagName)) return; if (e.key === 'ArrowRight') move(1); if (e.key === 'ArrowLeft') move(-1); }; window.addEventListener('keydown', key); return () => window.removeEventListener('keydown', key); }, [count]);
   const offsets = mobile ? [0] : [-1, 0, 1];
@@ -250,9 +254,9 @@ export default function Projects() {
         </motion.div>
         <div className="mb-8 flex flex-wrap items-center justify-center gap-2">{filters.map((f) => <button key={f.id} type="button" onClick={() => setFilter(f.id)} aria-pressed={filter === f.id} className={`rounded-full border px-4 py-2 text-xs font-semibold backdrop-blur-md transition sm:text-sm ${filter === f.id ? 'border-brand-purple/50 bg-brand-purple/15 text-text-main shadow-md' : 'border-border bg-bg-card/70 text-text-secondary hover:border-brand-pink/50'}`}>{f.label}</button>)}</div>
         <div className="relative mx-auto max-w-6xl">
-          <div className="relative h-[760px] overflow-hidden sm:h-[790px] md:h-[820px] [perspective:1400px]">
-            <motion.div className="relative h-full w-full cursor-grab touch-pan-y active:cursor-grabbing" drag={count > 1 ? 'x' : false} dragConstraints={{ left: 0, right: 0 }} dragElastic={0.12} onDragEnd={(_, info) => { if (info.offset.x < -55) move(1); if (info.offset.x > 55) move(-1); }} role="group" aria-label="Project carousel. Drag with mouse or swipe to browse.">
-              {cards.map(({ project, index, offset }) => { const selected = offset === 0; return <motion.div key={project.id} initial={false} animate={{ x: mobile ? 0 : offset * 465, scale: selected ? 1 : 0.78, opacity: selected ? 1 : 0.58, rotateY: mobile ? 0 : offset * -7, zIndex: selected ? 20 : 10 }} transition={{ type: 'spring', stiffness: 190, damping: 25 }} style={{ translate: '-50% 0', transformStyle: 'preserve-3d' }} className={`absolute left-1/2 top-0 w-full max-w-[680px] origin-top ${selected ? 'pointer-events-auto' : 'pointer-events-none'}`} onClick={() => { if (!selected) setActive(index); }} aria-hidden={!selected}><ProjectCard project={project} index={index} /></motion.div>; })}
+          <div className="relative h-[740px] overflow-hidden sm:h-[780px] lg:h-[820px] [perspective:1400px]">
+            <motion.div className="relative h-full w-full cursor-grab touch-pan-y active:cursor-grabbing" drag={count > 1 ? 'x' : false} dragConstraints={{ left: 0, right: 0 }} dragElastic={0.12} onDragEnd={(_, info) => { if (info.offset.x < -Math.max(40, viewportWidth * 0.07)) move(1); if (info.offset.x > Math.max(40, viewportWidth * 0.07)) move(-1); }} role="group" aria-label="Project carousel. Drag with mouse or swipe to browse.">
+              {cards.map(({ project, index, offset }) => { const selected = offset === 0; return <motion.div key={project.id} initial={false} animate={{ x: mobile ? 0 : offset * slideDistance, scale: selected ? 1 : sideScale, opacity: selected ? 1 : tablet ? 0.42 : 0.58, rotateY: mobile ? 0 : offset * (tablet ? -4 : -7), zIndex: selected ? 20 : 10 }} transition={{ type: 'spring', stiffness: 190, damping: 25 }} style={{ translate: '-50% 0', transformStyle: 'preserve-3d' }} className={`absolute left-1/2 top-0 w-[calc(100%-8px)] sm:w-[min(88%,680px)] origin-top ${selected ? 'pointer-events-auto' : 'pointer-events-auto cursor-pointer'}`} onClick={() => { if (!selected) setActive(index); }} aria-hidden={!selected}><ProjectCard project={project} index={index} /></motion.div>; })}
             </motion.div>
           </div>
           <div className="relative z-30 -mt-1 flex items-center justify-center gap-5">
