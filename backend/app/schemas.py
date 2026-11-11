@@ -7,7 +7,7 @@ class InquiryCreate(BaseModel):
     email: EmailStr = Field(..., example="sujita@example.com")
     project_type: str = Field(..., min_length=2, max_length=100, example="3D Interactive Web App")
     budget: Optional[str] = Field(None, example="$5,000 - $10,000")
-    message: str = Field(..., min_length=5, example="I want to build a custom 3D web experience with an AI chatbot.")
+    message: str = Field(..., min_length=1, example="I want to build a custom 3D web experience with an AI chatbot.")
     source: Optional[str] = Field("form", description="Origin of inquiry: 'form' or 'chat'")
 
 class InquiryResponse(BaseModel):
