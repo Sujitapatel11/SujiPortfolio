@@ -51,11 +51,17 @@ def _get_effective_password_hash() -> str:
     return _DEV_HASH
 
 
+# One stable development key per process. Generating a new key on every
+# call makes freshly issued JWTs impossible to validate on the next request.
+import secrets
+_DEV_JWT_SECRET = secrets.token_urlsafe(48)
+
+
 def _get_effective_jwt_secret() -> str:
     """
     Return the JWT signing secret.
-    In production: raises if not set or too short.
-    In development: generates a per-process random key for local use.
+    Production requires an explicitly configured secret. Development uses one
+    stable process-local secret so login, chat authorization, and /admin/me agree.
     """
     if JWT_SECRET_KEY:
         return JWT_SECRET_KEY
@@ -66,15 +72,12 @@ def _get_effective_jwt_secret() -> str:
             "(at least 32 characters) and set it in your environment."
         )
 
-    # Development-only: random per-process key
-    import secrets
-    dev_secret = secrets.token_urlsafe(48)
     logger.warning(
-        "JWT_SECRET_KEY not set — using a random per-process key. "
-        "All sessions will invalidate on server restart. "
-        "Set JWT_SECRET_KEY in .env for persistent sessions."
+        "JWT_SECRET_KEY not set — using a process-local development key. "
+        "Sessions invalidate when the backend restarts. Set JWT_SECRET_KEY in .env "
+        "for persistent sessions."
     )
-    return dev_secret
+    return _DEV_JWT_SECRET
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
