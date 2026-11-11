@@ -106,10 +106,21 @@ def trigger_job_search(keywords: Optional[List[str]] = None) -> str:
         search_keywords = keywords if keywords else ["python", "fastapi", "react", "ai"]
         orchestrator = JobDiscoveryOrchestrator()
         summary = orchestrator.run_discovery(db=db, keywords=search_keywords)
-        fetched = summary.get("fetched", 0)
-        matched = summary.get("matched", 0)
-        drafted = summary.get("drafted", 0)
-        return f"SUCCESS: Job search executed. Fetched {fetched} jobs across platforms, matched {matched} high-scoring targets, and drafted {drafted} proposals."
+        totals = {
+            "fetched": sum(int(item.get("fetched", 0)) for item in summary.values()),
+            "matched": sum(int(item.get("matched", 0)) for item in summary.values()),
+            "drafted": sum(int(item.get("drafted", 0)) for item in summary.values()),
+        }
+        source_lines = [
+            f"- {source}: fetched {item.get('fetched', 0)}, matched {item.get('matched', 0)}, drafted {item.get('drafted', 0)}"
+            + (f" (error: {item['error']})" if item.get("error") else "")
+            for source, item in summary.items()
+        ]
+        return (
+            f"Job search finished. Total fetched: {totals['fetched']}; "
+            f"matched: {totals['matched']}; proposal drafts: {totals['drafted']}.\\n"
+            + ("\\n".join(source_lines) if source_lines else "No source returned results.")
+        )
     except Exception as e:
         logger.error(f"Error in trigger_job_search tool: {e}")
         return f"ERROR: Job search failed: {str(e)}"
