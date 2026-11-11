@@ -32,7 +32,8 @@ def _parse_date(value: Any) -> Optional[datetime]:
         return None
     try:
         if isinstance(value, (int, float)):
-            return datetime.fromtimestamp(value, tz=timezone.utc)
+            timestamp = value / 1000 if value > 100000000000 else value
+            return datetime.fromtimestamp(timestamp, tz=timezone.utc)
         parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
         return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
     except (TypeError, ValueError, OverflowError):
