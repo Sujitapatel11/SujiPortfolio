@@ -103,7 +103,7 @@ def trigger_job_search(keywords: Optional[List[str]] = None) -> str:
     from app.admin.orchestrator import JobDiscoveryOrchestrator
     db = SessionLocal()
     try:
-        search_keywords = keywords if keywords else ["python", "fastapi", "react", "ai"]
+        search_keywords = keywords if keywords else ["python", "backend", "fastapi", "react", "javascript"]
         orchestrator = JobDiscoveryOrchestrator()
         summary = orchestrator.run_discovery(db=db, keywords=search_keywords)
         totals = {
