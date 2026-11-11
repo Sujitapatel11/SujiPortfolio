@@ -60,21 +60,21 @@ class JobicyRemoteConnector(BaseConnector):
             params = urllib.parse.urlencode({"count": 50, "geo": "anywhere", "tag": keyword})
             payload = _get_json(f"https://jobicy.com/api/jobs?{params}")
             for item in payload.get("jobs", []) if isinstance(payload, dict) else []:
-                title = (item.get("title") or "").strip()
+                title = (item.get("jobTitle") or item.get("title") or "").strip()
                 company = (item.get("companyName") or item.get("company") or "").strip()
                 url = item.get("url") or item.get("jobUrl") or ""
                 if not title or not url:
                     continue
-                description = item.get("jobDescription") or item.get("description") or ""
+                description = item.get("jobDescription") or item.get("jobExcerpt") or item.get("description") or ""
                 jobs.append(NormalizedJob(
                     platform="Jobicy",
                     external_id=_identity("Jobicy", item.get("id"), title, company, url),
                     title=title,
                     description=(f"Company: {company}\n\n{description}" if company else description),
                     url=url,
-                    budget=item.get("salary"),
+                    budget=item.get("salary") or (str(item.get("salaryCurrency") or "") + " " + str(item.get("salaryMin") or "") + "–" + str(item.get("salaryMax") or "") + " " + str(item.get("salaryPeriod") or "")).strip() if (item.get("salaryMin") or item.get("salaryMax")) else None,
                     posted_at=_parse_date(item.get("pubDate") or item.get("publishedAt")),
-                    raw_metadata={"company": company, "source": "Jobicy", "remote_scope": item.get("jobGeo")},
+                    raw_metadata={"company": company, "source": "Jobicy", "remote_scope": item.get("jobGeo"), "job_type": item.get("jobType"), "job_level": item.get("jobLevel") },
                 ))
         return jobs
 
