@@ -14,8 +14,8 @@ alembic>=1.13.1
 PyJWT>=2.8.0
 twilio>=9.0.0
 python-multipart>=0.0.9
-passlib[bcrypt]>=1.7.4
-bcrypt>=4.1.2
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 pgvector>=0.2.4
 sentence-transformers>=2.2.2
 email-validator>=2.0.0
