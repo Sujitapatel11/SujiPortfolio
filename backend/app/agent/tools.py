@@ -106,20 +106,30 @@ def trigger_job_search(keywords: Optional[List[str]] = None) -> str:
         search_keywords = keywords if keywords else ["python", "backend", "fastapi", "react", "javascript"]
         orchestrator = JobDiscoveryOrchestrator()
         summary = orchestrator.run_discovery(db=db, keywords=search_keywords)
+        source_summary = {name: item for name, item in summary.items() if name != "_top_matches"}
         totals = {
-            "fetched": sum(int(item.get("fetched", 0)) for item in summary.values()),
-            "matched": sum(int(item.get("matched", 0)) for item in summary.values()),
-            "drafted": sum(int(item.get("drafted", 0)) for item in summary.values()),
+            "fetched": sum(int(item.get("fetched", 0)) for item in source_summary.values()),
+            "matched": sum(int(item.get("matched", 0)) for item in source_summary.values()),
+            "drafted": sum(int(item.get("drafted", 0)) for item in source_summary.values()),
         }
         source_lines = [
             f"- {source}: fetched {item.get('fetched', 0)}, matched {item.get('matched', 0)}, drafted {item.get('drafted', 0)}"
             + (f" (error: {item['error']})" if item.get("error") else "")
-            for source, item in summary.items()
+            for source, item in source_summary.items()
         ]
+        job_lines = []
+        for job in summary.get("_top_matches", []):
+            salary = f" | Salary: {job['salary']}" if job.get("salary") else ""
+            job_lines.append(
+                f"#{job['id']} {job['title']} — {job['platform']} — Match {round(job['match_score'] * 100)}%{salary}\n"
+                f"Apply/source: {job['url']}"
+            )
+        details = "\n\nTop matching jobs:\n" + "\n\n".join(job_lines) if job_lines else "\nNo saved new matches met the relevance threshold."
         return (
-            f"Job search finished. Total fetched: {totals['fetched']}; "
-            f"matched: {totals['matched']}; proposal drafts: {totals['drafted']}.\n"
+            f"Job search finished. Total fetched: {totals['fetched']}; matched: {totals['matched']}; "
+            f"proposal drafts: {totals['drafted']}.\n"
             + ("\n".join(source_lines) if source_lines else "No source returned results.")
+            + details
         )
     except Exception as e:
         logger.error(f"Error in trigger_job_search tool: {e}")
