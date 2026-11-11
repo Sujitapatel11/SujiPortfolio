@@ -248,6 +248,27 @@ def run_agent_message(
         CONVERSATION_STORE[cid] = []
 
     history = CONVERSATION_STORE[cid]
+
+    # Execute explicit owner job-search commands deterministically. Do not rely
+    # on an LLM deciding whether to call the protected search tool.
+    normalized_message = user_message.lower().strip()
+    job_terms = ["job", "jobs", "internship", "internships", "role", "roles", "naukri", "नौकरी"]
+    search_terms = ["search", "find", "look for", "show", "list", "khoj", "khojo", "dhund", "ढूंढ", "खोज"]
+    is_job_search_intent = is_admin_context and (
+        normalized_message in {"job khojo", "jobs khojo", "naukri khojo", "find jobs"}
+        or (
+            any(term in normalized_message for term in job_terms)
+            and any(term in normalized_message for term in search_terms)
+        )
+    )
+    if is_job_search_intent:
+        reply = trigger_job_search.invoke({
+            "keywords": ["python", "backend", "fastapi", "react", "javascript"]
+        })
+        history.append({"role": "user", "content": user_message})
+        history.append({"role": "assistant", "content": reply})
+        return reply, cid
+
     llm = get_llm()
 
     if llm is None:
