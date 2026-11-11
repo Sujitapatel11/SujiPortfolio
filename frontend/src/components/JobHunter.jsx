@@ -1,14 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-  BriefcaseBusiness,
+  Briefcase,
   Search,
-  BrainCircuit,
+  Brain,
   FileText,
-  ListChecks,
+  CheckSquare,
   ShieldCheck,
   ArrowUpRight,
-  LockKeyhole,
+  Lock,
   Sparkles,
   Workflow,
 } from 'lucide-react';
@@ -21,7 +21,7 @@ const capabilities = [
     tone: 'pink',
   },
   {
-    icon: BrainCircuit,
+    icon: Brain,
     title: 'AI relevance scoring',
     description: 'Rank opportunities against your skills and target roles, with clear reasons behind each match.',
     tone: 'violet',
@@ -33,7 +33,7 @@ const capabilities = [
     tone: 'blue',
   },
   {
-    icon: ListChecks,
+    icon: CheckSquare,
     title: 'Application pipeline',
     description: 'Track opportunities from discovery and shortlist through approval and application status.',
     tone: 'green',
@@ -42,7 +42,7 @@ const capabilities = [
 
 const stages = [
   { label: 'Discover', detail: 'Collect relevant listings', icon: Search },
-  { label: 'Analyze', detail: 'Score fit and skill gaps', icon: BrainCircuit },
+  { label: 'Analyze', detail: 'Score fit and skill gaps', icon: Brain },
   { label: 'Review', detail: 'Shortlist and edit drafts', icon: FileText },
   { label: 'Approve', detail: 'You decide what proceeds', icon: ShieldCheck },
 ];
@@ -83,7 +83,7 @@ export default function JobHunter() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-bg-secondary/70 px-5 py-4 sm:px-7">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-pink to-brand-violet text-white shadow-lg">
-                <BriefcaseBusiness size={19} />
+                <Briefcase size={19} />
               </div>
               <div>
                 <p className="text-sm font-bold text-text-main">Job Hunter Workspace</p>
@@ -133,7 +133,7 @@ export default function JobHunter() {
                   <p className="text-xs font-bold text-text-main">Workspace access</p>
                   <p className="mt-1 text-[11px] text-text-muted">Private job records and agent controls</p>
                 </div>
-                <LockKeyhole size={19} className="text-brand-violet" />
+                <Lock size={19} className="text-brand-violet" />
               </div>
               <div className="mb-5 space-y-3">
                 {[
