@@ -16,7 +16,6 @@ export const Login = () => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-
     try {
       await login(username, password);
       navigate("/admin/dashboard");
@@ -31,12 +30,15 @@ export const Login = () => {
     <div className="admin-body">
       <div className="admin-login-container">
         <div className="admin-login-card">
-          <h2 className="admin-login-title">Suji's World Admin</h2>
-          <p className="admin-login-subtitle">Private Management Portal</p>
+          {/* Header */}
+          <div className="admin-login-header">
+            <h2 className="admin-login-title">Suji.dev</h2>
+            <p className="admin-login-subtitle">ADMIN PORTAL / SECURE ACCESS</p>
+          </div>
 
-          {error && <div className="admin-error-banner">{error}</div>}
+          <form onSubmit={handleSubmit} className="admin-login-form">
+            {error && <div className="admin-error-banner">{error}</div>}
 
-          <form onSubmit={handleSubmit}>
             <div className="admin-form-group">
               <label className="admin-label" htmlFor="username">Username</label>
               <input
@@ -63,14 +65,26 @@ export const Login = () => {
               />
             </div>
 
-            <button
-              type="submit"
-              className="admin-btn-primary"
-              disabled={submitting}
-            >
-              {submitting ? "Signing in..." : "Sign In to Admin Portal"}
+            <button type="submit" className="admin-btn-primary" disabled={submitting} style={{ width: '100%', marginTop: '0.5rem' }}>
+              {submitting ? "Signing in…" : "Sign in"}
             </button>
           </form>
+
+          {/* Footer */}
+          <div className="admin-login-tb">
+            <div className="bp-tb-field">
+              <span className="bp-tb-label">USER</span>
+              <span className="bp-tb-value">S. PATEL</span>
+            </div>
+            <div className="bp-tb-field">
+              <span className="bp-tb-label">VERSION</span>
+              <span className="bp-tb-value">v1.0</span>
+            </div>
+            <div className="bp-tb-field">
+              <span className="bp-tb-label">YEAR</span>
+              <span className="bp-tb-value">2026</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

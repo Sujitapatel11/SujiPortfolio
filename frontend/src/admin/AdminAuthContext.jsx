@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 const AdminAuthContext = createContext(null);
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export const AdminAuthProvider = ({ children }) => {
   const [adminToken, setAdminToken] = useState(() => localStorage.getItem("admin_token"));

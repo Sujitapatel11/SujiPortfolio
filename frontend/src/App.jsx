@@ -1,42 +1,114 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
+import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
-import Sections from './components/Sections';
+import Hero from './components/Hero';
+import Stats from './components/Stats';
+import About from './components/About';
+import Projects from './components/Projects';
+import EngineeringLab from './components/EngineeringLab';
+import Experience from './components/Experience';
+import Contact from './components/Contact';
+import Footer from './components/Footer';
 import ChatDrawer from './components/ChatDrawer';
 import { AdminAuthProvider } from './admin/AdminAuthContext';
-import Login from './admin/Login';
-import Dashboard from './admin/Dashboard';
+
+// Lazy-load private admin modules for code-splitting
+const Login = lazy(() => import('./admin/Login'));
+const Dashboard = lazy(() => import('./admin/Dashboard'));
+
+function AdminLoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-bg-primary text-text-secondary font-mono text-sm">
+      <div className="flex items-center gap-3">
+        <span className="w-2 h-2 rounded-full bg-brand-purple animate-ping" />
+        Loading Admin Module...
+      </div>
+    </div>
+  );
+}
 
 function PublicPortfolio() {
   const [chatOpen, setChatOpen] = useState(false);
 
   return (
-    <div className="single-page-layout">
-      <Navbar onOpenChat={() => setChatOpen(true)} />
-      <Sections onOpenChat={() => setChatOpen(true)} />
+    <div className="relative min-h-screen bg-bg-primary text-text-main transition-colors duration-200">
+      {/* Ambient background glow */}
+      <div className="ambient-glow" />
+
+      <Navbar />
+
+      <main className="relative z-10">
+        <Hero />
+        <Stats />
+        <About />
+        <Projects />
+        <EngineeringLab />
+        <Experience />
+        <Contact />
+      </main>
+
+      <Footer />
+
+      {/* Chat drawer */}
       <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+
+      {/* Floating chat button */}
+      {!chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-6 right-6 z-40 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-105 shadow-xl cursor-pointer"
+          style={{
+            background: 'linear-gradient(135deg, #FF2E93 0%, #A855F7 100%)',
+            boxShadow: '0 4px 20px rgba(255, 46, 147, 0.45)',
+            width: '3.5rem',
+            height: '3.5rem',
+          }}
+          aria-label="Open Ask Suji AI Chat"
+          title="Ask Suji AI"
+        >
+          <MessageCircle size={24} />
+        </button>
+      )}
     </div>
   );
 }
 
 export default function App() {
   return (
-    <AdminAuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Single-Page Continuous-Scroll Portfolio */}
-          <Route path="/" element={<PublicPortfolio />} />
+    <ThemeProvider>
+      <AdminAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Single-Page Continuous-Scroll Portfolio */}
+            <Route path="/" element={<PublicPortfolio />} />
 
-          {/* Private Admin Module */}
-          <Route path="/admin/login" element={<Login />} />
-          <Route path="/admin/dashboard" element={<Dashboard />} />
-          <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
+            {/* Private Admin Module with Suspense */}
+            <Route
+              path="/admin/login"
+              element={
+                <Suspense fallback={<AdminLoadingFallback />}>
+                  <Login />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <Suspense fallback={<AdminLoadingFallback />}>
+                  <Dashboard />
+                </Suspense>
+              }
+            />
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AdminAuthProvider>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AdminAuthProvider>
+    </ThemeProvider>
   );
 }

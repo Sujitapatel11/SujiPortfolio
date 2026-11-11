@@ -1,544 +1,607 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  ArrowRight,
-  Code2,
-  Cpu,
-  Layers,
-  Sparkles,
-  ExternalLink,
-  Github,
-  Mail,
-  MessageCircle,
-  CheckCircle2,
-  Play,
-  Terminal,
-  Database,
-  Server,
-  Layout,
-  Container
+  ArrowRight, Mail, MessageCircle, Linkedin, Instagram, Github,
+  Layout, Server, Rocket, Cpu, ArrowUpRight,
 } from 'lucide-react';
-import HeroCanvas from './HeroCanvas';
+import {
+  SheetHeader, TitleBlock, RegistrationMarks, SectionMarker,
+  DimensionLine, MonoTag, DrawingNotes, CalloutBalloon, HatchFill,
+} from '../blueprint/primitives';
 import { submitInquiry } from '../api/inquiries';
 
 export default function Sections({ onOpenChat }) {
-  // Contact Form State
+  /* ── Contact form state ── */
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    project_type: 'Full-Stack Web App',
-    budget: '$5,000 - $10,000',
-    message: ''
+    name: '', email: '', project_type: 'Full-Stack Web App',
+    budget: '$5,000 – $10,000', message: '',
   });
-  const [formStatus, setFormStatus] = useState({ loading: false, success: null, error: null });
+  const [formStatus, setFormStatus] = useState({ loading: false, success: false, error: null });
 
-  // Scroll Reveal Observer
+  /* ── Scroll reveal ── */
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
-        });
-      },
-      { threshold: 0.12 }
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && e.target.classList.add('visible')),
+      { threshold: 0.1 }
     );
-
-    const revealElements = document.querySelectorAll('.scroll-reveal');
-    revealElements.forEach((el) => observer.observe(el));
-
-    return () => {
-      revealElements.forEach((el) => observer.unobserve(el));
-    };
+    document.querySelectorAll('.scroll-reveal').forEach((el) => obs.observe(el));
+    return () => document.querySelectorAll('.scroll-reveal').forEach((el) => obs.unobserve(el));
   }, []);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormStatus({ loading: true, success: null, error: null });
-
+    setFormStatus({ loading: true, success: false, error: null });
     try {
       await submitInquiry({
-        name: formData.name,
-        email: formData.email,
-        project_type: formData.project_type,
-        budget: formData.budget,
-        message: formData.message,
-        source: 'form'
+        name: formData.name, email: formData.email,
+        project_type: formData.project_type, budget: formData.budget,
+        message: formData.message, source: 'form',
       });
-      setFormStatus({
-        loading: false,
-        success: 'Thank you! Your project inquiry has been dispatched to Sujita. She will reach out via email shortly.',
-        error: null
-      });
-      setFormData({
-        name: '',
-        email: '',
-        project_type: 'Full-Stack Web App',
-        budget: '$5,000 - $10,000',
-        message: ''
-      });
+      setFormStatus({ loading: false, success: true, error: null });
+      setFormData({ name: '', email: '', project_type: 'Full-Stack Web App', budget: '$5,000 – $10,000', message: '' });
     } catch (err) {
-      setFormStatus({
-        loading: false,
-        success: null,
-        error: err.message || 'Failed to send inquiry. Please try again.'
-      });
+      setFormStatus({ loading: false, success: false, error: err.message || 'Failed to send inquiry.' });
     }
   };
 
+  /* ── Bill of Materials data ── */
+  const bom = [
+    { item: '01', component: 'Python',        category: 'Backend',   status: 'Active' },
+    { item: '02', component: 'FastAPI',        category: 'Backend',   status: 'Active' },
+    { item: '03', component: 'Django',         category: 'Backend',   status: 'Active' },
+    { item: '04', component: 'Flask',          category: 'Backend',   status: 'Familiar' },
+    { item: '05', component: 'React',          category: 'Frontend',  status: 'Active' },
+    { item: '06', component: 'PostgreSQL',     category: 'Data',      status: 'Active' },
+    { item: '07', component: 'MongoDB',        category: 'Data',      status: 'Familiar' },
+    { item: '08', component: 'MySQL',          category: 'Data',      status: 'Familiar' },
+    { item: '09', component: 'Redis',          category: 'Data',      status: 'Active' },
+    { item: '10', component: 'Supabase',       category: 'Data',      status: 'Familiar' },
+    { item: '11', component: 'Docker',        category: 'Infra',     status: 'Active' },
+    { item: '12', component: 'CI/CD',          category: 'Infra',     status: 'Active' },
+    { item: '13', component: 'Git',            category: 'Infra',     status: 'Active' },
+    { item: '14', component: 'LangChain',      category: 'AI',        status: 'Active' },
+    { item: '15', component: 'RAG',            category: 'AI',        status: 'Active' },
+    { item: '16', component: 'Vector Databases', category: 'AI',      status: 'Active' },
+  ];
+
+  /* ── Services data ── */
+  const services = [
+    {
+      num: '01', title: 'Full-Stack Web Apps', icon: <Layout size={22} />,
+      liner: 'End-to-end applications shipped from blank repo to live URL.',
+      chips: ['React', 'FastAPI', 'PostgreSQL', 'Docker'],
+      annotations: ['→ Responsive UI engineering', '→ REST API + ORM design', '→ Auth & session flows', '→ Deployment pipeline'],
+    },
+    {
+      num: '02', title: 'Backend & API Development', icon: <Server size={22} />,
+      liner: 'High-throughput Python services built for real traffic, not demos.',
+      chips: ['FastAPI', 'SQLAlchemy', 'JWT', 'OpenAPI'],
+      annotations: ['→ Async endpoint design', '→ Pydantic validation', '→ Database migrations', '→ Rate limiting & caching'],
+    },
+    {
+      num: '03', title: 'SaaS / MVP Building', icon: <Rocket size={22} />,
+      liner: 'Take an idea from napkin sketch to a product users can log into.',
+      chips: ['MVP', 'Admin Panel', 'Docker', 'Launch'],
+      annotations: ['→ Full architecture scoping', '→ Lead tracking & intake', '→ Multi-role access', '→ Containerised deploy'],
+    },
+    {
+      num: '04', title: 'AI/ML Integration', icon: <Cpu size={22} />,
+      liner: 'LLM agents, RAG pipelines and tool-calling wired into real products.',
+      chips: ['LangChain', 'RAG', 'Tool-calling', 'Vector DB'],
+      annotations: ['→ Conversational agent design', '→ Context-grounded RAG', '→ Custom Python tools', '→ Dual-LLM fallback'],
+    },
+  ];
+
+  /* ── Revision table data ── */
+  const revisions = [
+    { rev: 'A', date: '2023.08', desc: 'Started B.Tech CSE, Parul University' },
+    { rev: 'B', date: '2025.03', desc: 'Shipped SoulCare — journaling + AI mood' },
+    { rev: 'C', date: '2025.09', desc: 'Shipped AIEC — education consultancy' },
+    { rev: 'D', date: '2026.11', desc: 'Building AI agents & applied AI products' },
+  ];
+
+  /* ── Schematic nodes ── */
+  const schematicNodes = [
+    { label: 'User',       sub: 'INPUT',    callout: 1, calloutLabel: 'Intent & query' },
+    { label: 'LLM Agent',  sub: 'REASONING', callout: 2, calloutLabel: 'Plans & decides' },
+    { label: 'Tools',      sub: 'EXECUTION', callout: 3, calloutLabel: 'Acts on the world' },
+    { label: 'Database',   sub: 'MEMORY',    callout: 4, calloutLabel: 'Stores & recalls' },
+  ];
+
+  const specs = [
+    { num: '01', text: 'LLM-powered chatbots that hold context across a full conversation.' },
+    { num: '02', text: 'RAG knowledge systems grounded in your own documents, not hallucination.' },
+    { num: '03', text: 'AI agents with tool-calling that write to databases and call real APIs.' },
+    { num: '04', text: 'AI insights embedded inside products — mood analysis, recommendations, scoring.' },
+  ];
+
+  const processSteps = ['Discovery call', 'Scoping', 'Weekly updates', 'Delivery'];
+
+  const contactRows = [
+    { label: 'Email',    value: 'sujitapatel787@gmail.com',    icon: <Mail size={15} />,       href: 'mailto:sujitapatel787@gmail.com' },
+    { label: 'WhatsApp', value: 'Message directly',            icon: <MessageCircle size={15} />, href: 'https://wa.me/910000000000' },
+    { label: 'LinkedIn', value: '/in/sujita-patel',            icon: <Linkedin size={15} />,   href: 'https://linkedin.com' },
+    { label: 'Instagram', value: '@sujita.codes',              icon: <Instagram size={15} />,  href: 'https://instagram.com' },
+    { label: 'GitHub',   value: 'Sujitapatel11',               icon: <Github size={15} />,     href: 'https://github.com/Sujitapatel11' },
+  ];
+
   return (
     <div className="sections-wrapper">
-      {/* ================= HERO SECTION ================= */}
-      <section id="hero" className="hero-section">
-        <div className="hero-grid">
-          {/* Text Content Column */}
-          <div className="hero-text-content">
-            <div className="badge-pill">
-              <span className="dot-cyan"></span>
-              <span>Available for Full-Stack & AI Systems Consulting</span>
-            </div>
 
-            <h1 className="hero-headline">
-              Hi, I'm <span className="gradient-text">Sujita Patel</span>
-            </h1>
+      {/* ════════════════════════════════════════════════════════════
+          SHEET 1 — HERO ("Figure 1")
+          ════════════════════════════════════════════════════════════ */}
+      <section id="hero" className="bp-section bp-hero bp-grid-bg">
+        <RegistrationMarks />
+        <div className="bp-section-inner">
+          <div className="bp-hero-grid">
 
-            <p className="hero-tagline">
-              Full-Stack & AI Systems Engineer
-            </p>
+            {/* Left: headline + notes + CTAs */}
+            <div className="bp-hero-text">
+              <div className="bp-hero-fig-label">FIGURE 1 — SUBJECT</div>
+              <h1 className="bp-hero-headline">
+                I turn ideas into <span className="bp-italic">real</span> products.
+              </h1>
+              <p className="bp-hero-subline">BACKEND ENGINEER / APPLIED AI / FULL-STACK</p>
 
-            <p className="hero-statement">
-              I don't just build apps — <span className="text-highlight">I want them to work.</span>
-            </p>
-
-            <p className="hero-bio-short">
-              Building high-performance FastAPI backends, reactive WebGL frontends, and autonomous agentic AI workflows.
-            </p>
-
-            <div className="hero-actions">
-              <a href="#projects" className="btn-primary">
-                <span>Explore What I Build</span>
-                <ArrowRight size={18} />
-              </a>
-
-              <button className="btn-secondary" onClick={onOpenChat}>
-                <Sparkles size={18} />
-                <span>Talk to Ask Suji AI</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 3D Interactive Avatar Canvas Column */}
-          <div className="hero-3d-content">
-            <HeroCanvas />
-            <div className="avatar-hint">
-              <span className="hint-pulse"></span>
-              <span>Click Avatar to toggle 3D states (Solid → Wireframe → Mesh)</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= ABOUT SECTION ================= */}
-      <section id="about" className="content-section scroll-reveal">
-        <div className="section-header">
-          <span className="section-num">01.</span>
-          <h2 className="section-title">About Sujita</h2>
-          <div className="header-line"></div>
-        </div>
-
-        <div className="about-grid">
-          <div className="about-bio-card glass-card">
-            <h3>Bridging High-Performance Web Engineering with Applied AI</h3>
-            <p>
-              Holding a <strong>B.Tech in Computer Science and Engineering (CSE)</strong>, Sujita Patel specializes in designing production-grade digital architectures.
-            </p>
-            <p>
-              Her work focuses on combining reactive WebGL frontends with robust FastAPI microservices and LLM agentic tool execution. Whether building privacy-first SaaS platforms or education consultancy ecosystems, Sujita delivers solutions engineered for real-world scaling and business outcomes.
-            </p>
-
-            <div className="about-stats-row">
-              <div className="stat-box">
-                <span className="stat-num">2+</span>
-                <span className="stat-label">Featured Flagship Platforms</span>
-              </div>
-              <div className="stat-box">
-                <span className="stat-num">4</span>
-                <span className="stat-label">Core Consulting Capabilities</span>
-              </div>
-              <div className="stat-box">
-                <span className="stat-num">100%</span>
-                <span className="stat-label">Containerized Arch (Docker)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= AI / ML SECTION ================= */}
-      <section id="aiml" className="content-section scroll-reveal">
-        <div className="section-header">
-          <span className="section-num">02.</span>
-          <h2 className="section-title">AI & Agentic Engineering</h2>
-          <div className="header-line"></div>
-        </div>
-
-        <div className="aiml-grid">
-          <div className="aiml-feature-card glass-card">
-            <div className="card-icon cyan">
-              <Cpu size={24} />
-            </div>
-            <h3>LangChain & Multi-Model Orchestration</h3>
-            <p>
-              Designing conversational workflows with dynamic provider routing (OpenAI GPT-4o & Anthropic Claude 3.5 Haiku) with zero downtime fallback handling.
-            </p>
-          </div>
-
-          <div className="aiml-feature-card glass-card">
-            <div className="card-icon violet">
-              <Terminal size={24} />
-            </div>
-            <h3>Autonomous Tool Calling & Lead Intake</h3>
-            <p>
-              Equipping AI agents with custom Python tool invocation routines (`save_client_inquiry`) to parse, qualify, and store actionable leads directly into PostgreSQL.
-            </p>
-          </div>
-
-          <div className="aiml-feature-card glass-card">
-            <div className="card-icon blue">
-              <Database size={24} />
-            </div>
-            <h3>Context Grounding & RAG Pipelines</h3>
-            <p>
-              Enforcing strict single-source-of-truth factual grounding (`profile.py`) to ensure client AI agents communicate accurate services, pricing, and project facts.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= PROJECTS / GALLERY SECTION ================= */}
-      <section id="projects" className="content-section scroll-reveal">
-        <div className="section-header">
-          <span className="section-num">03.</span>
-          <h2 className="section-title">Featured Projects & Gallery</h2>
-          <div className="header-line"></div>
-        </div>
-
-        <div className="projects-grid">
-          {/* Project 1: SoulCare */}
-          <div className="project-card glass-card">
-            <div className="project-video-placeholder">
-              <div className="play-button-overlay">
-                <Play size={28} className="play-icon" />
-              </div>
-              <span className="video-badge">SoulCare — Interactive Walkthrough (Coming Soon)</span>
-            </div>
-
-            <div className="project-info">
-              <div className="project-category">Mental Wellness & Anonymous Identity</div>
-              <h3 className="project-title">SoulCare Platform</h3>
-              <p className="project-desc">
-                Private journaling platform featuring AI mood insights and an anonymous community with a trust-based identity reveal mechanism. Built for emotional wellbeing with deep encryption and mood analytics.
-              </p>
-
-              <div className="tech-tags">
-                <span className="tag">React</span>
-                <span className="tag">FastAPI</span>
-                <span className="tag">Python</span>
-                <span className="tag">AI / LLM</span>
-                <span className="tag">PostgreSQL</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Project 2: AIEC */}
-          <div className="project-card glass-card">
-            <div className="project-video-placeholder">
-              <div className="play-button-overlay">
-                <Play size={28} className="play-icon" />
-              </div>
-              <span className="video-badge">AIEC Platform — Interactive Walkthrough (Coming Soon)</span>
-            </div>
-
-            <div className="project-info">
-              <div className="project-category">EdTech & Administrative Automation</div>
-              <h3 className="project-title">AIEC (Education Consultancy Platform)</h3>
-              <p className="project-desc">
-                Comprehensive education consultancy ecosystem equipped with an administrative panel, student inquiry lifecycle management, counsellor-student matching engine, document tracking, and automated university recommendations.
-              </p>
-
-              <div className="tech-tags">
-                <span className="tag">Python</span>
-                <span className="tag">FastAPI</span>
-                <span className="tag">React</span>
-                <span className="tag">SQLAlchemy</span>
-                <span className="tag">PostgreSQL</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= ENGINEERING / SKILLS SECTION ================= */}
-      <section id="engineering" className="content-section scroll-reveal">
-        <div className="section-header">
-          <span className="section-num">04.</span>
-          <h2 className="section-title">Engineering Stack</h2>
-          <div className="header-line"></div>
-        </div>
-
-        <div className="skills-grid">
-          <div className="skill-category-card glass-card">
-            <div className="category-header">
-              <Layout size={20} className="cat-icon cyan" />
-              <h3>Frontend & WebGL</h3>
-            </div>
-            <ul className="skill-list">
-              <li>React 18 & Vite</li>
-              <li>JavaScript (ESNext)</li>
-              <li>Three.js / React Three Fiber</li>
-              <li>GSAP Animations</li>
-              <li>Vanilla CSS3 Design Systems</li>
-            </ul>
-          </div>
-
-          <div className="skill-category-card glass-card">
-            <div className="category-header">
-              <Server size={20} className="cat-icon violet" />
-              <h3>Backend & API Development</h3>
-            </div>
-            <ul className="skill-list">
-              <li>Python 3.10+</li>
-              <li>FastAPI & Uvicorn</li>
-              <li>Pydantic v2 Validation</li>
-              <li>SQLAlchemy ORM</li>
-              <li>RESTful API Design</li>
-            </ul>
-          </div>
-
-          <div className="skill-category-card glass-card">
-            <div className="category-header">
-              <Cpu size={20} className="cat-icon blue" />
-              <h3>AI & Data Engineering</h3>
-            </div>
-            <ul className="skill-list">
-              <li>LangChain Framework</li>
-              <li>OpenAI & Anthropic APIs</li>
-              <li>PostgreSQL 15</li>
-              <li>SQLite (Dev Fallback)</li>
-              <li>Alembic Database Migrations</li>
-            </ul>
-          </div>
-
-          <div className="skill-category-card glass-card">
-            <div className="category-header">
-              <Container size={20} className="cat-icon emerald" />
-              <h3>DevOps & Tooling</h3>
-            </div>
-            <ul className="skill-list">
-              <li>Docker & Docker Compose</li>
-              <li>JWT Authentication & Passlib</li>
-              <li>Git & GitHub Workflows</li>
-              <li>Linux / PowerShell Environments</li>
-              <li>Multi-Platform Connector Pipelines</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= SERVICES SECTION ================= */}
-      <section id="services" className="content-section scroll-reveal">
-        <div className="section-header">
-          <span className="section-num">05.</span>
-          <h2 className="section-title">Services Offered</h2>
-          <div className="header-line"></div>
-        </div>
-
-        <div className="services-grid">
-          <div className="service-card glass-card">
-            <div className="service-header">
-              <h3>Full-Stack Web Apps</h3>
-              <span className="price-tag">$2,500 - $5,000+</span>
-            </div>
-            <p>End-to-end web applications built with FastAPI backends and responsive React frontends.</p>
-            <ul className="deliverables-list">
-              <li><CheckCircle2 size={14} /> Responsive React UI/UX</li>
-              <li><CheckCircle2 size={14} /> FastAPI REST API Integration</li>
-              <li><CheckCircle2 size={14} /> Database ORM & Migrations</li>
-            </ul>
-          </div>
-
-          <div className="service-card glass-card">
-            <div className="service-header">
-              <h3>Backend & API Development</h3>
-              <span className="price-tag">$2,000 - $4,500+</span>
-            </div>
-            <p>High-throughput Python microservices, database schema design, and secure auth systems.</p>
-            <ul className="deliverables-list">
-              <li><CheckCircle2 size={14} /> Pydantic Data Validation</li>
-              <li><CheckCircle2 size={14} /> JWT Token Authorization</li>
-              <li><CheckCircle2 size={14} /> Automated Unit Testing</li>
-            </ul>
-          </div>
-
-          <div className="service-card glass-card">
-            <div className="service-header">
-              <h3>SaaS / MVP Building</h3>
-              <span className="price-tag">$3,500 - $8,000+</span>
-            </div>
-            <p>Rapid MVP prototyping designed to take early-stage ideas from architecture to launch.</p>
-            <ul className="deliverables-list">
-              <li><CheckCircle2 size={14} /> Full Product Architecture</li>
-              <li><CheckCircle2 size={14} /> Admin Dashboards & Lead Tracking</li>
-              <li><CheckCircle2 size={14} /> Dockerized Deployment Stack</li>
-            </ul>
-          </div>
-
-          <div className="service-card glass-card">
-            <div className="service-header">
-              <h3>AI / ML Integration</h3>
-              <span className="price-tag">$2,500 - $6,000+</span>
-            </div>
-            <p>Integrating intelligent LangChain agentic workflows, custom tool calling, and RAG pipelines.</p>
-            <ul className="deliverables-list">
-              <li><CheckCircle2 size={14} /> Conversational AI Assistants</li>
-              <li><CheckCircle2 size={14} /> Automated Lead Intake Tools</li>
-              <li><CheckCircle2 size={14} /> Dual LLM Fallback Routing</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= CONTACT SECTION ================= */}
-      <section id="contact" className="content-section scroll-reveal">
-        <div className="section-header">
-          <span className="section-num">06.</span>
-          <h2 className="section-title">Client Intake Terminal</h2>
-          <div className="header-line"></div>
-        </div>
-
-        <div className="contact-container glass-card">
-          <div className="contact-intro">
-            <h3>Start Your Project or Schedule a Consultation</h3>
-            <p>Fill out the inquiry form below to dispatch your project specifications directly to Sujita.</p>
-          </div>
-
-          {formStatus.success && (
-            <div className="form-alert success">
-              <CheckCircle2 size={18} />
-              <span>{formStatus.success}</span>
-            </div>
-          )}
-
-          {formStatus.error && (
-            <div className="form-alert error">
-              <span>{formStatus.error}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleFormSubmit} className="contact-form">
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="name">Your Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  required
-                  placeholder="e.g. Alex Johnson"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
-                <input
-                  type="email"
-                  id="email"
-                  required
-                  placeholder="e.g. alex@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="project_type">Project Type</label>
-                <select
-                  id="project_type"
-                  value={formData.project_type}
-                  onChange={(e) => setFormData({ ...formData, project_type: e.target.value })}
-                >
-                  <option value="Full-Stack Web App">Full-Stack Web App</option>
-                  <option value="Backend/API Development">Backend/API Development</option>
-                  <option value="SaaS/MVP Building">SaaS/MVP Building</option>
-                  <option value="AI/ML Integration">AI/ML Integration</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="budget">Estimated Budget</label>
-                <select
-                  id="budget"
-                  value={formData.budget}
-                  onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                >
-                  <option value="$2,500 - $5,000">$2,500 - $5,000 (Starter)</option>
-                  <option value="$5,000 - $10,000">$5,000 - $10,000 (Growth)</option>
-                  <option value="$10,000+">$10,000+ (Enterprise)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="message">Project Requirements & Details</label>
-              <textarea
-                id="message"
-                rows={4}
-                required
-                placeholder="Describe your goals, tech stack preferences, and desired timeline..."
-                value={formData.message}
-                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              <DrawingNotes
+                notes={[
+                  "I'm Sujita.",
+                  "A Computer Science Engineering student.",
+                  "I build backend systems.",
+                  "I work with AI and machine learning.",
+                  "I turn ideas into real products.",
+                  "I want them to work.",
+                ]}
+                className="bp-hero-notes"
               />
+
+              <div className="bp-hero-cta-row">
+                <a href="#projects" className="bp-btn bp-btn-primary" onClick={(e) => { e.preventDefault(); document.querySelector('#projects')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                  Explore what I build <ArrowRight size={16} />
+                </a>
+                <a href="#contact" className="bp-btn bp-btn-outline" onClick={(e) => { e.preventDefault(); document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' }); }}>
+                  Book a call <ArrowUpRight size={16} />
+                </a>
+              </div>
             </div>
 
-            <button type="submit" className="btn-submit-form" disabled={formStatus.loading}>
-              {formStatus.loading ? (
-                <span>Dispatching Inquiry...</span>
-              ) : (
-                <>
-                  <span>Dispatch Project Inquiry</span>
-                  <ArrowRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
+            {/* Right: portrait figure with callouts */}
+            <div className="bp-portrait-wrap">
+              <div className="bp-portrait-frame">
+                <div className="bp-portrait-photo">
+                  <img src="/assets/suji-portrait.jpg" alt="Sujita Patel portrait" />
+                </div>
+                <div className="bp-portrait-wireframe" />
+                <div className="bp-portrait-dither">
+                  {[...Array(9)].map((_, i) => <span key={i} style={{ width: `${30 + Math.random() * 50}%` }} />)}
+                </div>
+
+                {/* Callout balloons positioned around portrait */}
+                <CalloutBalloon number={1} label="Face → About" lineDir="left" lineLen={40}
+                  style={{ top: '8%', left: '-8px' }} />
+                <CalloutBalloon number={2} label="Head → AI/ML" lineDir="right" lineLen={40}
+                  style={{ top: '16%', right: '-8px' }} />
+                <CalloutBalloon number={3} label="Laptop → Projects" lineDir="right" lineLen={40}
+                  style={{ top: '50%', right: '-8px' }} />
+                <CalloutBalloon number={4} label="Side → Engineering" lineDir="right" lineLen={40}
+                  style={{ bottom: '18%', right: '-8px' }} />
+                <CalloutBalloon number={5} label="Background → Business" lineDir="left" lineLen={40}
+                  style={{ bottom: '6%', left: '-8px' }} />
+              </div>
+
+              {/* Dimension lines */}
+              <DimensionLine measurement="W 140" orientation="horizontal"
+                className="bp-portrait-dim-h" style={{ position: 'absolute' }} />
+              <DimensionLine measurement="H 180" orientation="vertical"
+                className="bp-portrait-dim-v" style={{ position: 'absolute' }} />
+
+              <span className="bp-portrait-legend">FIG. 1: SUBJECT, STATE 1/3</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ================= FOOTER ================= */}
-      <footer className="footer-section">
-        <div className="footer-container">
-          <div className="footer-brand">
-            <span className="brand-icon">🌌</span>
-            <span>SUJI'S WORLD</span>
-            <span className="copyright-text">© {new Date().getFullYear()} Sujita Patel. All rights reserved.</span>
+      {/* ════════════════════════════════════════════════════════════
+          SHEET 2 — ABOUT / REVISION TABLE
+          ════════════════════════════════════════════════════════════ */}
+      <section id="about" className="bp-section bp-grid-bg scroll-reveal">
+        <RegistrationMarks />
+        <div className="bp-section-inner">
+          <SheetHeader index="01" title="About" italicWord="Sujita" marker="SHEET 2/8" />
+          <SectionMarker label="SECTION A-A" />
+
+          <div className="bp-about-grid">
+            <div className="bp-about-bio">
+              <h3>Backend engineer building products, not just <em className="bp-italic">studying theory</em>.</h3>
+              <p>
+                I'm a <strong>B.Tech Computer Science Engineering</strong> student at Parul University, currently
+                in my 7th semester. My focus is backend systems and applied AI — the kind of engineering that
+                ships a working product rather than a notebook full of theory.
+              </p>
+              <p>
+                I've built and shipped two full platforms: <strong>SoulCare</strong>, a private journaling app
+                with AI mood insights, and <strong>AIEC</strong>, an education consultancy system with admin
+                panels, inquiry management and counsellor matching. Both are live, both solve real problems.
+              </p>
+              <p>
+                What I care about is the last 20% — the part where the thing actually works for a real user.
+                That's why I work across the stack: FastAPI backends, React frontends, and LangChain agents
+                that call real tools and write to real databases.
+              </p>
+            </div>
+
+            <div>
+              <div className="bp-rev-table-title">REVISION TABLE</div>
+              <div className="bp-rev-table">
+                <div className="bp-rev-table-head">
+                  <span>REV</span><span>DATE</span><span>DESCRIPTION</span>
+                </div>
+                {revisions.map((r) => (
+                  <div className="bp-rev-table-row" key={r.rev}>
+                    <span>{r.rev}</span><span>{r.date}</span><span>{r.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <TitleBlock drawingNo="SP-002" sheet="2/8" style={{ marginTop: '2.5rem' }} />
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          SHEET 3 — AI/ML SCHEMATIC
+          ════════════════════════════════════════════════════════════ */}
+      <section id="aiml" className="bp-section bp-grid-bg scroll-reveal">
+        <RegistrationMarks />
+        <div className="bp-section-inner">
+          <SheetHeader index="02" title="Applied AI, not AI" italicWord="for its own sake" marker="SHEET 3/8" />
+          <SectionMarker label="SECTION B-B" />
+
+          <div className="bp-aiml-grid">
+            {/* Schematic diagram */}
+            <div className="bp-schematic">
+              <HatchFill opacity={0.03} />
+              <div className="bp-schematic-flow">
+                {schematicNodes.map((node, i) => (
+                  <React.Fragment key={i}>
+                    <div className="bp-schematic-node">
+                      <div className="bp-schematic-node-label">{node.label}</div>
+                      <div className="bp-schematic-node-sub">{node.sub}</div>
+                    </div>
+                    {i < schematicNodes.length - 1 && <div className="bp-schematic-arrow" />}
+                  </React.Fragment>
+                ))}
+              </div>
+
+              {/* Callout balloons above schematic */}
+              {schematicNodes.map((node, i) => (
+                <CalloutBalloon
+                  key={i}
+                  number={node.callout}
+                  label={node.calloutLabel}
+                  lineDir="down"
+                  lineLen={28}
+                  style={{ top: '12px', left: `${10 + i * 24}%` }}
+                />
+              ))}
+            </div>
+
+            {/* Specification rows */}
+            <div className="bp-spec-list">
+              {specs.map((s) => (
+                <div className="bp-spec-row" key={s.num}>
+                  <span className="bp-spec-num">{s.num}</span>
+                  <span className="bp-spec-text">{s.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <TitleBlock drawingNo="SP-003" sheet="3/8" style={{ marginTop: '2.5rem' }} />
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          SHEET 4 — PROJECTS / CASE FILES
+          ════════════════════════════════════════════════════════════ */}
+      <section id="projects" className="bp-section bp-grid-bg scroll-reveal">
+        <RegistrationMarks />
+        <div className="bp-section-inner">
+          <SheetHeader index="03" title="Case" italicWord="files" marker="SHEET 4/8" />
+          <SectionMarker label="SECTION C-C" />
+
+          <div className="bp-projects-stack">
+
+            {/* SoulCare */}
+            <div className="bp-project-sheet">
+              <div className="bp-project-visual">
+                <RegistrationMarks />
+                <HatchFill opacity={0.04} />
+                <div className="bp-project-visual-inner">
+                  <div className="bp-project-visual-placeholder">
+                    SOULCARE<br/>SCREENSHOT<br/>— COMING —
+                  </div>
+                  <DimensionLine measurement="W 1280" orientation="horizontal"
+                    style={{ position: 'absolute', bottom: '4px', left: 0, right: 0 }} />
+                </div>
+                <a href="#projects" className="bp-project-walkthrough-link" onClick={(e) => e.preventDefault()}>
+                  View walkthrough <ArrowUpRight size={12} />
+                </a>
+              </div>
+              <div className="bp-project-info">
+                <div className="bp-project-num">CASE FILE 01</div>
+                <h3 className="bp-project-title">SoulCare</h3>
+                <p className="bp-project-line">
+                  <strong>Problem:</strong> People need private space to journal, but public mental health
+                  apps feel exposed. <strong>Solution:</strong> A private journaling platform with AI mood
+                  insights and an anonymous community where identity is revealed only after trust is earned.
+                </p>
+                <div className="bp-project-tags">
+                  <MonoTag>React</MonoTag><MonoTag>FastAPI</MonoTag><MonoTag>Python</MonoTag>
+                  <MonoTag>AI / LLM</MonoTag><MonoTag>PostgreSQL</MonoTag>
+                </div>
+                <div className="bp-project-title-block">
+                  <div className="bp-tb-field"><span className="bp-tb-label">DRAWING NO.</span><span className="bp-tb-value">SP-SC-01</span></div>
+                  <div className="bp-tb-field"><span className="bp-tb-label">SHEET</span><span className="bp-tb-value">4/8</span></div>
+                  <div className="bp-tb-field"><span className="bp-tb-label">SCALE</span><span className="bp-tb-value">1:1</span></div>
+                  <div className="bp-tb-field"><span className="bp-tb-label">REV</span><span className="bp-tb-value">B</span></div>
+                </div>
+              </div>
+            </div>
+
+            {/* AIEC */}
+            <div className="bp-project-sheet">
+              <div className="bp-project-visual">
+                <RegistrationMarks />
+                <HatchFill opacity={0.04} />
+                <div className="bp-project-visual-inner">
+                  <div className="bp-project-visual-placeholder">
+                    AIEC<br/>SCREENSHOT<br/>— COMING —
+                  </div>
+                  <DimensionLine measurement="W 1280" orientation="horizontal"
+                    style={{ position: 'absolute', bottom: '4px', left: 0, right: 0 }} />
+                </div>
+                <a href="#projects" className="bp-project-walkthrough-link" onClick={(e) => e.preventDefault()}>
+                  View walkthrough <ArrowUpRight size={12} />
+                </a>
+              </div>
+              <div className="bp-project-info">
+                <div className="bp-project-num">CASE FILE 02</div>
+                <h3 className="bp-project-title">AIEC</h3>
+                <p className="bp-project-line">
+                  <strong>Problem:</strong> Education consultancies drown in spreadsheets tracking student
+                  inquiries, documents and counsellor assignments. <strong>Solution:</strong> A platform with
+                  an admin panel, student inquiry management, counsellor matching, document tracking and
+                  course recommendations.
+                </p>
+                <div className="bp-project-tags">
+                  <MonoTag>Python</MonoTag><MonoTag>FastAPI</MonoTag><MonoTag>React</MonoTag>
+                  <MonoTag>SQLAlchemy</MonoTag><MonoTag>PostgreSQL</MonoTag>
+                </div>
+                <div className="bp-project-title-block">
+                  <div className="bp-tb-field"><span className="bp-tb-label">DRAWING NO.</span><span className="bp-tb-value">SP-AE-02</span></div>
+                  <div className="bp-tb-field"><span className="bp-tb-label">SHEET</span><span className="bp-tb-value">4/8</span></div>
+                  <div className="bp-tb-field"><span className="bp-tb-label">SCALE</span><span className="bp-tb-value">1:1</span></div>
+                  <div className="bp-tb-field"><span className="bp-tb-label">REV</span><span className="bp-tb-value">C</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          SHEET 5 — ENGINEERING / BILL OF MATERIALS
+          ════════════════════════════════════════════════════════════ */}
+      <section id="engineering" className="bp-section bp-grid-bg scroll-reveal">
+        <RegistrationMarks />
+        <div className="bp-section-inner">
+          <SheetHeader index="04" title="Engineering" italicWord="stack" marker="SHEET 5/8" />
+          <SectionMarker label="SECTION D-D" />
+
+          <div className="bp-bom-wrap">
+            <table className="bp-bom">
+              <thead>
+                <tr><th>ITEM</th><th>COMPONENT</th><th>CATEGORY</th><th>STATUS</th></tr>
+              </thead>
+              <tbody className="bp-bom-tbody">
+                {bom.map((row) => (
+                  <tr key={row.item}>
+                    <td className="bp-bom-item">{row.item}</td>
+                    <td className="bp-bom-component">{row.component}</td>
+                    <td className="bp-bom-category">{row.category}</td>
+                    <td>
+                      <span className={`bp-bom-status ${row.status === 'Active' ? 'bp-bom-status--active' : ''}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <TitleBlock drawingNo="SP-005" sheet="5/8" style={{ marginTop: '2.5rem' }} />
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          SHEET 6 — SERVICES / PART DRAWINGS
+          ════════════════════════════════════════════════════════════ */}
+      <section id="services" className="bp-section bp-grid-bg scroll-reveal">
+        <RegistrationMarks />
+        <div className="bp-section-inner">
+          <SheetHeader index="05" title="Bill of" italicWord="services" marker="SHEET 6/8" />
+          <SectionMarker label="SECTION E-E" />
+
+          <div className="bp-services-grid">
+            {services.map((s) => (
+              <div className="bp-service-part" key={s.num}>
+                <span className="bp-service-item-num">ITEM {s.num}</span>
+                <div className="bp-service-icon">{s.icon}</div>
+                <h3 className="bp-service-title">{s.title}</h3>
+                <p className="bp-service-liner">{s.liner}</p>
+                <div className="bp-service-chips">
+                  {s.chips.map((c) => <MonoTag key={c}>{c}</MonoTag>)}
+                </div>
+                <div className="bp-service-annotations">
+                  {s.annotations.map((a, i) => <div key={i}><span>↳</span><span>{a.replace('→ ', '')}</span></div>)}
+                </div>
+              </div>
+            ))}
           </div>
 
-          <div className="footer-links">
-            <a href="mailto:sujitapatel787@gmail.com" className="footer-link" target="_blank" rel="noreferrer">
-              <Mail size={16} />
-              <span>Email</span>
-            </a>
-            <a href="https://wa.me/910000000000" className="footer-link" target="_blank" rel="noreferrer">
-              <MessageCircle size={16} />
-              <span>WhatsApp</span>
-            </a>
-            <a href="https://github.com/sujita" className="footer-link" target="_blank" rel="noreferrer">
-              <Github size={16} />
-              <span>GitHub</span>
-            </a>
+          {/* Process Flow */}
+          <div className="bp-process-flow">
+            <div className="bp-process-flow-title">PROCESS FLOW</div>
+            <div className="bp-process-steps">
+              {processSteps.map((step, i) => (
+                <React.Fragment key={i}>
+                  <div className="bp-process-step">
+                    <div className="bp-process-step-num">STEP {String(i + 1).padStart(2, '0')}</div>
+                    <div className="bp-process-step-label">{step}</div>
+                  </div>
+                  {i < processSteps.length - 1 && <div className="bp-process-arrow" />}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+          <TitleBlock drawingNo="SP-006" sheet="6/8" style={{ marginTop: '2.5rem' }} />
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          SHEET 7 — CONTACT (DARK BLUEPRINT)
+          ════════════════════════════════════════════════════════════ */}
+      <section id="contact" className="bp-section bp-contact bp-grid-bg scroll-reveal">
+        <RegistrationMarks color="rgba(255,255,255,0.4)" />
+        <div className="bp-section-inner">
+          <SheetHeader index="06" title="Request a" italicWord="quotation" marker="SHEET 7/8" />
+
+          <div className="bp-contact-grid">
+            {/* Left: reassurance + contact rows */}
+            <div className="bp-contact-left">
+              <h3>Let's scope your build.</h3>
+              <div className="bp-contact-reassure">
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--bp-orange)' }} />
+                I reply within 24 hours
+              </div>
+
+              <div className="bp-contact-rows">
+                {contactRows.map((row) => (
+                  <a key={row.label} href={row.href} target="_blank" rel="noreferrer" className="bp-contact-row">
+                    <span className="bp-contact-row-label">{row.label}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {row.icon}
+                      <span className="bp-contact-row-value">{row.value}</span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: RFQ form */}
+            <div className="bp-rfq">
+              <div className="bp-rfq-header">
+                <span className="bp-rfq-title">REQUEST FOR QUOTATION</span>
+                <span className="bp-rfq-sheet">FORM RFQ-01 / REV 2026.11</span>
+              </div>
+
+              {formStatus.success ? (
+                <div className="bp-received-stamp">
+                  <div className="bp-received-mark">RECEIVED</div>
+                  <p className="bp-received-msg">Got it, I'll reply within 24 hours.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleFormSubmit}>
+                  <div className="bp-rfq-row">
+                    <div className="bp-rfq-field">
+                      <label className="bp-rfq-label">Name</label>
+                      <input className="bp-rfq-input" type="text" required
+                        placeholder="Your name"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                    </div>
+                    <div className="bp-rfq-field">
+                      <label className="bp-rfq-label">Email</label>
+                      <input className="bp-rfq-input" type="email" required
+                        placeholder="you@company.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="bp-rfq-row">
+                    <div className="bp-rfq-field">
+                      <label className="bp-rfq-label">Project type</label>
+                      <select className="bp-rfq-select"
+                        value={formData.project_type}
+                        onChange={(e) => setFormData({ ...formData, project_type: e.target.value })}>
+                        <option>Full-Stack Web App</option>
+                        <option>Backend/API Development</option>
+                        <option>SaaS/MVP Building</option>
+                        <option>AI/ML Integration</option>
+                      </select>
+                    </div>
+                    <div className="bp-rfq-field">
+                      <label className="bp-rfq-label">Budget</label>
+                      <select className="bp-rfq-select"
+                        value={formData.budget}
+                        onChange={(e) => setFormData({ ...formData, budget: e.target.value })}>
+                        <option>$2,500 – $5,000</option>
+                        <option>$5,000 – $10,000</option>
+                        <option>$10,000+</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="bp-rfq-field">
+                    <label className="bp-rfq-label">Message</label>
+                    <textarea className="bp-rfq-textarea" required rows={3}
+                      placeholder="Describe your project goals, timeline and stack preferences."
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })} />
+                  </div>
+                  {formStatus.error && (
+                    <p style={{ color: 'var(--bp-orange)', fontFamily: 'var(--bp-font-mono)', fontSize: '0.74rem', marginBottom: '1rem' }}>
+                      {formStatus.error}
+                    </p>
+                  )}
+                  <button type="submit" className="bp-rfq-submit" disabled={formStatus.loading}>
+                    {formStatus.loading ? 'Sending…' : 'Send inquiry'}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+          <TitleBlock drawingNo="SP-007" sheet="7/8" dark style={{ marginTop: '2.5rem' }} />
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════
+          SHEET 8 — FOOTER
+          ════════════════════════════════════════════════════════════ */}
+      <footer className="bp-footer">
+        <div className="bp-footer-inner">
+          <div className="bp-footer-top">
+            <div>
+              <div className="bp-footer-block-label">DRAWN BY</div>
+              <div className="bp-footer-block-value">S. PATEL</div>
+            </div>
+            <div>
+              <div className="bp-footer-block-label">REVISION</div>
+              <div className="bp-footer-block-value">2026.11</div>
+            </div>
+            <div>
+              <div className="bp-footer-block-label">CONTACT</div>
+              <div className="bp-footer-socials">
+                <a className="bp-footer-social" href="mailto:sujitapatel787@gmail.com">Email</a>
+                <a className="bp-footer-social" href="https://wa.me/910000000000" target="_blank" rel="noreferrer">WhatsApp</a>
+                <a className="bp-footer-social" href="https://linkedin.com" target="_blank" rel="noreferrer">LinkedIn</a>
+                <a className="bp-footer-social" href="https://instagram.com" target="_blank" rel="noreferrer">Instagram</a>
+                <a className="bp-footer-social" href="https://github.com/Sujitapatel11" target="_blank" rel="noreferrer">GitHub</a>
+              </div>
+            </div>
+          </div>
+          <div className="bp-footer-bottom">
+            <span>DRAWING NO. SP-001 / SHEET 8/8 / SCALE 1:1</span>
+            <span>© {new Date().getFullYear()} SUJITA PATEL — ALL RIGHTS RESERVED</span>
           </div>
         </div>
       </footer>

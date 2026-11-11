@@ -27,33 +27,48 @@ PROFILE_DATA = {
         {
             "title": "SoulCare",
             "description": (
-                "A private journaling platform featuring AI mood insights and an "
-                "anonymous community with trust-based identity reveal mechanisms."
+                "A social creator platform architected around an introspective journaling core, "
+                "empowering creators to publish authentic long-form reflections, build trusted communities, "
+                "and monetize content with real-time interactions."
             ),
             "features": [
-                "Private encrypted journaling",
-                "AI-driven emotional & mood analysis",
-                "Anonymous peer community support",
-                "Trust-based gradual identity reveal system"
+                "Core journaling module with personal reflection workflows",
+                "Creator publishing tools and subscriber community feeds",
+                "Identity privacy controls and trust-based community mechanisms",
+                "Real-time interactions, comments, and notification pipeline"
             ],
-            "tags": ["React", "FastAPI", "Python", "AI/LLM", "PostgreSQL"],
+            "tags": ["Django", "PostgreSQL", "Redis", "React"],
             "featured": True
         },
         {
-            "title": "AIEC (Education Consultancy Platform)",
+            "title": "ResumeRoast",
             "description": (
-                "A comprehensive education consultancy platform equipped with a powerful administrative panel. "
-                "Covers student inquiry management, counsellor-student matching, document and application tracking, "
-                "and automated course/university recommendations."
+                "An AI-powered resume critique engine designed to analyze tech resumes, "
+                "deliver candid actionable feedback, and highlight impact gaps before job applications. "
+                "(Currently in active development)."
             ),
             "features": [
-                "Comprehensive Admin Panel & Analytics Dashboard",
-                "Student Inquiry Management & Lifecycle Tracking",
-                "Intelligent Counsellor-Student Matching Engine",
-                "Document Upload & Application Progress Tracking",
-                "Automated Course & University Recommendation System"
+                "Planned: Automated resume parsing pipeline (In development)",
+                "Planned: Dual-mode LLM critique engine (constructive vs candid roast)",
+                "Planned: Keyword alignment analysis for target role descriptions",
+                "Planned: Modular action-item suggestions for bullet-point impact"
             ],
-            "tags": ["Python", "FastAPI", "React", "PostgreSQL", "Matching System"],
+            "tags": ["Python", "FastAPI", "React", "LLM Pipeline"],
+            "featured": True
+        },
+        {
+            "title": "UrmiNexus (AIEC)",
+            "description": (
+                "A full-scale education consultancy management system connecting students and overseas advisors "
+                "with structured intake workflows, document pipelines, and program recommendations."
+            ),
+            "features": [
+                "Student inquiry lifecycle management & tracking dashboard",
+                "Administrative portal with counsellor-student matching engine",
+                "Application progress tracking and document intake flows",
+                "Course and university recommendation filtering system"
+            ],
+            "tags": ["Python", "FastAPI", "React", "PostgreSQL", "Matching Engine"],
             "featured": True
         }
     ],
