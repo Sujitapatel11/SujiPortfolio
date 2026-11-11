@@ -88,12 +88,12 @@ def chat_with_agent(req: ChatRequest, request: Request, db: Session = Depends(ge
             known_terms = ["python", "fastapi", "django", "backend", "frontend", "react", "javascript", "typescript", "java", "spring", "machine learning", "ai", "data science", "full stack", "software engineer", "cybersecurity", "cloud", "devops", "data analyst", "designer", "marketing"]
             keywords = [term for term in known_terms if term in message_lower]
             if not keywords:
-                cleaned = re.sub(r"\\b(find|search|show me|jobs?|job hunter|internships?|naukri|khojo|khoj|for|in|at|worldwide|global)\\b", " ", message_lower)
+                cleaned = re.sub(r"\b(find|search|show me|jobs?|job hunter|internships?|naukri|khojo|khoj|for|in|at|worldwide|global)\\b", " ", message_lower)
                 keywords = [word for word in re.findall(r"[a-zA-Z][a-zA-Z+#.]{2,}", cleaned)[:5]]
             work_mode = "remote" if "remote" in message_lower else ("hybrid" if "hybrid" in message_lower else ("on-site" if any(x in message_lower for x in ["on-site", "onsite", "office"]) else None))
             employment_type = next((x for x in ["internship", "full-time", "part-time", "freelance", "contract", "apprenticeship", "temporary"] if x in message_lower), None)
             experience_level = next((x for x in ["fresher", "entry-level", "junior", "mid-level", "senior", "lead"] if x in message_lower), None)
-            location_match = re.search(r"\\b(?:in|from|at)\\s+([a-z][a-z .-]{1,35}?)(?=\\s+(?:for|as|with|remote|hybrid|on-site|onsite|internship|full-time|part-time)|$)", message_lower)
+            location_match = re.search(r"\b(?:in|from|at)\s+([a-z][a-z .-]{1,35}?)(?=\s+(?:for|as|with|remote|hybrid|on-site|onsite|internship|full-time|part-time)|$)", message_lower)
             location = location_match.group(1).strip() if location_match else None
             results = perform_public_search(keywords, work_mode, location, employment_type, experience_level, limit=20)
             lines = [f"Job Hunter found {results['count']} matching listings.", "Filters: " + ", ".join(f"{k}={v}" for k, v in results["filters"].items() if v) if any(results["filters"].values()) else "Filters: broad search."]
