@@ -118,11 +118,11 @@ class RemotiveRemoteConnector(BaseConnector):
 
 
 class ArbeitnowRemoteConnector(BaseConnector):
-    """Arbeitnow public feed, filtered to postings explicitly marked remote."""
+    """Arbeitnow public feed for remote and location-based roles."""
 
     @property
     def platform_name(self) -> str:
-        return "Arbeitnow (remote)"
+        return "Arbeitnow"
 
     def is_available(self) -> bool:
         return True
@@ -133,8 +133,6 @@ class ArbeitnowRemoteConnector(BaseConnector):
         terms = [term.lower() for term in (keywords or []) if term.strip()]
         jobs: List[NormalizedJob] = []
         for item in items:
-            if not item.get("remote"):
-                continue
             title = (item.get("title") or "").strip()
             company = (item.get("company_name") or "").strip()
             url = item.get("url") or ""
