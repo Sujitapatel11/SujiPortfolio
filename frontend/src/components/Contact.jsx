@@ -194,9 +194,9 @@ export default function Contact() {
               <div className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-lg">
                 <CheckCircle2 size={28} />
               </div>
-              <h3 className="text-xl font-bold text-text-main">Inquiry Dispatched Successfully</h3>
+              <h3 className="text-xl font-bold text-text-main">Message received</h3>
               <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
-                Thank you for reaching out! Your inquiry has been persisted to the backend database. Sujita will review your requirements and respond within 24 hours.
+                Thank you for reaching out! Your message was submitted successfully. Thank you for sharing the details.
               </p>
               <div className="pt-3">
                 <button
@@ -326,7 +326,7 @@ export default function Contact() {
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <span className="text-[11px] font-mono text-text-muted flex items-center gap-1.5">
                   <CheckCircle2 size={13} className="text-emerald-400" />
-                  Pydantic Validated & PostgreSQL Stored
+                  Form validation • Secure API submission
                 </span>
                 <button
                   type="submit"
