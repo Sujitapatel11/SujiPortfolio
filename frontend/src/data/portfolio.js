@@ -32,6 +32,7 @@ export const navLinks = [
   { label: 'Skills', href: '#skills' },
   { label: 'Projects', href: '#projects' },
   { label: 'Engineering Lab', href: '#engineering-lab' },
+  { label: 'Job Hunter', href: '#job-hunter' },
   { label: 'Experience', href: '#experience' },
   { label: 'Contact', href: '#contact' },
 ];
@@ -120,36 +121,12 @@ export const engineeringTopics = [
 
 /* Skills — verified technical proficiencies */
 export const skillCategories = [
-  {
-    category: 'Programming',
-    skills: ['Python', 'Java', 'JavaScript', 'C++', 'C'],
-    icon: 'code',
-  },
-  {
-    category: 'Backend',
-    skills: ['Django', 'FastAPI', 'Node.js', 'REST APIs'],
-    icon: 'server',
-  },
-  {
-    category: 'Frontend',
-    skills: ['React', 'HTML5', 'CSS3', 'Tailwind CSS'],
-    icon: 'layout',
-  },
-  {
-    category: 'Databases',
-    skills: ['PostgreSQL', 'MongoDB', 'Redis'],
-    icon: 'database',
-  },
-  {
-    category: 'AI / ML',
-    skills: ['Machine Learning', 'NLP', 'Scikit-learn', 'TensorFlow', 'LLM Integration'],
-    icon: 'cpu',
-  },
-  {
-    category: 'DevOps',
-    skills: ['Git', 'GitHub', 'Docker', 'Vercel', 'Railway'],
-    icon: 'git',
-  },
+  { category: 'Programming', skills: ['Python', 'Java', 'JavaScript', 'C++', 'C'], icon: 'code' },
+  { category: 'Backend', skills: ['Django', 'FastAPI', 'Node.js', 'REST APIs'], icon: 'server' },
+  { category: 'Frontend', skills: ['React', 'HTML5', 'CSS3', 'Tailwind CSS'], icon: 'layout' },
+  { category: 'Databases', skills: ['PostgreSQL', 'MongoDB', 'Redis'], icon: 'database' },
+  { category: 'AI / ML', skills: ['Machine Learning', 'NLP', 'Scikit-learn', 'TensorFlow', 'LLM Integration'], icon: 'cpu' },
+  { category: 'DevOps', skills: ['Git', 'GitHub', 'Docker', 'Vercel', 'Railway'], icon: 'git' },
 ];
 
 /* Experience / Timeline — only verifiable information */
@@ -167,23 +144,7 @@ export const experience = [
     title: 'SoulCare — Social Creator Platform',
     org: 'Featured Engineering Project',
     period: '2025',
-    description: 'Designed and built a social creator platform with journaling core, trusted community features, and creator monetization using Django, PostgreSQL, Redis, and React.',
+    description: 'Designed and built a social creator platform with journaling, creator publishing, and community features.',
     current: false,
-  },
-  {
-    type: 'project',
-    title: 'UrmiNexus (AIEC) — Consultancy Platform',
-    org: 'Featured Engineering Project',
-    period: '2025',
-    description: 'Engineered an overseas education platform with an administrative dashboard, counsellor-student matching, and university recommendation pipeline using FastAPI, PostgreSQL, and React.',
-    current: false,
-  },
-  {
-    type: 'project',
-    title: 'SujiPortfolio — Spatial Intake Platform',
-    org: 'Production Engineering Project',
-    period: '2026',
-    description: 'Architected and built an automated AI client intake platform and engineering showcase using FastAPI, PostgreSQL pgvector RAG agent, and responsive React frontend.',
-    current: true,
   },
 ];
