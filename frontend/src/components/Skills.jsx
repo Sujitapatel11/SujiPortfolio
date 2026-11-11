@@ -1,151 +1,226 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Terminal, Code2, Layers, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, Layers3, Sparkles, Terminal } from 'lucide-react';
 import { skillCategories, skillsList } from '../data/skillsData';
+
+const VISIBLE_OFFSETS = [0, -1, 1, -2, 2];
+
+const positionClasses = {
+  '-2': 'opacity-35 scale-[0.76] -translate-x-[300px] md:-translate-x-[420px] -rotate-y-[24deg] blur-[1px] pointer-events-none',
+  '-1': 'opacity-75 scale-[0.88] -translate-x-[155px] md:-translate-x-[215px] -rotate-y-[13deg]',
+  '0': 'opacity-100 scale-100 translate-x-0 rotate-y-0 z-30',
+  '1': 'opacity-75 scale-[0.88] translate-x-[155px] md:translate-x-[215px] rotate-y-[13deg]',
+  '2': 'opacity-35 scale-[0.76] translate-x-[300px] md:translate-x-[420px] rotate-y-[24deg] blur-[1px] pointer-events-none',
+};
 
 export default function Skills() {
   const [activeCategory, setActiveCategory] = useState('all');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const filteredSkills =
-    activeCategory === 'all'
+  const filteredSkills = useMemo(
+    () => activeCategory === 'all'
       ? skillsList
-      : skillsList.filter((s) => s.category === activeCategory);
+      : skillsList.filter((skill) => skill.category === activeCategory),
+    [activeCategory]
+  );
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [activeCategory]);
+
+  useEffect(() => {
+    const updateViewport = () => setIsMobile(window.innerWidth < 640);
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
+
+  const move = (direction) => {
+    setActiveIndex((current) => (current + direction + filteredSkills.length) % filteredSkills.length);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'ArrowRight') move(1);
+      if (event.key === 'ArrowLeft') move(-1);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredSkills.length]);
+
+  const visibleCards = VISIBLE_OFFSETS.map((offset) => {
+    const index = (activeIndex + offset + filteredSkills.length) % filteredSkills.length;
+    return { skill: filteredSkills[index], index, offset };
+  }).filter((item, position, items) =>
+    item.skill && items.findIndex((candidate) => candidate.index === item.index) === position
+  );
+
+  const activeSkill = filteredSkills[activeIndex];
+  const ActiveIcon = activeSkill?.icon;
 
   return (
-    <section id="skills" className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Section Heading */}
+    <section id="skills" className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(168,85,247,0.13),transparent_58%)]" />
+      <div className="relative z-10 mx-auto max-w-7xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45 }}
-          className="text-center mb-12 sm:mb-16"
+          className="mb-10 text-center sm:mb-14"
         >
-          <div className="flex items-center justify-center gap-2 mb-2.5">
+          <div className="mb-3 flex items-center justify-center gap-2">
             <span className="section-label">/ Tools & Technologies</span>
+            <Sparkles size={14} className="text-brand-pink" />
           </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-main mb-3">
-            Tools I Work With & <span className="text-gradient">What I’m Building</span>
+          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-text-main sm:text-5xl">
+            Technologies I <span className="text-gradient">Work With</span>
           </h2>
-          <p className="text-sm sm:text-base text-text-secondary max-w-2xl mx-auto leading-relaxed">
-            A practical snapshot of the languages, frameworks, and tools I’ve used while building projects and strengthening my engineering skills.
+          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">
+            Explore the languages, frameworks, and tools I use while building projects and growing as an engineer.
           </p>
         </motion.div>
 
-        {/* Category Filter Pills */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="flex flex-wrap items-center justify-center gap-2 mb-10 max-w-4xl mx-auto"
-        >
-          {skillCategories.map((cat) => {
-            const isActive = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-xl font-mono text-xs transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? 'bg-gradient-to-r from-brand-pink to-brand-violet text-white font-semibold shadow-lg shadow-brand-pink/25 scale-105'
-                    : 'bg-bg-card/90 text-text-secondary border border-border hover:border-brand-violet/50 hover:text-text-main'
-                }`}
-                aria-pressed={isActive}
-              >
-                {cat.name}
-              </button>
-            );
-          })}
-        </motion.div>
-
-        {/* Responsive Skill Cards Grid */}
-        <motion.div
-          layout
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4"
-        >
-          <AnimatePresence>
-            {filteredSkills.map((tech) => {
-              const Icon = tech.icon;
+        <div className="mb-8 flex justify-center">
+          <div className="no-scrollbar flex max-w-full gap-2 overflow-x-auto px-1 pb-2">
+            {skillCategories.map((category) => {
+              const selected = activeCategory === category.id;
               return (
-                <motion.div
-                  layout
-                  key={tech.name}
-                  initial={{ opacity: 0, scale: 0.92 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.92 }}
-                  transition={{ duration: 0.25 }}
-                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                  className="group relative rounded-2xl p-4 sm:p-5 bg-bg-card/85 border border-border hover:border-border-accent shadow-md backdrop-blur-xl flex flex-col items-center text-center justify-between transition-all duration-200 overflow-hidden"
-                  title={`${tech.name} — ${tech.tooltip}`}
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => setActiveCategory(category.id)}
+                  aria-pressed={selected}
+                  className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition-all duration-200 sm:text-sm ${
+                    selected
+                      ? 'border-brand-pink/60 bg-brand-pink/15 text-text-main shadow-[0_0_18px_rgba(255,46,147,0.16)]'
+                      : 'border-border bg-bg-card/70 text-text-secondary hover:border-brand-violet/60 hover:text-text-main'
+                  }`}
                 >
-                  {/* Subtle brand glow on card hover */}
-                  <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-300 pointer-events-none rounded-2xl"
-                    style={{
-                      background: `radial-gradient(circle at center, ${tech.brandColor}, transparent 70%)`,
-                    }}
-                  />
-
-                  {/* Official SVG Logo */}
-                  <div className="relative mb-3 flex items-center justify-center">
-                    <div
-                      className="w-13 h-13 rounded-2xl flex items-center justify-center bg-bg-secondary/90 border border-border group-hover:scale-110 group-hover:border-border-accent transition-all duration-200 shadow-sm"
-                      style={{
-                        boxShadow: `0 4px 14px rgba(0,0,0,0.3)`,
-                      }}
-                    >
-                      <Icon
-                        size={28}
-                        style={{ color: tech.brandColor }}
-                        className="transition-transform duration-200 group-hover:drop-shadow-[0_0_8px_rgba(255,46,147,0.4)]"
-                        aria-hidden="true"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Technology Name & Details */}
-                  <div className="w-full">
-                    <h3 className="text-xs sm:text-sm font-bold text-text-main group-hover:text-white transition-colors truncate">
-                      {tech.name}
-                    </h3>
-                    <span
-                      className="inline-block mt-1 font-mono text-[10px] px-2 py-0.5 rounded-md bg-bg-secondary border border-border/80 text-brand-lavender truncate max-w-full"
-                    >
-                      {tech.tag}
-                    </span>
-                  </div>
-
-                  {/* Tooltip text for extra architectural context */}
-                  <p className="sr-only">{tech.tooltip}</p>
-                </motion.div>
+                  {category.name}
+                </button>
               );
             })}
-          </AnimatePresence>
-        </motion.div>
+          </div>
+        </div>
 
-        {/* Bottom Metrics Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="mt-12 rounded-2xl p-4 sm:p-5 bg-bg-card/70 border border-border flex flex-col sm:flex-row items-center justify-between gap-3 font-mono text-xs text-text-secondary max-w-4xl mx-auto backdrop-blur-md"
-        >
+        <div className="relative mx-auto max-w-5xl">
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-[min(78vw,760px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-violet/10 blur-3xl" />
+
+          <div className="relative flex h-[350px] items-center justify-center overflow-hidden sm:h-[410px] [perspective:1200px]">
+            <motion.div
+              className="relative h-full w-full touch-pan-y"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.08}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -45) move(1);
+                if (info.offset.x > 45) move(-1);
+              }}
+              role="group"
+              aria-label="Interactive technology carousel. Drag or swipe to browse."
+            >
+              {visibleCards.map(({ skill, index, offset }) => {
+                const Icon = skill.icon;
+                const isActive = offset === 0;
+                return (
+                  <motion.article
+                    key={skill.name}
+                    initial={false}
+                    animate={{
+                      x: offset * (isMobile ? 155 : 215),
+                      scale: isActive ? 1 : Math.abs(offset) === 1 ? 0.88 : 0.76,
+                      rotateY: offset * -13,
+                      opacity: isActive ? 1 : Math.abs(offset) === 1 ? 0.76 : 0.36,
+                      zIndex: 10 - Math.abs(offset),
+                    }}
+                    transition={{ type: 'spring', stiffness: 230, damping: 25, mass: 0.8 }}
+                    className={`absolute left-1/2 top-1/2 flex h-[270px] w-[220px] -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-3xl border p-5 text-center backdrop-blur-xl sm:h-[320px] sm:w-[260px] sm:p-6 ${
+                      isActive
+                        ? 'border-brand-pink/70 bg-bg-card shadow-[0_0_35px_rgba(168,85,247,0.28),0_0_12px_rgba(255,46,147,0.2)]'
+                        : 'border-border bg-bg-card/85 shadow-xl'
+                    }`}
+                    style={{ transformStyle: 'preserve-3d' }}
+                    onClick={() => {
+                      if (!isActive) setActiveIndex(index);
+                    }}
+                    aria-label={`${skill.name}, ${skill.categoryLabel}`}
+                  >
+                    <div className="mb-5 flex w-full items-center justify-between">
+                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
+                        {String(index + 1).padStart(2, '0')} / {String(filteredSkills.length).padStart(2, '0')}
+                      </span>
+                      {isActive && (
+                        <span className="rounded-full border border-brand-violet/50 bg-brand-violet/15 px-2.5 py-1 text-[10px] font-semibold text-brand-lavender">
+                          Featured
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-bg-secondary/90 sm:h-24 sm:w-24"
+                      style={{ boxShadow: isActive ? `0 0 28px ${skill.brandColor}35` : 'none' }}
+                    >
+                      <Icon size={isActive ? 52 : 44} style={{ color: skill.brandColor }} aria-hidden="true" />
+                    </div>
+
+                    <h3 className="mb-2 text-xl font-bold tracking-tight text-text-main sm:text-2xl">
+                      {skill.name}
+                    </h3>
+                    <span className="mb-4 rounded-full border border-border bg-bg-secondary px-3 py-1 font-mono text-[10px] text-brand-lavender">
+                      {skill.tag}
+                    </span>
+                    <p className="mt-auto line-clamp-3 text-xs leading-relaxed text-text-secondary sm:text-sm">
+                      {skill.tooltip}
+                    </p>
+                    {isActive && (
+                      <div className="mt-4 h-1 w-16 overflow-hidden rounded-full bg-bg-tertiary">
+                        <div className="h-full w-full rounded-full bg-gradient-to-r from-brand-pink to-brand-violet" />
+                      </div>
+                    )}
+                  </motion.article>
+                );
+              })}
+            </motion.div>
+          </div>
+
+          <div className="relative z-40 mt-1 flex items-center justify-center gap-5">
+            <button
+              type="button"
+              onClick={() => move(-1)}
+              aria-label="Previous technology"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-pink hover:text-brand-pink hover:shadow-[0_0_18px_rgba(255,46,147,0.22)]"
+            >
+              <ArrowLeft size={19} />
+            </button>
+            <div className="min-w-[92px] text-center">
+              <p className="font-mono text-xs tabular-nums text-text-secondary">
+                {String(activeIndex + 1).padStart(2, '0')} <span className="text-text-muted">/</span> {String(filteredSkills.length).padStart(2, '0')}
+              </p>
+              <p className="mt-1 text-[10px] text-text-muted">Drag or swipe</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => move(1)}
+              aria-label="Next technology"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-pink hover:text-brand-pink hover:shadow-[0_0_18px_rgba(255,46,147,0.22)]"
+            >
+              <ArrowRight size={19} />
+            </button>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-center justify-between gap-3 rounded-2xl border border-border bg-bg-card/65 px-5 py-4 text-xs text-text-secondary backdrop-blur-md sm:flex-row">
           <div className="flex items-center gap-2 text-text-main">
-            <Terminal size={14} className="text-brand-pink" />
-            <span className="font-semibold">{skillsList.length} Technologies & Tools</span>
+            <Layers3 size={16} className="text-brand-pink" />
+            <span className="font-semibold">{skillsList.length} technologies across {skillCategories.length - 1} categories</span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-text-muted">
-            <span className="flex items-center gap-1 text-emerald-400">
-              <CheckCircle2 size={12} />
-              Technology overview
-            </span>
-            <span>&#8226;</span>
-            <span className="text-brand-violet font-semibold">Learning in progress</span>
+          <div className="flex items-center gap-2 font-mono text-[10px] text-brand-lavender">
+            <Terminal size={13} />
+            <span>{activeSkill?.categoryLabel ?? 'Technology stack'}</span>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
