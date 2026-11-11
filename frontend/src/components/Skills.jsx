@@ -5,14 +5,6 @@ import { skillCategories, skillsList } from '../data/skillsData';
 
 const VISIBLE_OFFSETS = [0, -1, 1, -2, 2];
 
-const positionClasses = {
-  '-2': 'opacity-35 scale-[0.76] -translate-x-[300px] md:-translate-x-[420px] -rotate-y-[24deg] blur-[1px] pointer-events-none',
-  '-1': 'opacity-75 scale-[0.88] -translate-x-[155px] md:-translate-x-[215px] -rotate-y-[13deg]',
-  '0': 'opacity-100 scale-100 translate-x-0 rotate-y-0 z-30',
-  '1': 'opacity-75 scale-[0.88] translate-x-[155px] md:translate-x-[215px] rotate-y-[13deg]',
-  '2': 'opacity-35 scale-[0.76] translate-x-[300px] md:translate-x-[420px] rotate-y-[24deg] blur-[1px] pointer-events-none',
-};
-
 export default function Skills() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -108,7 +100,7 @@ export default function Skills() {
         <div className="relative mx-auto max-w-5xl">
           <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-[min(78vw,760px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-violet/10 blur-3xl" />
 
-          <div className="relative flex h-[350px] items-center justify-center overflow-hidden sm:h-[410px] [perspective:1200px]">
+          <div className="relative flex h-[400px] items-center justify-center overflow-hidden sm:h-[460px] [perspective:1200px]">
             <motion.div
               className="relative h-full w-full touch-pan-y"
               drag="x"
@@ -136,12 +128,12 @@ export default function Skills() {
                       zIndex: 10 - Math.abs(offset),
                     }}
                     transition={{ type: 'spring', stiffness: 230, damping: 25, mass: 0.8 }}
-                    className={`absolute left-1/2 top-1/2 flex h-[270px] w-[220px] -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-3xl border p-5 text-center backdrop-blur-xl sm:h-[320px] sm:w-[260px] sm:p-6 ${
+                    className={`absolute left-1/2 top-1/2 flex h-[310px] w-[220px] flex-col items-center rounded-3xl border p-5 text-center backdrop-blur-xl sm:h-[350px] sm:w-[260px] sm:p-6 ${
                       isActive
                         ? 'border-brand-pink/70 bg-bg-card shadow-[0_0_35px_rgba(168,85,247,0.28),0_0_12px_rgba(255,46,147,0.2)]'
                         : 'border-border bg-bg-card/85 shadow-xl'
                     }`}
-                    style={{ transformStyle: 'preserve-3d' }}
+                    style={{ transformStyle: 'preserve-3d', translateX: '-50%', translateY: '-50%' }}
                     onClick={() => {
                       if (!isActive) setActiveIndex(index);
                     }}
@@ -185,7 +177,7 @@ export default function Skills() {
             </motion.div>
           </div>
 
-          <div className="relative z-40 mt-1 flex items-center justify-center gap-5">
+          <div className="relative z-40 mt-5 flex items-center justify-center gap-5">
             <button
               type="button"
               onClick={() => move(-1)}
