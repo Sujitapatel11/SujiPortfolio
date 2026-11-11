@@ -189,6 +189,7 @@ export const Dashboard = () => {
   // Helpers
   const getPlatformBadge = (platform) => {
     const p = (platform || "").toLowerCase();
+    if (p.includes("linkedin")) return "admin-badge-default";
     if (p.includes("upwork")) return "admin-badge-upwork";
     if (p.includes("fiverr")) return "admin-badge-fiverr";
     if (p.includes("freelancer")) return "admin-badge-freelancer";
@@ -367,6 +368,7 @@ export const Dashboard = () => {
                         <label className="admin-label">Platform</label>
                         <select className="admin-select" value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value)}>
                           <option value="all">All</option>
+                          <option value="linkedin">LinkedIn</option>
                           <option value="upwork">Upwork</option>
                           <option value="fiverr">Fiverr</option>
                           <option value="freelancer.com">Freelancer.com</option>
@@ -582,6 +584,7 @@ export const Dashboard = () => {
                 <div className="admin-form-group">
                   <label className="admin-label">Platform</label>
                   <select className="admin-select" value={pasteForm.platform} onChange={(e) => setPasteForm({ ...pasteForm, platform: e.target.value })}>
+                    <option value="LinkedIn">LinkedIn</option>
                     <option value="Upwork">Upwork</option>
                     <option value="Fiverr">Fiverr</option>
                     <option value="Other">Other / Direct</option>

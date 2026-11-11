@@ -85,47 +85,7 @@ class FreelancerConnector(BaseConnector):
         except Exception as e:
             logger.warning(f"Could not fetch from live Freelancer API ({e}). Using sample discovery dataset.")
 
-        # Fallback sample dataset if live API request times out or is unreachable in offline dev
-        sample_projects = [
-            {
-                "id": "fl_101",
-                "title": "Full-Stack Web App Development with FastAPI & React",
-                "description": "Looking for an expert developer to build a modern dashboard using FastAPI backend and React frontend with dynamic 3D elements.",
-                "url": "https://www.freelancer.com/projects/fl_101",
-                "budget": "USD 2,500 - 5,000",
-                "posted_at": datetime.now(timezone.utc)
-            },
-            {
-                "id": "fl_102",
-                "title": "Python AI Agent Integration for Lead Capture",
-                "description": "Need an AI/ML developer to integrate a conversational LangChain agent for automated lead qualification and PostgreSQL storage.",
-                "url": "https://www.freelancer.com/projects/fl_102",
-                "budget": "USD 1,500 - 3,000",
-                "posted_at": datetime.now(timezone.utc)
-            },
-            {
-                "id": "fl_103",
-                "title": "WordPress Site Maintenance",
-                "description": "Simple CSS tweaks and plugin updates for an old blog site.",
-                "url": "https://www.freelancer.com/projects/fl_103",
-                "budget": "USD 50 - 100",
-                "posted_at": datetime.now(timezone.utc)
-            }
-        ]
-
-        for sp in sample_projects:
-            # Check if sample matches any keyword
-            desc_text = f"{sp['title']} {sp['description']}".lower()
-            if not keywords or any(kw.lower() in desc_text for kw in keywords):
-                jobs.append(NormalizedJob(
-                    platform=self.platform_name,
-                    external_id=sp["id"],
-                    title=sp["title"],
-                    description=sp["description"],
-                    url=sp["url"],
-                    budget=sp["budget"],
-                    posted_at=sp["posted_at"],
-                    raw_metadata={"sample": True}
-                ))
-
+        # Never fabricate job listings when the live source is unavailable.
+        # Returning an empty result keeps demo data out of the real application pipeline.
+        logger.error("Freelancer.com live discovery unavailable; no synthetic jobs will be returned.")
         return jobs
