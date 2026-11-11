@@ -20,7 +20,7 @@ export default function Stats() {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className="max-w-5xl mx-auto rounded-2xl p-5 sm:p-7 glow-card"
       >
-        <div className={`grid grid-cols-1 sm:grid-cols-${stats.length === 3 ? '3' : '2'} gap-5 lg:gap-8`}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 lg:gap-8">
           {stats.map((stat, i) => {
             const Icon = iconMap[stat.icon] || CheckCircle2;
             return (
@@ -37,7 +37,7 @@ export default function Stats() {
                   <div>
                     <div
                       className={`text-xl sm:text-2xl font-bold tracking-tight ${
-                        stat.highlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-text-main'
+                        'text-text-main'
                       }`}
                     >
                       {stat.value}
