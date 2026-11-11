@@ -6,7 +6,7 @@ import jwt
 
 from app.database import get_db
 from app.agent import run_agent_message
-from app.admin.auth import JWT_SECRET_KEY, JWT_ALGORITHM, ADMIN_USERNAME
+from app.admin.auth import JWT_ALGORITHM, ADMIN_USERNAME, _get_effective_jwt_secret
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -25,7 +25,7 @@ def check_is_admin(request: Request) -> bool:
     if auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1].strip()
         try:
-            payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            payload = jwt.decode(token, _get_effective_jwt_secret(), algorithms=[JWT_ALGORITHM])
             username = payload.get("sub")
             if username == ADMIN_USERNAME:
                 return True
