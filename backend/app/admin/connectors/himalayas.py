@@ -41,7 +41,7 @@ class HimalayasRemoteConnector(BaseConnector):
                     item.get("salaryPeriod") or "",
                 ]).strip()
             description = item.get("description") or item.get("excerpt") or ""
-            attribution = "\n\nSource: Himalayas. Apply through the original Himalayas listing."
+            attribution = "\n\nSource: Himalayas (https://himalayas.app). Apply through the original Himalayas listing."
             jobs.append(NormalizedJob(
                 platform="Himalayas",
                 external_id=_identity("Himalayas", item.get("guid"), title, company, url),
