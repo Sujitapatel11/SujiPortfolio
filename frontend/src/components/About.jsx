@@ -11,8 +11,34 @@ import {
   MapPin,
   Mail,
   MessageSquare,
-  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
+import {
+  SiPython,
+  SiJavascript,
+  SiTypescript,
+  SiCplusplus,
+  SiC,
+  SiReact,
+  SiHtml5,
+  SiTailwindcss,
+  SiFastapi,
+  SiDjango,
+  SiNodedotjs,
+  SiPostman,
+  SiPostgresql,
+  SiMongodb,
+  SiRedis,
+  SiTensorflow,
+  SiLangchain,
+  SiScikitlearn,
+  SiDocker,
+  SiVercel,
+  SiRailway,
+  SiGit,
+  SiGithub,
+} from 'react-icons/si';
+import { FaJava, FaCss3Alt } from 'react-icons/fa6';
 import { personalInfo, skillCategories } from '../data/portfolio';
 
 const categoryIcons = {
@@ -22,6 +48,38 @@ const categoryIcons = {
   database: Database,
   cpu: Cpu,
   git: GitBranch,
+};
+
+const skillLogoMap = {
+  Python: { icon: SiPython, color: '#3776AB' },
+  Java: { icon: FaJava, color: '#ED8B00' },
+  JavaScript: { icon: SiJavascript, color: '#F7DF1E' },
+  TypeScript: { icon: SiTypescript, color: '#3178C6' },
+  'C++': { icon: SiCplusplus, color: '#00599C' },
+  C: { icon: SiC, color: '#A8B9CC' },
+  Django: { icon: SiDjango, color: '#2BA977' },
+  FastAPI: { icon: SiFastapi, color: '#009688' },
+  'Node.js': { icon: SiNodedotjs, color: '#5FA04E' },
+  'REST APIs': { icon: SiPostman, color: '#FF6C37' },
+  React: { icon: SiReact, color: '#61DAFB' },
+  HTML5: { icon: SiHtml5, color: '#E34F26' },
+  HTML: { icon: SiHtml5, color: '#E34F26' },
+  CSS3: { icon: FaCss3Alt, color: '#1572B6' },
+  CSS: { icon: FaCss3Alt, color: '#1572B6' },
+  'Tailwind CSS': { icon: SiTailwindcss, color: '#06B6D4' },
+  PostgreSQL: { icon: SiPostgresql, color: '#4169E1' },
+  MongoDB: { icon: SiMongodb, color: '#47A248' },
+  Redis: { icon: SiRedis, color: '#FF4438' },
+  'Machine Learning': { icon: SiTensorflow, color: '#FF6F00' },
+  NLP: { icon: SiLangchain, color: '#2DD4BF' },
+  'Scikit-learn': { icon: SiScikitlearn, color: '#F7931E' },
+  TensorFlow: { icon: SiTensorflow, color: '#FF6F00' },
+  'LLM Integration': { icon: SiLangchain, color: '#2DD4BF' },
+  Git: { icon: SiGit, color: '#F05032' },
+  GitHub: { icon: SiGithub, color: '#FFFFFF' },
+  Docker: { icon: SiDocker, color: '#2496ED' },
+  Vercel: { icon: SiVercel, color: '#FFFFFF' },
+  Railway: { icon: SiRailway, color: '#C084FC' },
 };
 
 export default function About() {
@@ -37,11 +95,11 @@ export default function About() {
           className="mb-12 sm:mb-14"
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="section-label">/ About & Stack</span>
+            <span className="section-label">/ Foundation & Background</span>
             <span className="h-px w-12 bg-border-accent inline-block" />
           </div>
           <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-main">
-            Engineering Depth & <span className="text-gradient">Architectural Foundation</span>
+            Engineering Depth & <span className="text-gradient">Core Foundation</span>
           </h2>
         </motion.div>
 
@@ -134,12 +192,27 @@ export default function About() {
                 </div>
               </div>
             </div>
+
+            {/* Quick jump to complete skills section */}
+            <div className="pt-2 border-t border-border">
+              <a
+                href="#skills"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.querySelector('#skills')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-mono text-brand-pink hover:text-white bg-bg-secondary hover:bg-brand-pink/20 border border-border hover:border-brand-pink/40 transition-all"
+              >
+                <span>View All 28 Technology Logos</span>
+                <ArrowRight size={13} />
+              </a>
+            </div>
           </motion.div>
 
-          {/* Categorized Skills Grid */}
+          {/* Categorized Skills Grid with Official SVG Logos */}
           <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {skillCategories.map((cat, i) => {
-              const Icon = categoryIcons[cat.icon] || Code2;
+              const CategoryIcon = categoryIcons[cat.icon] || Code2;
               return (
                 <motion.div
                   key={cat.category}
@@ -149,27 +222,38 @@ export default function About() {
                   transition={{ duration: 0.35, delay: i * 0.04 }}
                   className="rounded-3xl p-5 sm:p-6 bg-bg-card/80 border border-border hover:border-brand-pink/40 transition-all duration-200 shadow-md group"
                 >
-                  <div className="flex items-center gap-3 mb-3.5">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-bg-secondary border border-border group-hover:scale-105 transition-transform">
-                      <Icon size={16} className="text-brand-pink" />
+                      <CategoryIcon size={16} className="text-brand-pink" />
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-text-main">{cat.category}</h3>
                       <span className="font-mono text-[10px] text-text-muted">
-                        {cat.skills.length} core tools
+                        Official Stack
                       </span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {cat.skills.map((skill) => (
-                      <span
-                        key={skill}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-mono text-xs text-text-secondary bg-bg-secondary border border-border/80 hover:border-brand-violet/40 hover:text-white transition-colors"
-                      >
-                        <span className="w-1 h-1 rounded-full bg-brand-violet" />
-                        {skill}
-                      </span>
-                    ))}
+                  <div className="flex flex-wrap gap-2">
+                    {cat.skills.map((skill) => {
+                      const logoMeta = skillLogoMap[skill];
+                      const SkillIcon = logoMeta ? logoMeta.icon : Code2;
+                      const brandColor = logoMeta ? logoMeta.color : '#A855F7';
+                      return (
+                        <span
+                          key={skill}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl font-mono text-xs text-text-main bg-bg-secondary border border-border/80 hover:border-brand-violet/50 hover:bg-bg-tertiary transition-all group/item shadow-sm"
+                          title={`${skill} (Official Technology)`}
+                        >
+                          <SkillIcon
+                            size={14}
+                            style={{ color: brandColor }}
+                            className="flex-shrink-0 group-hover/item:scale-110 transition-transform"
+                            aria-hidden="true"
+                          />
+                          <span>{skill}</span>
+                        </span>
+                      );
+                    })}
                   </div>
                 </motion.div>
               );

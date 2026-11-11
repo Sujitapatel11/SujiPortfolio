@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Stats from './components/Stats';
 import About from './components/About';
+import Skills from './components/Skills';
 import Projects from './components/Projects';
 import EngineeringLab from './components/EngineeringLab';
 import Experience from './components/Experience';
@@ -43,6 +44,7 @@ function PublicPortfolio() {
         <Hero />
         <Stats />
         <About />
+        <Skills />
         <Projects />
         <EngineeringLab />
         <Experience />
