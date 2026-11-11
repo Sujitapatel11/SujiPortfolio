@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -43,35 +44,35 @@ def chat_with_agent(req: ChatRequest, request: Request, db: Session = Depends(ge
     """
     is_admin = check_is_admin(request)
 
-    # Public read-only job discovery does not require owner credentials.
-    # Sensitive admin operations (proposals, inquiries, scheduler) remain protected.
+    # Public job discovery is read-only and does not require owner credentials.
     message_lower = req.message.lower().strip()
-    job_intent = any(term in message_lower for term in ["job", "jobs", "internship", "internships", "naukri", "नौकरी"])
-    search_intent = (
-        message_lower in {"job khojo", "jobs khojo", "naukri khojo", "find jobs", "search jobs", "job search"}
-        or any(term in message_lower for term in ["find", "search", "khoj", "khojo", "dhund", "ढूंढ", "खोज", "show me"])
-    )
+    job_intent = any(term in message_lower for term in ["job", "jobs", "internship", "internships", "naukri", "नौकरी", "vacancy", "hiring", "career"])
+    search_intent = any(term in message_lower for term in ["find", "search", "khoj", "khojo", "dhund", "ढूंढ", "खोज", "show me", "look for"]) or message_lower in {"job", "jobs", "job hunter"}
     if job_intent and search_intent:
         try:
-            available_terms = ["python", "fastapi", "django", "backend", "frontend", "react", "javascript", "typescript", "java", "spring", "machine learning", "ai", "data science", "full stack", "internship"]
-            keywords = [term for term in available_terms if term in message_lower]
+            known_terms = ["python", "fastapi", "django", "backend", "frontend", "react", "javascript", "typescript", "java", "spring", "machine learning", "ai", "data science", "full stack", "software engineer", "cybersecurity", "cloud", "devops", "data analyst", "designer", "marketing"]
+            keywords = [term for term in known_terms if term in message_lower]
             if not keywords:
-                keywords = ["python", "backend", "fastapi", "react", "javascript"]
-            results = perform_public_search(keywords)
-            lines = [
-                f"Found {results['count']} global-remote opportunities from free public sources.",
-                "Sources: " + (", ".join(f"{s['source']} ({s['fetched']} fetched)" for s in results["sources"]) or "No source returned data."),
-            ]
+                cleaned = re.sub(r"\\b(find|search|show me|jobs?|job hunter|internships?|naukri|khojo|khoj|for|in|at|worldwide|global)\\b", " ", message_lower)
+                keywords = [word for word in re.findall(r"[a-zA-Z][a-zA-Z+#.]{2,}", cleaned)[:5]]
+            work_mode = "remote" if "remote" in message_lower else ("hybrid" if "hybrid" in message_lower else ("on-site" if any(x in message_lower for x in ["on-site", "onsite", "office"]) else None))
+            employment_type = next((x for x in ["internship", "full-time", "part-time", "freelance", "contract", "apprenticeship", "temporary"] if x in message_lower), None)
+            experience_level = next((x for x in ["fresher", "entry-level", "junior", "mid-level", "senior", "lead"] if x in message_lower), None)
+            location_match = re.search(r"\\b(?:in|from|at)\\s+([a-z][a-z .-]{1,35}?)(?=\\s+(?:for|as|with|remote|hybrid|on-site|onsite|internship|full-time|part-time)|$)", message_lower)
+            location = location_match.group(1).strip() if location_match else None
+            results = perform_public_search(keywords, work_mode, location, employment_type, experience_level, limit=20)
+            lines = [f"Job Hunter found {results['count']} matching listings.", "Filters: " + ", ".join(f"{k}={v}" for k, v in results["filters"].items() if v) if any(results["filters"].values()) else "Filters: broad search."]
             for index, job in enumerate(results["jobs"], 1):
-                salary = f" | Salary: {job['salary']}" if job.get("salary") else ""
                 company = f" at {job['company']}" if job.get("company") else ""
-                lines.append(f"{index}. {job['title']}{company} | {job['source']} | Match {round(job['match_score'] * 100)}%{salary}\nApply: {job['url']}")
+                details = " | ".join(str(v) for v in [job.get("location"), job.get("work_mode"), job.get("employment_type"), job.get("experience_level"), job.get("salary")] if v)
+                lines.append(f"{index}. {job['title']}{company} | {job['source']} | Match {round(job['match_score'] * 100)}%\n{details}\nApply: {job['url']}")
             if results["warnings"]:
-                lines.append("Some sources were temporarily unavailable: " + ", ".join(w["source"] for w in results["warnings"]))
+                lines.append("Unavailable sources: " + ", ".join(w["source"] for w in results["warnings"]))
             if not results["jobs"]:
-                lines.append("No matching listings were returned this time. Try a different skill or role keyword.")
-            return ChatResponse(reply="\n\n".join(lines), conversation_id=req.conversation_id or "public-job-search")
-        except Exception as e:
+                lines.append("No matching listings were returned. Try broader keywords or remove restrictive filters.")
+            lines.append(results["coverage_note"])
+            return ChatResponse(reply="\\n\\n".join(lines), conversation_id=req.conversation_id or "public-job-search")
+        except Exception:
             logger = __import__("logging").getLogger("sujis_world.chat")
             logger.exception("Public job search failed")
             raise HTTPException(status_code=502, detail="Job sources are temporarily unavailable. Please try again shortly.")
