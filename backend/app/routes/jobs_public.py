@@ -41,19 +41,9 @@ def _score(title: str, description: str, keywords: List[str]) -> float:
     return min(round(0.55 + (matches / len(keywords)) * 0.35 + min(title_matches * 0.08, 0.20), 2), 1.0)
 
 
-@router.post("/search")
-def search_public_remote_jobs(payload: PublicJobSearchRequest, request: Request):
-    """Search free global-remote sources without exposing admin data or actions."""
-    client_ip = request.client.host if request.client else "unknown"
-    now = time.monotonic()
-    bucket = _REQUESTS[client_ip]
-    while bucket and now - bucket[0] > WINDOW_SECONDS:
-        bucket.popleft()
-    if len(bucket) >= MAX_REQUESTS:
-        raise HTTPException(status_code=429, detail="Too many searches. Please wait a minute and try again.")
-    bucket.append(now)
-
-    keywords = [k.strip() for k in payload.keywords if k and k.strip()][:8]
+def perform_public_search(keywords: List[str]):
+    """Search free global-remote sources and return ranked, read-only listings."""
+    keywords = [k.strip() for k in keywords if k and k.strip()][:8]
     if not keywords:
         keywords = ["python", "backend", "fastapi", "react", "javascript"]
 
@@ -87,3 +77,17 @@ def search_public_remote_jobs(payload: PublicJobSearchRequest, request: Request)
         unique.setdefault(job["url"], job)
     ranked = sorted(unique.values(), key=lambda item: (item["match_score"], item["posted_at"] or ""), reverse=True)[:20]
     return {"region": "global_remote", "count": len(ranked), "jobs": ranked, "sources": sources, "warnings": errors}
+
+
+@router.post("/search")
+def search_public_remote_jobs(payload: PublicJobSearchRequest, request: Request):
+    """Search free global-remote sources without exposing admin data or actions."""
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+    bucket = _REQUESTS[client_ip]
+    while bucket and now - bucket[0] > WINDOW_SECONDS:
+        bucket.popleft()
+    if len(bucket) >= MAX_REQUESTS:
+        raise HTTPException(status_code=429, detail="Too many searches. Please wait a minute and try again.")
+    bucket.append(now)
+    return perform_public_search(payload.keywords)
