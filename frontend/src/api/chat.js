@@ -2,7 +2,7 @@
  * Helper function to communicate with FastAPI AI Chat Agent endpoint.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 export async function sendChatMessage(message, conversationId = null, accessToken = null) {
   const payload = { message };
@@ -10,7 +10,7 @@ export async function sendChatMessage(message, conversationId = null, accessToke
     payload.conversation_id = conversationId;
   }
 
-  const response = await fetch(`${API_BASE}/chat`, {
+  const response = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
