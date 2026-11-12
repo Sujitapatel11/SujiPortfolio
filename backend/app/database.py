@@ -1,41 +1,75 @@
-import os
+"""Database engine and session configuration.
+
+Loads local development secrets from the repository root while allowing
+hosting-platform environment variables to take precedence. A configured
+PostgreSQL database is never silently replaced with SQLite.
+"""
 import logging
+import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
-load_dotenv()
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 logger = logging.getLogger("sujis_world.database")
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://suji_user:suji_password@localhost:5432/sujis_world_db"
+# backend/app/database.py -> repository root
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+
+# Hosting environment variables always win (override=False). For local
+# development, load root .env.local first, then backend/.env and root .env.
+load_dotenv(REPOSITORY_ROOT / ".env.local", override=False)
+load_dotenv(REPOSITORY_ROOT / "backend" / ".env", override=False)
+load_dotenv(REPOSITORY_ROOT / ".env", override=False)
+
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").strip().lower()
+
+if DATABASE_URL.startswith("postgresql+psycopg://"):
+    # This project installs psycopg2-binary, not psycopg (v3).
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql+psycopg://",
+        "postgresql+psycopg2://",
+        1,
+    )
+elif DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+if not DATABASE_URL:
+    if ENVIRONMENT == "production":
+        raise RuntimeError(
+            "DATABASE_URL is required in production; configure Neon PostgreSQL."
+        )
+    DATABASE_URL = f"sqlite:///{(REPOSITORY_ROOT / 'backend' / 'sujis_world.db').as_posix()}"
+    logger.warning("DATABASE_URL is not set; using the local development SQLite database.")
+
+connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
+engine = create_engine(
+    DATABASE_URL,
+    connect_args=connect_args,
+    pool_pre_ping=not DATABASE_URL.startswith("sqlite"),
 )
 
-# Connect args special handling for SQLite vs Postgres
-connect_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-
+# Fail clearly if a configured database cannot be reached. Never hide a
+# PostgreSQL outage by silently switching to a different SQLite database.
 try:
-    engine = create_engine(DATABASE_URL, connect_args=connect_args)
-    # Test connection attempt
-    with engine.connect() as conn:
-        logger.info("Successfully connected to database.")
-except Exception as e:
-    logger.warning(f"Could not connect to target database at {DATABASE_URL}: {e}")
-    # Fallback to local SQLite for smooth local development if primary DB is unavailable
-    FALLBACK_DB = "sqlite:///./sujis_world.db"
-    logger.info(f"Falling back to local SQLite database at {FALLBACK_DB}")
-    engine = create_engine(FALLBACK_DB, connect_args={"check_same_thread": False})
+    with engine.connect() as connection:
+        logger.info("Database connection established.")
+except Exception as exc:
+    engine.dispose()
+    raise RuntimeError(
+        "Could not connect to the configured database. Verify DATABASE_URL, "
+        "network access, credentials and the installed PostgreSQL driver."
+    ) from exc
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+
 def get_db():
-    """Dependency for providing database session per request."""
+    """Dependency that yields one SQLAlchemy session per request."""
     db = SessionLocal()
     try:
         yield db
