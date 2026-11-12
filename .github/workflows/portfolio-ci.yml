@@ -1,0 +1,65 @@
+name: Portfolio CI
+
+on:
+  push:
+    branches: [main, fix/neon-postgres-connection]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-static-and-migrations:
+    name: Backend syntax and migration graph
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install database and migration tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "SQLAlchemy>=2.0.25" "psycopg2-binary>=2.9.9" "python-dotenv>=1.0.0" "alembic>=1.13.1" "pgvector>=0.2.4"
+
+      - name: Compile backend Python
+        run: python -m compileall -q app alembic
+
+      - name: Validate Alembic migration graph
+        run: |
+          alembic heads
+          alembic history
+
+  frontend-build:
+    name: Frontend production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build

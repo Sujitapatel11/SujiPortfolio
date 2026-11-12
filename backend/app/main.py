@@ -1,44 +1,39 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine, Base
+
+from app.config import CORS_ORIGINS, validate_production_config
 from app.routes import inquiries, chat, admin
 from app.data.profile import PROFILE_DATA
 
-# Create database tables automatically if they don't exist
-Base.metadata.create_all(bind=engine)
+# Fail fast when required production settings are missing or insecure.
+validate_production_config()
 
 app = FastAPI(
     title="Suji's World Backend API",
-    description="Backend API for 3D interactive portfolio, inquiries CRUD, and AI intake agent.",
-    version="1.0.0"
+    description="Backend API for interactive portfolio, inquiries CRUD, and AI intake agent.",
+    version="1.0.0",
 )
 
-# CORS Middleware setup
-origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-    "*"
-]
-
+# Database schema is managed exclusively by Alembic migrations.
+# Do not call Base.metadata.create_all() during application startup.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
-# Include Routers
 app.include_router(inquiries.router)
 app.include_router(chat.router)
 app.include_router(admin.router)
 
+
 @app.get("/api/health")
 def health_check():
-    """Health check endpoint for Docker & monitoring."""
+    """Health check endpoint for Docker and monitoring."""
     return {"status": "ok", "app": "Suji's World API", "version": "1.0.0"}
+
 
 @app.get("/api/profile")
 def get_profile():
