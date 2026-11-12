@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import CORS_ORIGINS
+from app.config import CORS_ORIGINS, validate_production_config
 from app.routes import inquiries, chat, admin
 from app.data.profile import PROFILE_DATA
+
+# Fail fast when required production settings are missing or insecure.
+validate_production_config()
 
 app = FastAPI(
     title="Suji's World Backend API",
