@@ -26,15 +26,26 @@ load_dotenv(REPOSITORY_ROOT / ".env", override=False)
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").strip().lower()
 
+# Pin the driver explicitly. SQLAlchemy 2.1 defaults plain postgresql:// URLs
+# to psycopg (v3), while this project installs psycopg2-binary.
 if DATABASE_URL.startswith("postgresql+psycopg://"):
-    # This project installs psycopg2-binary, not psycopg (v3).
     DATABASE_URL = DATABASE_URL.replace(
         "postgresql+psycopg://",
         "postgresql+psycopg2://",
         1,
     )
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+psycopg2://",
+        1,
+    )
 elif DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgres://",
+        "postgresql+psycopg2://",
+        1,
+    )
 
 if not DATABASE_URL:
     if ENVIRONMENT == "production":
