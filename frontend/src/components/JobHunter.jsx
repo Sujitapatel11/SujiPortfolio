@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-  BriefcaseBusiness,
+  Briefcase,
   Search,
   BrainCircuit,
   FileText,
@@ -83,7 +83,7 @@ export default function JobHunter() {
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-bg-secondary/70 px-5 py-4 sm:px-7">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-pink to-brand-violet text-white shadow-lg">
-                <BriefcaseBusiness size={19} />
+                <Briefcase size={19} />
               </div>
               <div>
                 <p className="text-sm font-bold text-text-main">Job Hunter Workspace</p>
