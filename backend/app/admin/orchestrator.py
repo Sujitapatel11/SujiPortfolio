@@ -13,7 +13,8 @@ from app.admin.connectors.remotive import RemotiveConnector
 from app.admin.connectors.adzuna import AdzunaConnector
 from app.admin.connectors.jooble import JoobleConnector
 from app.admin.connectors.usajobs import USAJobsConnector
-from app.admin.nl_search_parser import parse_natural_language_query\nfrom app.admin.connectors.helpers import assess_applicant_eligibility
+from app.admin.nl_search_parser import parse_natural_language_query
+from app.admin.connectors.helpers import assess_applicant_eligibility
 from app.admin.ai_matcher import evaluate_job_fit, generate_tailored_application
 from app.admin.whatsapp import notify_job_matches
 
@@ -145,7 +146,9 @@ class JobDiscoveryOrchestrator:
         summary: Dict[str, Any] = {}
         matched_jobs: List[Job] = []
         total_fetched = 0
-        total_matched = 0\n        total_ineligible = 0\n        total_eligibility_unknown = 0
+        total_matched = 0
+        total_ineligible = 0
+        total_eligibility_unknown = 0
 
         # Freshness cutoff if specified
         freshness_cutoff = None
@@ -179,7 +182,25 @@ class JobDiscoveryOrchestrator:
                 total_fetched += fetched_count
 
                 for norm_job in normalized_jobs:
-                    # 2. Freshness check
+                    # 2. Applicant-country eligibility: reject only explicit conflicts.
+                    candidate_scope = (
+                        norm_job.raw_metadata.get("candidate_required_location")
+                        or norm_job.raw_metadata.get("applicant_location")
+                        or norm_job.raw_metadata.get("eligibility")
+                    )
+                    eligibility = assess_applicant_eligibility(
+                        candidate_scope,
+                        search_query.applicant_countries,
+                    )
+                    norm_job.raw_metadata["applicant_eligibility"] = eligibility
+                    norm_job.raw_metadata["applicant_countries_checked"] = search_query.applicant_countries
+                    if eligibility == "ineligible":
+                        total_ineligible += 1
+                        continue
+                    if eligibility == "unknown":
+                        total_eligibility_unknown += 1
+
+                    # 3. Freshness check
                     if freshness_cutoff and norm_job.posted_at and norm_job.posted_at < freshness_cutoff:
                         logger.debug(f"Job {norm_job.external_id} older than max_days_old. Skipping.")
                         continue
@@ -308,7 +329,9 @@ class JobDiscoveryOrchestrator:
             notify_job_matches(matched_jobs)
 
         summary["_total_fetched"] = total_fetched
-        summary["_total_matched"] = total_matched\n        summary["_total_ineligible"] = total_ineligible\n        summary["_eligibility_unknown"] = total_eligibility_unknown
+        summary["_total_matched"] = total_matched
+        summary["_total_ineligible"] = total_ineligible
+        summary["_eligibility_unknown"] = total_eligibility_unknown
         summary["_parsed_filters"] = parsed_meta.get("parsed_filters")
         summary["_unsupported_explanations"] = parsed_meta.get("unsupported_explanations", [])
         return summary
