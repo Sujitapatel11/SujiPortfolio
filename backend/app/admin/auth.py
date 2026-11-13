@@ -51,12 +51,15 @@ def _get_effective_password_hash() -> str:
     return _DEV_HASH
 
 
+_DEV_SECRET = None
+
 def _get_effective_jwt_secret() -> str:
     """
     Return the JWT signing secret.
     In production: raises if not set or too short.
-    In development: generates a per-process random key for local use.
+    In development: generates a per-process random key for local use (cached per process).
     """
+    global _DEV_SECRET
     if JWT_SECRET_KEY:
         return JWT_SECRET_KEY
 
@@ -66,15 +69,16 @@ def _get_effective_jwt_secret() -> str:
             "(at least 32 characters) and set it in your environment."
         )
 
-    # Development-only: random per-process key
-    import secrets
-    dev_secret = secrets.token_urlsafe(48)
-    logger.warning(
-        "JWT_SECRET_KEY not set — using a random per-process key. "
-        "All sessions will invalidate on server restart. "
-        "Set JWT_SECRET_KEY in .env for persistent sessions."
-    )
-    return dev_secret
+    # Development-only: cached per-process key
+    if _DEV_SECRET is None:
+        import secrets
+        _DEV_SECRET = secrets.token_urlsafe(48)
+        logger.warning(
+            "JWT_SECRET_KEY not set — using a random per-process key. "
+            "All sessions will invalidate on server restart. "
+            "Set JWT_SECRET_KEY in .env for persistent sessions."
+        )
+    return _DEV_SECRET
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

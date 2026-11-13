@@ -108,8 +108,11 @@ class TestJobConnectorsAndOrchestrator(unittest.TestCase):
         # Check DB records created
         db_jobs = self.db.query(Job).all()
         db_proposals = self.db.query(Proposal).all()
-        self.assertEqual(len(db_jobs), matched_1)
-        self.assertEqual(len(db_proposals), drafted_1)
+        total_matched = sum(v["matched"] for k, v in summary_1.items() if isinstance(v, dict) and "matched" in v)
+        self.assertEqual(len(db_jobs), total_matched)
+        self.assertEqual(len(db_proposals), total_matched)
+        fl_jobs = self.db.query(Job).filter(Job.platform == "Freelancer.com").all()
+        self.assertEqual(len(fl_jobs), matched_1)
 
         # Run discovery #2 with same keywords -> All jobs should be deduplicated (matched=0)
         summary_2 = orchestrator.run_discovery(self.db, keywords=["python", "fastapi"])

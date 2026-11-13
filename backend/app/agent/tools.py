@@ -106,10 +106,16 @@ def trigger_job_search(keywords: Optional[List[str]] = None) -> str:
         search_keywords = keywords if keywords else ["python", "fastapi", "react", "ai"]
         orchestrator = JobDiscoveryOrchestrator()
         summary = orchestrator.run_discovery(db=db, keywords=search_keywords)
-        fetched = summary.get("fetched", 0)
-        matched = summary.get("matched", 0)
-        drafted = summary.get("drafted", 0)
-        return f"SUCCESS: Job search executed. Fetched {fetched} jobs across platforms, matched {matched} high-scoring targets, and drafted {drafted} proposals."
+        fetched = summary.get("_total_fetched") or sum(
+            v.get("fetched", 0) for k, v in summary.items() if isinstance(v, dict)
+        )
+        matched = summary.get("_total_matched") or sum(
+            v.get("matched", 0) for k, v in summary.items() if isinstance(v, dict)
+        )
+        drafted = sum(
+            v.get("drafted", 0) for k, v in summary.items() if isinstance(v, dict)
+        )
+        return f"SUCCESS: Job search executed. Fetched {fetched} jobs across active providers, matched {matched} opportunities, and drafted {drafted} tailored applications."
     except Exception as e:
         logger.error(f"Error in trigger_job_search tool: {e}")
         return f"ERROR: Job search failed: {str(e)}"

@@ -467,7 +467,12 @@
 }
 .admin-badge-upwork { border-color: #C77DFF; color: #C77DFF; }
 .admin-badge-fiverr { border-color: #9747FF; color: #9747FF; }
-.admin-badge-freelancer { border-color: #6B6780; color: #6B6780; }
+.admin-badge-freelancer { border-color: #38bdf8; color: #38bdf8; }
+.admin-badge-adzuna { border-color: #22c55e; color: #22c55e; }
+.admin-badge-jooble { border-color: #f97316; color: #f97316; }
+.admin-badge-remotive { border-color: #ec4899; color: #ec4899; }
+.admin-badge-usajobs { border-color: #3b82f6; color: #3b82f6; }
+.admin-badge-google { border-color: #a855f7; color: #a855f7; }
 .admin-badge-default { border-color: rgba(151,71,255,0.15); color: #6B6780; }
 
 .admin-score-badge {
@@ -483,15 +488,19 @@
   color: #B8B4C7;
   border-radius: 6px;
 }
-.admin-score-high { border-color: #C77DFF; color: #C77DFF; }
-.admin-score-med { color: #B8B4C7; }
+.admin-score-high { border-color: #10b981; color: #10b981; background: rgba(16,185,129,0.1); }
+.admin-score-med { color: #C77DFF; border-color: #9747FF; background: rgba(151,71,255,0.1); }
 .admin-score-low { color: #6B6780; border-color: rgba(151,71,255,0.1); }
 
 .admin-status-new { border-color: rgba(151,71,255,0.2); color: #C77DFF; }
-.admin-status-applied { background: rgba(151,71,255,0.15); color: #C77DFF; border-color: #9747FF; }
+.admin-status-matched { background: rgba(168,85,247,0.15); color: #c084fc; border-color: #a855f7; }
+.admin-status-saved { background: rgba(99,102,241,0.15); color: #818cf8; border-color: #6366f1; }
+.admin-status-drafted { background: rgba(245,158,11,0.15); color: #fbbf24; border-color: #f59e0b; }
+.admin-status-approved { background: rgba(20,184,166,0.15); color: #2dd4bf; border-color: #14b8a6; }
+.admin-status-applied { background: rgba(16,185,129,0.15); color: #10b981; border-color: #059669; }
 .admin-status-rejected { border-color: rgba(232,121,249,0.3); color: #E879F9; }
 .admin-status-hired { background: #22D69A; color: #090812; border-color: #22D69A; }
-.admin-status-pending { border-color: #C77DFF; color: #C77DFF; }
+.admin-status-pending { border-color: #f59e0b; color: #fbbf24; }
 .admin-status-confirmed { background: rgba(34,214,154,0.15); color: #22D69A; border-color: #22D69A; }
 .admin-status-declined { border-color: rgba(232,121,249,0.3); color: #E879F9; }
 .admin-status-rescheduled { border-color: #9747FF; color: #9747FF; }

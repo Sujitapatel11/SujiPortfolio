@@ -27,7 +27,9 @@ try:
 except Exception as e:
     logger.warning(f"Could not connect to target database at {DATABASE_URL}: {e}")
     # Fallback to local SQLite for smooth local development if primary DB is unavailable
-    FALLBACK_DB = "sqlite:///./sujis_world.db"
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    fallback_path = os.path.join(BASE_DIR, "sujis_world.db").replace("\\", "/")
+    FALLBACK_DB = f"sqlite:///{fallback_path}"
     logger.info(f"Falling back to local SQLite database at {FALLBACK_DB}")
     engine = create_engine(FALLBACK_DB, connect_args={"check_same_thread": False})
 

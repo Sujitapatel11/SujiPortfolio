@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Inquiry, Job, Proposal, Appointment
+from app.models import Inquiry, Job, Proposal, Appointment, JobStatus, SearchAuditLog, ProviderHealthRecord
 from app.schemas import (
     AdminLoginRequest,
     AdminLoginResponse,
@@ -19,6 +19,7 @@ from app.schemas import (
     JobPasteRequest,
     JobPasteResponse,
     JobStatusUpdate,
+    SchedulerIntervalUpdate,
     ProposalCreate,
     ProposalUpdate,
     ProposalResponse,
@@ -33,6 +34,9 @@ from app.admin.auth import (
     get_current_admin,
 )
 from app.admin.orchestrator import JobDiscoveryOrchestrator
+from app.admin.nl_search_parser import parse_natural_language_query
+from app.admin.connectors.base import SearchQuery
+from app.admin.ai_matcher import generate_tailored_application
 from app.admin.connectors.manual import process_pasted_job
 from app.admin.whatsapp import clear_pending_job, get_pending_job_id, parse_job_reply
 from app.admin.whatsapp import ADMIN_WHATSAPP_NUMBER
@@ -103,6 +107,17 @@ def create_admin_job(
     db.refresh(job)
     return job
 
+@router.post("/jobs/nl-parse")
+def parse_job_query(
+    payload: JobSearchRequest,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """
+    Parse a natural language query into structured filters and return unsupported filter explanations.
+    """
+    query_str = payload.query or (payload.keywords and " ".join(payload.keywords)) or ""
+    return parse_natural_language_query(query_str)
+
 @router.post("/jobs/search-now", response_model=JobSearchResponse)
 def trigger_job_search(
     payload: Optional[JobSearchRequest] = None,
@@ -111,28 +126,97 @@ def trigger_job_search(
 ):
     """
     Trigger multi-platform automated job discovery, deduplication, scoring, and proposal drafting.
+    Supports natural language search string or structured filter inputs.
     """
-    keywords = payload.keywords if payload and payload.keywords else ["python", "fastapi", "react", "ai"]
     orchestrator = JobDiscoveryOrchestrator()
-    summary = orchestrator.run_discovery(db=db, keywords=keywords)
-    return JobSearchResponse(summary=summary)
+    if payload and payload.query:
+        # Full natural language discovery
+        res = orchestrator.run_discovery(db=db, keywords=payload.query)
+    elif payload and (payload.keywords or payload.location or payload.salary_min or payload.is_remote or payload.job_type or payload.max_days_old):
+        sq = SearchQuery(
+            keywords=payload.keywords or ["python", "developer"],
+            location=payload.location,
+            is_remote=payload.is_remote,
+            salary_min=payload.salary_min,
+            job_type=payload.job_type,
+            max_days_old=payload.max_days_old,
+        )
+        res = orchestrator.run_discovery(db=db, keywords=sq)
+    else:
+        keywords = payload.keywords if payload and payload.keywords else ["python", "fastapi", "react", "ai"]
+        res = orchestrator.run_discovery(db=db, keywords=keywords)
+
+    summary = res.copy()
+    total_fetched = summary.pop("_total_fetched", 0)
+    total_matched = summary.pop("_total_matched", 0)
+    parsed_filters = summary.pop("_parsed_filters", None)
+    unsupported_explanations = summary.pop("_unsupported_explanations", [])
+
+    return JobSearchResponse(
+        summary=summary,
+        total_fetched=total_fetched,
+        total_matched=total_matched,
+        parsed_filters=parsed_filters,
+        unsupported_explanations=unsupported_explanations,
+    )
+
+@router.get("/providers/health")
+def get_providers_health(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    """
+    Get connectivity, credential status, and health info for all 6 job providers.
+    """
+    orchestrator = JobDiscoveryOrchestrator()
+    return orchestrator.get_providers_health(db=db)
+
+@router.get("/audit-logs")
+def list_search_audit_logs(
+    limit: int = 15,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    """
+    Get recent search audit logs and natural-language queries.
+    """
+    return db.query(SearchAuditLog).order_by(SearchAuditLog.created_at.desc()).limit(limit).all()
 
 @router.get("/jobs/agent/status")
-def job_agent_status(current_admin: dict = Depends(get_current_admin)):
+def job_agent_status(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
     from app.admin.job_scheduler import scheduler_status
-    return scheduler_status()
+    return scheduler_status(db=db)
 
 @router.post("/jobs/agent/start")
-def start_job_agent(current_admin: dict = Depends(get_current_admin)):
+def start_job_agent(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
     from app.admin.job_scheduler import start_scheduler, scheduler_status
     start_scheduler(force=True)
-    return scheduler_status()
+    return scheduler_status(db=db)
 
 @router.post("/jobs/agent/stop")
-def stop_job_agent(current_admin: dict = Depends(get_current_admin)):
+def stop_job_agent(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
     from app.admin.job_scheduler import stop_scheduler, scheduler_status
     stop_scheduler()
-    return scheduler_status()
+    return scheduler_status(db=db)
+
+@router.post("/jobs/agent/interval")
+def update_agent_interval(
+    payload: SchedulerIntervalUpdate,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    from app.admin.job_scheduler import set_interval, scheduler_status
+    set_interval(payload.interval_hours)
+    return scheduler_status(db=db)
 
 @router.get("/proposals", response_model=List[ProposalResponse])
 def list_admin_proposals(
@@ -194,7 +278,9 @@ def paste_job_and_draft_proposal(
             title=payload.title,
             description=payload.description,
             url=payload.url,
-            budget=payload.budget
+            budget=payload.budget,
+            company=payload.company,
+            location=payload.location,
         )
         return JobPasteResponse(job=db_job, proposal=proposal)
     except Exception as e:
@@ -202,6 +288,36 @@ def paste_job_and_draft_proposal(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process manual job paste: {str(e)}"
         )
+
+@router.post("/jobs/{job_id}/generate-assistance")
+def generate_job_assistance(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    """
+    Regenerate tailored application assistance (proposal, cover letter, resume recommendations, interview questions).
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    assistance = generate_tailored_application(job)
+    proposal = db.query(Proposal).filter(Proposal.job_id == job.id).first()
+    if not proposal:
+        proposal = Proposal(job_id=job.id, draft_text=assistance["proposal_draft"], status="draft")
+        db.add(proposal)
+
+    proposal.cover_letter = assistance["cover_letter"]
+    proposal.tailored_resume_suggestions = assistance["tailored_resume_suggestions"]
+    proposal.interview_questions = assistance["interview_questions"]
+    db.commit()
+    db.refresh(proposal)
+    return {
+        "job_id": job.id,
+        "proposal": proposal,
+        "assistance": assistance,
+    }
 
 @router.patch("/proposals/{proposal_id}", response_model=ProposalResponse)
 def update_proposal(
@@ -211,7 +327,7 @@ def update_proposal(
     current_admin: dict = Depends(get_current_admin)
 ):
     """
-    Update edited_text and/or status for a proposal draft.
+    Update edited_text, cover_letter, and/or status for a proposal draft.
     """
     proposal = db.query(Proposal).filter(Proposal.id == proposal_id).first()
     if not proposal:
@@ -222,6 +338,8 @@ def update_proposal(
     
     if payload.edited_text is not None:
         proposal.edited_text = payload.edited_text
+    if payload.cover_letter is not None:
+        proposal.cover_letter = payload.cover_letter
     if payload.status is not None:
         proposal.status = payload.status
 
@@ -237,9 +355,8 @@ def update_job_status(
     current_admin: dict = Depends(get_current_admin)
 ):
     """
-    Update job status (e.g. new, applied, rejected, hired).
-    - If status is 'applied', sets linked proposal status to 'submitted'.
-    - If status is 'rejected' (Skip action), leaves proposal status as 'draft'.
+    Update job status according to standard lifecycle:
+    DISCOVERED, MATCHED, SAVED, DRAFTED, PENDING_APPROVAL, APPROVED, SUBMITTED, REJECTED, EXPIRED.
     """
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
@@ -251,14 +368,36 @@ def update_job_status(
     return _apply_job_status(db, job, payload.status)
 
 
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_admin_job(
+    job_id: int,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    """
+    Delete a job and its associated proposals.
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job #{job_id} not found"
+        )
+    db.delete(job)
+    db.commit()
+    return None
+
 def _apply_job_status(db: Session, job: Job, new_status: str) -> Job:
-    job.status = new_status.lower()
+    normalized = JobStatus.normalize(new_status)
+    job.status = normalized
     linked_proposal = db.query(Proposal).filter(Proposal.job_id == job.id).first()
     if linked_proposal:
-        if job.status in ["applied", "submitted"]:
+        if normalized == JobStatus.SUBMITTED:
             linked_proposal.status = "submitted"
-        elif job.status == "hired":
-            linked_proposal.status = "accepted"
+        elif normalized == JobStatus.APPROVED:
+            linked_proposal.status = "approved"
+        elif normalized == JobStatus.DRAFTED:
+            linked_proposal.status = "draft"
     db.commit()
     db.refresh(job)
     return job

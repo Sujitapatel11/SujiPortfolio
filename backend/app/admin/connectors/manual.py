@@ -4,9 +4,10 @@ from datetime import datetime, timezone
 from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 
-from app.models import Job, Proposal
+from app.models import Job, Proposal, JobStatus
 from app.admin.connectors.base import BaseConnector, NormalizedJob
-from app.admin.proposal_drafter import generate_proposal_draft
+from app.admin.connectors.helpers import normalize_salary
+from app.admin.ai_matcher import evaluate_job_fit, generate_tailored_application
 
 logger = logging.getLogger("sujis_world.connectors.manual")
 
@@ -25,8 +26,10 @@ class ManualPasteConnector(BaseConnector):
     def is_available(self) -> bool:
         return True
 
-    def fetch_jobs(self, keywords: list[str]) -> list[NormalizedJob]:
-        # Manual paste jobs are submitted via process_pasted_job rather than background search
+    def get_missing_credentials(self) -> list[str]:
+        return []
+
+    def fetch_jobs(self, query: list[str]) -> list[NormalizedJob]:
         return []
 
 
@@ -36,63 +39,78 @@ def process_pasted_job(
     title: str,
     description: str,
     url: Optional[str] = None,
-    budget: Optional[str] = None
+    budget: Optional[str] = None,
+    company: Optional[str] = None,
+    location: Optional[str] = None,
 ) -> Tuple[Job, Proposal]:
     """
     Processes a manually pasted job listing:
-    1. Generates a unique external_id (e.g. manual_<uuid>).
-    2. Normalizes job data and scores relevance using JobDiscoveryOrchestrator matching engine.
-    3. Saves job record to database (always saved since user explicitly chose to paste it).
-    4. Drafts initial AI proposal using proposal_drafter module.
-    5. Saves proposal record linked to job.
-    Returns (db_job, proposal).
+    1. Generates unique external_id.
+    2. Evaluates job fit using explainable criteria.
+    3. Normalizes salary and canonical URL.
+    4. Persists Job record.
+    5. Prepares tailored proposal, cover letter, resume recommendations, and interview Qs.
+    6. Persists Proposal record.
     """
-    from app.admin.orchestrator import JobDiscoveryOrchestrator
     from app.admin.whatsapp import notify_job_match
 
     external_id = f"manual_{uuid.uuid4().hex[:10]}"
-    norm_job = NormalizedJob(
-        platform=platform,
-        external_id=external_id,
-        title=title,
-        description=description,
-        url=url,
-        budget=budget,
-        posted_at=datetime.now(timezone.utc)
+    min_sal, max_sal, curr = normalize_salary(budget)
+
+    # Evaluate job fit
+    fit_eval = evaluate_job_fit(
+        job_title=title,
+        job_description=description,
+        job_location=location or "Remote",
+        is_remote=True,
+        salary_min=min_sal,
+        target_keywords=["python", "fastapi", "react", "ai"],
     )
 
-    orchestrator = JobDiscoveryOrchestrator()
-
-    # Score job relevance using default keywords
-    match_score = orchestrator.score_job(norm_job, keywords=["python", "fastapi", "react", "ai"])
-
-    # Always persist manual paste submissions
     db_job = Job(
         platform=platform,
         external_id=external_id,
         title=title,
+        company=company or ("Direct Client" if "upwork" in platform.lower() or "fiverr" in platform.lower() else None),
+        location=location or "Worldwide / Remote",
+        is_remote=True,
+        job_type="Freelance / Contract",
         description=description,
         url=url,
+        canonical_url=url,
         budget=budget,
-        posted_at=norm_job.posted_at,
-        match_score=match_score,
-        status="new"
+        salary_min=min_sal,
+        salary_max=max_sal,
+        salary_currency=curr,
+        posted_at=datetime.now(timezone.utc),
+        match_score=fit_eval["score"],
+        match_explanation={
+            "criteria_breakdown": fit_eval["criteria_breakdown"],
+            "matching_skills": fit_eval["matching_skills"],
+            "missing_skills": fit_eval["missing_skills"],
+            "match_reason": fit_eval["match_reason"],
+        },
+        skills_gap={"analysis": fit_eval["skills_gap_analysis"]},
+        status=JobStatus.MATCHED if fit_eval["score"] >= 0.70 else JobStatus.SAVED,
     )
     db.add(db_job)
     db.commit()
     db.refresh(db_job)
 
-    # Draft custom proposal using existing proposal_drafter
-    draft_text = generate_proposal_draft(db_job)
+    # Generate complete application assistance
+    app_drafts = generate_tailored_application(db_job)
     proposal = Proposal(
         job_id=db_job.id,
-        draft_text=draft_text,
-        status="draft"
+        draft_text=app_drafts["proposal_draft"],
+        cover_letter=app_drafts["cover_letter"],
+        tailored_resume_suggestions=app_drafts["tailored_resume_suggestions"],
+        interview_questions=app_drafts["interview_questions"],
+        status="draft",
     )
     db.add(proposal)
     db.commit()
     db.refresh(proposal)
 
     notify_job_match(db_job)
-    logger.info(f"Successfully processed manual job paste (ID {db_job.id}, Score: {match_score}) from platform {platform}")
+    logger.info(f"Successfully processed manual job paste (ID {db_job.id}, Score: {db_job.match_score})")
     return db_job, proposal
