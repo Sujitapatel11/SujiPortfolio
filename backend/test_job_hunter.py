@@ -97,6 +97,11 @@ class TestJobHunterFullSuite(unittest.TestCase):
         from app.admin.connectors.helpers import assess_applicant_eligibility
         self.assertEqual(assess_applicant_eligibility("Worldwide"), "eligible")
 
+    def test_applicant_eligibility_does_not_overread_global_or_negated_text(self):
+        from app.admin.connectors.helpers import assess_applicant_eligibility
+        self.assertEqual(assess_applicant_eligibility("We are a global team"), "unknown")
+        self.assertEqual(assess_applicant_eligibility("Not worldwide"), "unknown")
+
     def test_applicant_eligibility_nepal_and_india_restriction(self):
         from app.admin.connectors.helpers import assess_applicant_eligibility
         self.assertEqual(
