@@ -102,6 +102,7 @@ class JobResponse(BaseModel):
     match_score: Optional[float] = 0.0
     match_explanation: Optional[dict] = None
     skills_gap: Optional[dict] = None
+    raw_metadata: Optional[dict] = None
     status: str
     created_at: datetime
 
