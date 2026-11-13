@@ -382,6 +382,9 @@ export const Dashboard = () => {
                 {item.count !== undefined && <span className="admin-nav-item-count">{item.count}</span>}
               </button>
             ))}
+            <button className="admin-nav-item" onClick={() => navigate("/admin/career-assistant")}>
+              <span>Career Intelligence ↗</span>
+            </button>
           </nav>
         </aside>
 
