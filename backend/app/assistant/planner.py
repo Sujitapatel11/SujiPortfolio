@@ -27,6 +27,27 @@ If the user asks to open a named website and its canonical public URL is unambig
 The application enforces approval separately. Do not make permission decisions."""
 
 
+def _parse_planner_content(content: str) -> dict:
+    try:
+        result = json.loads(content)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise PlannerUnavailable("The AI planner could not produce a valid response.") from exc
+    if not isinstance(result, dict) or result.get("kind") not in {"action", "clarification", "unsupported"}:
+        raise PlannerUnavailable("The AI planner returned an invalid response shape.")
+    message = result.get("message")
+    if not isinstance(message, str) or not message.strip():
+        raise PlannerUnavailable("The AI planner returned an empty response.")
+    if result["kind"] == "action":
+        if not isinstance(result.get("tool"), str) or not isinstance(result.get("arguments"), dict):
+            raise PlannerUnavailable("The AI planner returned an incomplete action.")
+        return {
+            "kind": "action",
+            "message": message[:1000],
+            "request": ActionProposalRequest(tool=result["tool"], arguments=result["arguments"]),
+        }
+    return {"kind": result["kind"], "message": message[:1000]}
+
+
 def plan_user_message(text: str) -> dict:
     if not OPENAI_API_KEY:
         raise PlannerUnavailable("AI planning is not configured. Set OPENAI_API_KEY in the backend environment.")
@@ -49,21 +70,7 @@ def plan_user_message(text: str) -> dict:
             response.raise_for_status()
             body = response.json()
             content = body["choices"][0]["message"]["content"]
-            result = json.loads(content)
-    except (httpx.HTTPError, KeyError, IndexError, TypeError, json.JSONDecodeError) as exc:
+    except (httpx.HTTPError, KeyError, IndexError, TypeError) as exc:
         raise PlannerUnavailable("The AI planner could not produce a valid response.") from exc
 
-    if not isinstance(result, dict) or result.get("kind") not in {"action", "clarification", "unsupported"}:
-        raise PlannerUnavailable("The AI planner returned an invalid response shape.")
-    message = result.get("message")
-    if not isinstance(message, str) or not message.strip():
-        raise PlannerUnavailable("The AI planner returned an empty response.")
-    if result["kind"] == "action":
-        if not isinstance(result.get("tool"), str) or not isinstance(result.get("arguments"), dict):
-            raise PlannerUnavailable("The AI planner returned an incomplete action.")
-        return {
-            "kind": "action",
-            "message": message[:1000],
-            "request": ActionProposalRequest(tool=result["tool"], arguments=result["arguments"]),
-        }
-    return {"kind": result["kind"], "message": message[:1000]}
+    return _parse_planner_content(content)
