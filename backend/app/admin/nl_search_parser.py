@@ -122,6 +122,9 @@ def parse_natural_language_query(query_text: str) -> Dict[str, Any]:
         text,
         flags=re.IGNORECASE
     )
+    # Remove the parsed location so country/city names do not become search keywords.
+    if location:
+        cleaned = re.sub(re.escape(location.lower()), ' ', cleaned)
     # Also strip currency amounts
     cleaned = re.sub(r'[€$£₹]\s*\d[\d,\.]*', ' ', cleaned)
     keywords = [w.strip() for w in re.split(r'[,;\s]+', cleaned) if len(w.strip()) > 1]
