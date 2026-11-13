@@ -174,6 +174,8 @@ class JobDiscoveryOrchestrator:
             fetched_count = 0
             matched_count = 0
             drafted_count = 0
+            provider_ineligible = 0
+            provider_eligibility_unknown = 0
 
             try:
                 # 1. Fetch raw normalized jobs from platform
@@ -196,16 +198,18 @@ class JobDiscoveryOrchestrator:
                     norm_job.raw_metadata["applicant_countries_checked"] = search_query.applicant_countries
                     if eligibility == "ineligible":
                         total_ineligible += 1
+                        provider_ineligible += 1
                         continue
                     if eligibility == "unknown":
                         total_eligibility_unknown += 1
+                        provider_eligibility_unknown += 1
 
                     # 3. Freshness check
                     if freshness_cutoff and norm_job.posted_at and norm_job.posted_at < freshness_cutoff:
                         logger.debug(f"Job {norm_job.external_id} older than max_days_old. Skipping.")
                         continue
 
-                    # 3. Deduplicate against existing jobs by (platform + external_id) OR canonical_url OR (title + company)
+                    # 4. Deduplicate against existing jobs by (platform + external_id) OR canonical_url OR (title + company)
                     canon_url = norm_job.compute_canonical_url()
                     query_filters = [
                         (Job.platform == norm_job.platform) & (Job.external_id == norm_job.external_id)
@@ -222,7 +226,7 @@ class JobDiscoveryOrchestrator:
                         logger.debug(f"Job {norm_job.external_id} from {platform_name} already exists. Skipping.")
                         continue
 
-                    # 4. Score job relevance & criteria breakdown
+                    # 5. Score job relevance & criteria breakdown
                     fit_eval = evaluate_job_fit(
                         job_title=norm_job.title,
                         job_description=norm_job.description,
@@ -234,13 +238,13 @@ class JobDiscoveryOrchestrator:
                     )
                     match_score = fit_eval["score"]
 
-                    # 5. Salary range filter check (if user requested minimum salary)
+                    # 6. Salary range filter check (if user requested minimum salary)
                     if search_query.salary_min and norm_job.salary_min:
                         if norm_job.salary_min < (search_query.salary_min * 0.75):
                             logger.debug(f"Job {norm_job.title} below target salary. Skipping.")
                             continue
 
-                    # 6. Save job if score exceeds threshold
+                    # 7. Save job if score exceeds threshold
                     if match_score >= score_threshold:
                         initial_status = JobStatus.MATCHED if match_score >= 0.70 else JobStatus.DISCOVERED
                         db_job = Job(
@@ -277,7 +281,7 @@ class JobDiscoveryOrchestrator:
                         matched_count += 1
                         total_matched += 1
 
-                        # 7. Prepare tailored application drafts (proposal, cover letter, resume advice, interview Qs)
+                        # 8. Prepare tailored application drafts (proposal, cover letter, resume advice, interview Qs)
                         app_drafts = generate_tailored_application(db_job)
                         proposal = Proposal(
                             job_id=db_job.id,
@@ -296,6 +300,8 @@ class JobDiscoveryOrchestrator:
                     "matched": matched_count,
                     "drafted": drafted_count,
                     "status": "connected",
+                    "applicant_ineligible": provider_ineligible,
+                    "eligibility_unknown": provider_eligibility_unknown,
                 }
                 self._sync_provider_health(db, platform_name, is_healthy=True)
 
