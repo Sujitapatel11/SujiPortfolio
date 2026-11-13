@@ -167,10 +167,10 @@ def assess_applicant_eligibility(
         return "eligible"
 
     known_other_regions = (
-        "united states", "usa only", "us only", "uk only", "united kingdom only",
-        "canada only", "europe only", "eu only", "australia only",
+        "united states", "usa", "us", "united kingdom", "uk",
+        "canada", "europe", "eu", "australia",
     )
-    if any(region in text for region in known_other_regions):
+    if mentions_restriction and any(region in text for region in known_other_regions):
         return "ineligible"
 
     # A named region without a clear restriction can describe team location, not applicant eligibility.
