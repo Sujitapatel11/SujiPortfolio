@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.admin.auth import get_current_admin
 from app.assistant.models import AssistantAction, AssistantAuditEvent, AssistantMessage, AssistantSession
 from app.assistant.policy import PolicyViolation, build_action_proposal
+from app.assistant.planner import PlannerUnavailable, plan_user_message
 from app.assistant.schemas import ActionProposalRequest
 from app.database import get_db
 
@@ -114,27 +115,93 @@ def get_session(session_id: str, db: Session = Depends(get_db), current_admin: d
 @router.post("/sessions/{session_id}/messages", status_code=status.HTTP_201_CREATED)
 def create_message(session_id: str, payload: MessageCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
     item = _owned_session(db, session_id, current_admin["username"])
-    message = AssistantMessage(
+    now = datetime.now(timezone.utc)
+    user_message = AssistantMessage(
         id=str(uuid4()),
         session_id=item.id,
         role="user",
         input_mode=payload.input_mode,
         content=payload.text,
     )
-    db.add(message)
-    item.updated_at = datetime.now(timezone.utc)
+    db.add(user_message)
+    item.updated_at = now
     _audit(db, item.id, None, current_admin["username"], "message.received", {
         "input_mode": payload.input_mode,
         "character_count": len(payload.text),
     })
-    db.commit()
-    return {
-        "message_id": message.id,
-        "session_id": item.id,
-        "status": "received",
-        "assistant_message": "Your message is saved. Natural-language action planning is the next implementation step.",
-    }
 
+    try:
+        plan = plan_user_message(payload.text)
+    except PlannerUnavailable as exc:
+        db.commit()
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    proposal_response = None
+    response_status = plan["kind"]
+    assistant_text = plan["message"]
+
+    if plan["kind"] == "action":
+        try:
+            proposal = build_action_proposal(plan["request"])
+        except (PolicyViolation, ValueError) as exc:
+            assistant_text = "I can't propose that action under the current safety policy. " + str(exc)
+            response_status = "unsupported"
+            _audit(db, item.id, None, "assistant", "planner.policy_blocked", {
+                "requested_tool": plan["request"].tool,
+                "reason": str(exc)[:300],
+            })
+        else:
+            action = AssistantAction(
+                id=proposal.action_id,
+                session_id=item.id,
+                tool=proposal.tool,
+                arguments=proposal.arguments,
+                summary=proposal.summary,
+                risk=proposal.risk,
+                status="awaiting_approval",
+                payload_sha256=proposal.payload_sha256,
+                created_at=now,
+                updated_at=now,
+                expires_at=now + timedelta(minutes=ACTION_TTL_MINUTES),
+            )
+            db.add(action)
+            _audit(db, item.id, action.id, "assistant", "action.proposed", {
+                "tool": action.tool,
+                "payload_sha256": action.payload_sha256,
+                "approval_required": True,
+            })
+            proposal_response = {
+                "action_id": proposal.action_id,
+                "tool": proposal.tool,
+                "arguments": proposal.arguments,
+                "summary": proposal.summary,
+                "risk": proposal.risk,
+                "approval_required": True,
+                "payload_sha256": proposal.payload_sha256,
+                "expires_at": action.expires_at,
+            }
+            response_status = "awaiting_approval"
+            assistant_text = "I prepared this action. Review the exact details and approve it before anything is executed."
+
+    assistant_message = AssistantMessage(
+        id=str(uuid4()),
+        session_id=item.id,
+        role="assistant",
+        input_mode=payload.input_mode,
+        content=assistant_text,
+    )
+    db.add(assistant_message)
+    _audit(db, item.id, None, "assistant", "planner.responded", {"status": response_status})
+    db.commit()
+
+    return {
+        "message_id": user_message.id,
+        "assistant_message_id": assistant_message.id,
+        "session_id": item.id,
+        "message": assistant_text,
+        "proposal": proposal_response,
+        "status": response_status,
+    }
 
 @router.get("/sessions/{session_id}/messages")
 def list_messages(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
