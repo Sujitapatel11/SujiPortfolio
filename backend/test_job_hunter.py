@@ -74,6 +74,25 @@ class TestJobHunterFullSuite(unittest.TestCase):
         self.assertTrue(any("visa" in e.lower() for e in explanations))
         self.assertTrue(any("experience" in e.lower() for e in explanations))
 
+    def test_nl_search_parser_nepal_terminal_location(self):
+        result = parse_natural_language_query("Find Python backend jobs in Nepal")
+        filters = result["parsed_filters"]
+        self.assertEqual(filters["location"], "Nepal")
+        self.assertEqual(filters["country_code"], "np")
+        self.assertIn("python", filters["keywords"])
+
+    def test_nl_search_parser_india_terminal_location(self):
+        result = parse_natural_language_query("Find React developer jobs in India")
+        filters = result["parsed_filters"]
+        self.assertEqual(filters["location"], "India")
+        self.assertEqual(filters["country_code"], "in")
+
+    def test_unknown_location_does_not_default_to_germany(self):
+        result = parse_natural_language_query("Find Python jobs in Singapore")
+        filters = result["parsed_filters"]
+        self.assertEqual(filters["location"], "Singapore")
+        self.assertIsNone(filters["country_code"])
+
     # 2. Mocked Provider Integrations
     @patch("urllib.request.urlopen")
     def test_adzuna_connector_mocked(self, mock_urlopen):
