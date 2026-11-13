@@ -7,6 +7,7 @@ from twilio.rest import Client
 from app.database import get_db
 from app.models import Inquiry
 from app.schemas import InquiryCreate, InquiryResponse
+from app.admin.auth import get_current_admin
 from app.config import (
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
@@ -75,7 +76,7 @@ def create_inquiry(inquiry_in: InquiryCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=List[InquiryResponse])
-def list_inquiries(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):
+def list_inquiries(skip: int = 0, limit: int = 50, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
     """Retrieve submitted inquiries."""
     inquiries = (
         db.query(Inquiry)
@@ -88,7 +89,7 @@ def list_inquiries(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)
 
 
 @router.get("/{inquiry_id}", response_model=InquiryResponse)
-def get_inquiry(inquiry_id: int, db: Session = Depends(get_db)):
+def get_inquiry(inquiry_id: int, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
     """Retrieve a specific inquiry by ID."""
     inquiry = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
     if not inquiry:
