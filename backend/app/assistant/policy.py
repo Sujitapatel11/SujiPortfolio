@@ -5,9 +5,8 @@ import hashlib
 import ipaddress
 import json
 import socket
+import uuid
 from urllib.parse import urlparse
-
-from pydantic import ValidationError
 
 from app.assistant.schemas import ActionProposal, ActionProposalRequest
 
@@ -25,11 +24,11 @@ def _is_public_host(hostname: str) -> bool:
     except ValueError:
         try:
             resolved = socket.getaddrinfo(normalized, None, type=socket.SOCK_STREAM)
-        except OSError:
-            # Do not resolve arbitrary hosts during planning; DNS is checked at execution.
-            return True
+        except OSError as exc:
+            # Fail closed: an unresolved destination must not be approved.
+            raise PolicyViolation("Destination hostname could not be safely resolved") from exc
         addresses = {ipaddress.ip_address(item[4][0]) for item in resolved}
-    return all(address.is_global for address in addresses)
+    return bool(addresses) and all(address.is_global for address in addresses)
 
 
 def validate_tool_arguments(tool: str, arguments: dict) -> dict:
@@ -70,7 +69,7 @@ def build_action_proposal(request: ActionProposalRequest) -> ActionProposal:
         "desktop.open_application": f"Open the {arguments['app_id']} application on the paired device",
     }
     return ActionProposal(
-        action_id=digest[:32],
+        action_id=uuid.uuid4().hex,
         tool=request.tool,
         arguments=arguments,
         summary=summaries[request.tool],
