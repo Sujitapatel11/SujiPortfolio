@@ -76,7 +76,7 @@ class JobDiscoveryOrchestrator:
             health_list.append({
                 "platform": c.platform_name,
                 "is_enabled": is_avail,
-                "is_healthy": record.is_healthy if record else True,
+                "is_healthy": record.is_healthy if record else None,
                 "missing_credentials": missing,
                 "last_sync_at": record.last_sync_at.isoformat() if record and record.last_sync_at else None,
                 "last_error": record.last_error if record else None,
