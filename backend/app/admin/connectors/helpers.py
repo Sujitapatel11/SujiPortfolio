@@ -53,12 +53,12 @@ def normalize_salary(salary_text: Optional[str]) -> Tuple[Optional[float], Optio
     return cleaned_nums[0], cleaned_nums[0], currency
 
 
-def resolve_country_code(location: Optional[str]) -> str:
+def resolve_country_code(location: Optional[str]) -> Optional[str]:
     """
     Map location / country name into standard 2-letter country code for provider APIs.
     """
     if not location:
-        return "de"  # Default requested target or international
+        return None
 
     loc = location.lower()
     if any(k in loc for k in ["germany", "deutschland", "berlin", "munich", "frankfurt", "hamburg"]):
@@ -67,6 +67,8 @@ def resolve_country_code(location: Optional[str]) -> str:
         return "us"
     if any(k in loc for k in ["united kingdom", "uk", "great britain", "london", "england"]):
         return "gb"
+    if any(k in loc for k in ["nepal", "kathmandu", "pokhara", "birgunj"]):
+        return "np"
     if any(k in loc for k in ["india", "bangalore", "delhi", "mumbai", "hyderabad", "pune"]):
         return "in"
     if any(k in loc for k in ["france", "paris"]):
@@ -77,7 +79,7 @@ def resolve_country_code(location: Optional[str]) -> str:
         return "au"
     if any(k in loc for k in ["netherlands", "amsterdam"]):
         return "nl"
-    return "de"
+    return None
 
 
 def parse_relative_date(date_str: Optional[str]) -> Optional[datetime]:
