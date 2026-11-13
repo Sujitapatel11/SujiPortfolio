@@ -126,3 +126,52 @@ def parse_relative_date(date_str: Optional[str]) -> Optional[datetime]:
             continue
 
     return now
+
+
+def assess_applicant_eligibility(
+    candidate_location: Optional[str],
+    applicant_countries: Optional[list] = None,
+) -> str:
+    """
+    Conservative eligibility check based only on explicit candidate-location text.
+    Returns eligible, ineligible, or unknown; never guesses from the job's office location.
+    """
+    if not candidate_location or not candidate_location.strip():
+        return "unknown"
+
+    text = candidate_location.casefold().strip()
+    countries = [str(country).casefold().strip() for country in (applicant_countries or ["Nepal", "India"])]
+
+    worldwide_terms = ("worldwide", "anywhere", "global", "all countries", "no location restrictions")
+    if any(term in text for term in worldwide_terms):
+        return "eligible"
+
+    aliases = {
+        "nepal": ("nepal", "kathmandu", "pokhara", "birgunj"),
+        "india": ("india", "indian"),
+    }
+    requested_terms = tuple(
+        term
+        for country in countries
+        for term in aliases.get(country, (country,))
+    )
+    explicit_restriction_markers = (
+        "only", "must be based", "based in", "residents of", "located in",
+        "eligible to work in", "authorized to work in", "candidates in",
+    )
+
+    mentions_requested_country = any(term in text for term in requested_terms)
+    mentions_restriction = any(marker in text for marker in explicit_restriction_markers)
+
+    if mentions_requested_country and mentions_restriction:
+        return "eligible"
+
+    known_other_regions = (
+        "united states", "usa only", "us only", "uk only", "united kingdom only",
+        "canada only", "europe only", "eu only", "australia only",
+    )
+    if any(region in text for region in known_other_regions):
+        return "ineligible"
+
+    # A named region without a clear restriction can describe team location, not applicant eligibility.
+    return "unknown"
