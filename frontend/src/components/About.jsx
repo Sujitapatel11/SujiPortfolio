@@ -110,7 +110,7 @@ export default function About() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.45 }}
-            className="glow-card rounded-3xl p-6 sm:p-7 flex flex-col gap-6 h-fit bg-bg-card/90 border border-border-accent shadow-xl backdrop-blur-xl"
+            className="glow-card rounded-3xl p-6 sm:p-7 flex h-full flex-col gap-6 self-stretch bg-bg-card/90 border border-border-accent shadow-xl backdrop-blur-xl"
           >
             <div className="flex items-center gap-4">
               <div className="relative">
