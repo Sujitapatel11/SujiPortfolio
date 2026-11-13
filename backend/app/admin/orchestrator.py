@@ -13,7 +13,7 @@ from app.admin.connectors.remotive import RemotiveConnector
 from app.admin.connectors.adzuna import AdzunaConnector
 from app.admin.connectors.jooble import JoobleConnector
 from app.admin.connectors.usajobs import USAJobsConnector
-from app.admin.nl_search_parser import parse_natural_language_query
+from app.admin.nl_search_parser import parse_natural_language_query\nfrom app.admin.connectors.helpers import assess_applicant_eligibility
 from app.admin.ai_matcher import evaluate_job_fit, generate_tailored_application
 from app.admin.whatsapp import notify_job_matches
 
@@ -145,7 +145,7 @@ class JobDiscoveryOrchestrator:
         summary: Dict[str, Any] = {}
         matched_jobs: List[Job] = []
         total_fetched = 0
-        total_matched = 0
+        total_matched = 0\n        total_ineligible = 0\n        total_eligibility_unknown = 0
 
         # Freshness cutoff if specified
         freshness_cutoff = None
@@ -308,7 +308,7 @@ class JobDiscoveryOrchestrator:
             notify_job_matches(matched_jobs)
 
         summary["_total_fetched"] = total_fetched
-        summary["_total_matched"] = total_matched
+        summary["_total_matched"] = total_matched\n        summary["_total_ineligible"] = total_ineligible\n        summary["_eligibility_unknown"] = total_eligibility_unknown
         summary["_parsed_filters"] = parsed_meta.get("parsed_filters")
         summary["_unsupported_explanations"] = parsed_meta.get("unsupported_explanations", [])
         return summary
