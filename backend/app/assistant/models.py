@@ -56,6 +56,11 @@ class AssistantAction(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
     expires_at = Column(DateTime(timezone=True), nullable=False)
+    approved_by = Column(String(255), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    rejected_reason = Column(Text, nullable=True)
+    result = Column(JSON, nullable=True)
+    error_code = Column(String(100), nullable=True)
 
     session = relationship("AssistantSession", back_populates="actions")
 
