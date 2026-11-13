@@ -84,7 +84,7 @@ class RemotiveConnector(BaseConnector):
                             salary_max=max_sal,
                             salary_currency=curr,
                             posted_at=posted_dt,
-                            raw_metadata={"category": item.get("category"), "tags": item.get("tags", [])}
+                            raw_metadata={"category": item.get("category"), "tags": item.get("tags", []), "candidate_required_location": candidate_location}
                         )
                         jobs.append(norm_job)
 
