@@ -222,7 +222,13 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
     if action.status != "awaiting_approval":
         raise HTTPException(status_code=409, detail=f"Action is already {action.status}")
 
+    session = action.session
     now = datetime.now(timezone.utc)
+    session_expires_at = session.expires_at
+    if session_expires_at.tzinfo is None:
+        session_expires_at = session_expires_at.replace(tzinfo=timezone.utc)
+    if session.status != "active" or session_expires_at <= now:
+        raise HTTPException(status_code=410, detail="Assistant session has expired or is closed")
     expires_at = action.expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
