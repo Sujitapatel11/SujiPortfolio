@@ -6,11 +6,11 @@ import "./admin.css";
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const QUICK_PROMPTS = [
-  "Find remote Python Developer jobs in Germany posted within the last 7 days, with salary above €40,000.",
-  "Find internships in India.",
-  "Find AI Engineer jobs requiring less than two years of experience.",
-  "Find freelance React projects.",
-  "Find jobs offering visa sponsorship.",
+  "Find junior Python backend jobs in Nepal posted within the last 14 days.",
+  "Find React developer internships in India.",
+  "Find remote Python and FastAPI jobs open to applicants in Nepal or India.",
+  "Find entry-level AI/ML engineering jobs in India.",
+  "Find worldwide remote full-stack developer jobs.",
 ];
 
 export const Dashboard = () => {
@@ -29,7 +29,7 @@ export const Dashboard = () => {
   const [dataLoading, setDataLoading] = useState(true);
 
   // Natural Language Search State
-  const [nlQuery, setNlQuery] = useState("Find remote Python Developer jobs in Germany posted within the last 7 days, with salary above €40,000.");
+  const [nlQuery, setNlQuery] = useState("Find junior Python backend jobs in Nepal posted within the last 14 days.");
   const [isSearching, setIsSearching] = useState(false);
   const [searchProgressStep, setSearchProgressStep] = useState("");
   const [parsedFilters, setParsedFilters] = useState(null);
@@ -564,7 +564,7 @@ export const Dashboard = () => {
                             background: "rgba(18,16,32,0.85)",
                             border: "1px solid rgba(151,71,255,0.3)"
                           }}
-                          placeholder="e.g. Find remote Python Developer jobs in Germany posted within the last 7 days, with salary above €40,000."
+                          placeholder="e.g. Find remote Python and FastAPI jobs open to applicants in Nepal or India."
                           value={nlQuery}
                           onChange={(e) => setNlQuery(e.target.value)}
                         />
@@ -726,16 +726,16 @@ export const Dashboard = () => {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "1rem", alignItems: "center" }}>
                     <span style={{ fontFamily: "var(--bp-font-mono)", fontSize: "0.64rem", color: "var(--bp-grey)" }}>Providers:</span>
                     {providerHealth.map((p) => {
-                      const hasKey = p.is_enabled;
+                      const hasKey = p.is_enabled;\n                      const isHealthy = p.is_healthy;
                       return (
                         <span
                           key={p.platform}
                           className={`admin-badge ${getPlatformBadge(p.platform)}`}
                           style={{
                             opacity: hasKey ? 1 : 0.65,
-                            border: hasKey ? "1px solid rgba(16,185,129,0.3)" : "1px dashed rgba(245,158,11,0.4)"
+                            border: !hasKey ? "1px dashed rgba(245,158,11,0.4)" : isHealthy ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(239,68,68,0.4)"
                           }}
-                          title={hasKey ? "Connected & Healthy" : `Missing: ${(p.missing_credentials || []).join(", ")}`}
+                          title={!hasKey ? `Missing: ${(p.missing_credentials || []).join(", ")}` : isHealthy ? "Configured and last health check passed" : (p.last_error || "Configured, but last health check failed")}
                         >
                           <span style={{ color: hasKey ? "#10b981" : "#f59e0b", marginRight: "4px" }}>
                             {hasKey ? "●" : "○"}
