@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routes import inquiries, chat, admin
+from app.assistant import models as assistant_models  # register assistant tables before create_all
+from app.routes import inquiries, chat, admin, assistant
 from app.data.profile import PROFILE_DATA
 
 # Create database tables automatically if they don't exist
@@ -34,6 +35,7 @@ app.add_middleware(
 app.include_router(inquiries.router)
 app.include_router(chat.router)
 app.include_router(admin.router)
+app.include_router(assistant.router)
 
 @app.get("/api/health")
 def health_check():
