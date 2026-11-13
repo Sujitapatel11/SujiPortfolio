@@ -53,6 +53,11 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("approved_by", sa.String(length=255), nullable=True),
+        sa.Column("approved_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("rejected_reason", sa.Text(), nullable=True),
+        sa.Column("result", sa.JSON(), nullable=True),
+        sa.Column("error_code", sa.String(length=100), nullable=True),
     )
     op.create_index("ix_assistant_actions_session_id", "assistant_actions", ["session_id"])
     op.create_index("ix_assistant_actions_status", "assistant_actions", ["status"])
