@@ -142,8 +142,18 @@ def assess_applicant_eligibility(
     text = candidate_location.casefold().strip()
     countries = [str(country).casefold().strip() for country in (applicant_countries or ["Nepal", "India"])]
 
-    worldwide_terms = ("worldwide", "anywhere", "global", "all countries", "no location restrictions")
-    if any(term in text for term in worldwide_terms):
+    # Do not let phrases such as "global team" or "not worldwide" create false eligibility.
+    if any(marker in text for marker in ("not worldwide", "not work from anywhere", "excluding", "except ")):
+        return "unknown"
+    worldwide_patterns = (
+        r"\bworldwide\b",
+        r"\bwork from anywhere\b",
+        r"\banywhere in the world\b",
+        r"\ball countries\b",
+        r"\bopen to applicants globally\b",
+        r"\bno location restrictions\b",
+    )
+    if any(re.search(pattern, text) for pattern in worldwide_patterns):
         return "eligible"
 
     aliases = {
