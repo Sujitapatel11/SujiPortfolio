@@ -35,7 +35,7 @@ def parse_natural_language_query(query_text: str) -> Dict[str, Any]:
     location = None
     country_code = None
     location_patterns = [
-        (r'\bin\s+([a-zA-Z\s]+?)(?=\s+(?:posted|with|salary|requiring|offering|$))', 1),
+        (r'\bin\s+([a-zA-Z][a-zA-Z\s,.-]*?)(?=\s+(?:posted|with|salary|requiring|offering|for|within)\b|[,;]|$)', 1),
         (r'\b(germany|deutschland|berlin|munich|frankfurt|hamburg)\b', 0),
         (r'\b(nepal|kathmandu|pokhara|birgunj|india|delhi|mumbai|bangalore|hyderabad|pune)\b', 0),
         (r'\b(united states|usa|us|uk|united kingdom|london|canada|australia|france)\b', 0),
