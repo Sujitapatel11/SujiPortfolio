@@ -73,11 +73,16 @@ def evaluate_job_fit(
     preferred_skills = []
     for canonical, aliases in skill_aliases.items():
         if any(_contains_term(full_text, alias) for alias in aliases):
-            # Explicit preferred/nice-to-have language is weaker evidence than a requirement.
-            evidence_window = full_text.lower()
-            is_preferred = any(marker in evidence_window for marker in (
-                "nice to have", "nice-to-have", "preferred", "bonus", "plus", "desirable"
-            ))
+            # Classify each skill using its own sentence, not a posting-wide "plus" mention.
+            preferred_markers = (
+                "nice to have", "nice-to-have", "preferred", "bonus", "is a plus", "desirable"
+            )
+            sentences = re.split(r"[.!?;\\n]", full_text.lower())
+            skill_sentence = next(
+                (sentence for sentence in sentences if any(_contains_term(sentence, alias) for alias in aliases)),
+                "",
+            )
+            is_preferred = any(marker in skill_sentence for marker in preferred_markers)
             (preferred_skills if is_preferred else required_skills).append(canonical)
 
     matching_skills = [skill for skill in required_skills if skill in candidate_capabilities]
