@@ -61,7 +61,7 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
         sa.Column('platform', sa.String(length=100), nullable=False),
         sa.Column('is_enabled', sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column('is_healthy', sa.Boolean(), nullable=False, server_default=sa.text('1')),
+        sa.Column('is_healthy', sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column('missing_credentials', sa.JSON(), nullable=True),
         sa.Column('last_sync_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('last_error', sa.Text(), nullable=True),
