@@ -17,6 +17,12 @@ export const Dashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
 
+  // Job Hunter agent controls and live provider status
+  const [agentStatus, setAgentStatus] = useState(null);
+  const [agentBusy, setAgentBusy] = useState(false);
+  const [agentSearchBusy, setAgentSearchBusy] = useState(false);
+  const [agentKeywords, setAgentKeywords] = useState("python, fastapi, django, react, typescript, machine learning, AI engineer");
+
   // Admin AI Chat State
   const [adminChatMessages, setAdminChatMessages] = useState([
     {
@@ -50,6 +56,10 @@ export const Dashboard = () => {
 
   useEffect(() => { if (isAuthenticated && adminToken) fetchDashboardData(); }, [isAuthenticated, adminToken]);
 
+  useEffect(() => {
+    if (isAuthenticated && adminToken) fetchAgentStatus();
+  }, [isAuthenticated, adminToken]);
+
   const fetchDashboardData = async () => {
     setDataLoading(true);
     try {
@@ -66,6 +76,69 @@ export const Dashboard = () => {
       if (apptRes && apptRes.ok) setAppointments(await apptRes.json());
     } catch (err) { console.error("Error fetching dashboard data:", err); }
     finally { setDataLoading(false); }
+  };
+
+  const fetchAgentStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/jobs/agent/status`, {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (!res.ok) throw new Error(`Agent status request failed (${res.status}).`);
+      setAgentStatus(await res.json());
+    } catch (err) {
+      console.error("Could not load Job Hunter status:", err);
+      showToast(`Job Hunter status unavailable: ${err.message}`);
+    }
+  };
+
+  const controlAgent = async (action) => {
+    setAgentBusy(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/jobs/agent/${action}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Could not ${action} the scheduler.`);
+      setAgentStatus(data);
+      showToast(action === "start" ? "Scheduled Job Hunter started." : "Scheduled Job Hunter stopped.");
+    } catch (err) {
+      showToast(`Job Hunter error: ${err.message}`);
+    } finally {
+      setAgentBusy(false);
+    }
+  };
+
+  const runAgentSearch = async () => {
+    const keywords = agentKeywords.split(",").map((keyword) => keyword.trim()).filter(Boolean);
+    if (!keywords.length) {
+      showToast("Add at least one search keyword.");
+      return;
+    }
+    setAgentSearchBusy(true);
+    try {
+      const res = await fetch(`${API_BASE}/admin/jobs/search-now`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({ keywords }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Job search failed (${res.status}).`);
+      await Promise.all([fetchDashboardData(), fetchAgentStatus()]);
+      const totals = Object.values(data.summary || {}).reduce((acc, item) => ({
+        fetched: acc.fetched + (item.fetched || 0),
+        matched: acc.matched + (item.matched || 0),
+        drafted: acc.drafted + (item.drafted || 0),
+      }), { fetched: 0, matched: 0, drafted: 0 });
+      showToast(`Scan complete: ${totals.fetched} fetched, ${totals.matched} matched, ${totals.drafted} drafts created.`);
+    } catch (err) {
+      showToast(`Job search error: ${err.message}`);
+    } finally {
+      setAgentSearchBusy(false);
+    }
   };
 
   const handleLogout = () => { logout(); navigate("/admin/login"); };
@@ -214,7 +287,7 @@ export const Dashboard = () => {
 
   const filteredJobs = jobs
     .filter((job) => {
-      if (platformFilter !== "all" && job.platform.toLowerCase() !== platformFilter.toLowerCase()) return false;
+      if (platformFilter !== "all" && (job.platform || "").toLowerCase() !== platformFilter.toLowerCase()) return false;
       if (statusFilter === "hide_rejected" && job.status === "rejected") return false;
       if (statusFilter !== "all" && statusFilter !== "hide_rejected" && job.status !== statusFilter) return false;
       if (searchQuery.trim()) {
