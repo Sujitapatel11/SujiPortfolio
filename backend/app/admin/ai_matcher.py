@@ -7,6 +7,15 @@ from app.data.profile import PROFILE_DATA
 logger = logging.getLogger("sujis_world.ai_matcher")
 
 
+def _contains_term(text: str, term: str) -> bool:
+    """Match a phrase/token without accidental substring hits (e.g. 'ai' in 'retail')."""
+    normalized_text = re.sub(r"[^a-z0-9+#.]+", " ", (text or "").lower())
+    normalized_term = re.sub(r"[^a-z0-9+#.]+", " ", (term or "").lower()).strip()
+    if not normalized_term:
+        return False
+    return re.search(r"(?<![a-z0-9])" + re.escape(normalized_term) + r"(?![a-z0-9])", normalized_text) is not None
+
+
 def evaluate_job_fit(
     job_title: str,
     job_description: Optional[str] = None,
@@ -18,123 +27,158 @@ def evaluate_job_fit(
     resume_text: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Evaluate job relevance score and generate explainable criteria breakdown and skills gap analysis.
-    Uses candidate's verified profile data (Sujita Patel).
+    Explainable first-pass ranking. Eligibility is a separate hard gate in the orchestrator.
+    Only PROFILE_DATA.skills are treated as candidate skills; project tags are not proof of proficiency.
     """
-    desc = (job_description or "").lower()
-    title = (job_title or "").lower()
-    full_text = f"{title} {desc}"
-
+    title = job_title or ""
+    description = job_description or ""
+    full_text = f"{title}\n{description}"
     candidate_skills = PROFILE_DATA.get("skills", [])
-    # Flatten candidate skill tokens
-    candidate_tokens = set()
-    for s in candidate_skills:
-        for token in re.split(r'[\s/&]+', s.lower()):
-            if len(token) > 1 and token not in ("web", "and", "or", "in"):
-                candidate_tokens.add(token)
 
-    # Common tech skills to check in job postings
-    tech_catalog = {
-        "python": "Python",
-        "fastapi": "FastAPI",
-        "django": "Django",
-        "react": "React",
-        "typescript": "TypeScript",
-        "javascript": "JavaScript",
-        "postgresql": "PostgreSQL",
-        "sql": "SQL",
-        "docker": "Docker",
-        "three.js": "Three.js",
-        "langchain": "LangChain",
-        "ai": "AI / LLM Agents",
-        "redis": "Redis",
-        "aws": "AWS",
-        "gcp": "Google Cloud",
-        "kubernetes": "Kubernetes",
-        "graphql": "GraphQL",
-        "next.js": "Next.js",
-        "tailwind": "TailwindCSS",
-        "ci/cd": "CI/CD",
-        "linux": "Linux",
+    # Canonical labels and common spelling variants. Matching is phrase/token based.
+    skill_aliases = {
+        "python": ("python",),
+        "fastapi": ("fastapi",),
+        "django": ("django",),
+        "react": ("react",),
+        "typescript": ("typescript", "ts"),
+        "javascript": ("javascript", "js"),
+        "postgresql": ("postgresql", "postgres"),
+        "sql": ("sql", "sqlalchemy"),
+        "docker": ("docker",),
+        "three.js": ("three.js", "threejs"),
+        "langchain": ("langchain",),
+        "llm agents": ("llm", "llm agents", "large language model"),
+        "redis": ("redis",),
+        "aws": ("aws", "amazon web services"),
+        "gcp": ("gcp", "google cloud"),
+        "kubernetes": ("kubernetes", "k8s"),
+        "graphql": ("graphql",),
+        "next.js": ("next.js", "nextjs"),
+        "tailwindcss": ("tailwindcss", "tailwind"),
+        "ci/cd": ("ci/cd", "continuous integration", "continuous delivery"),
+        "linux": ("linux",),
+        "rest api": ("rest api", "restful api"),
+        "vite": ("vite",),
+        "sqlalchemy": ("sqlalchemy",),
     }
 
-    matching_skills: List[str] = []
-    missing_skills: List[str] = []
+    candidate_text = " | ".join(str(skill) for skill in candidate_skills)
+    candidate_capabilities = {
+        canonical for canonical, aliases in skill_aliases.items()
+        if any(_contains_term(candidate_text, alias) for alias in aliases)
+    }
 
-    for kw, label in tech_catalog.items():
-        if re.search(r'\b' + re.escape(kw) + r'\b', full_text):
-            # Check if candidate has this skill
-            kw_tokens = set(re.split(r'[\s/&]+', kw))
-            if any(t in candidate_tokens for t in kw_tokens):
-                matching_skills.append(label)
-            else:
-                missing_skills.append(label)
+    required_skills = []
+    preferred_skills = []
+    for canonical, aliases in skill_aliases.items():
+        if any(_contains_term(full_text, alias) for alias in aliases):
+            # Explicit preferred/nice-to-have language is weaker evidence than a requirement.
+            evidence_window = full_text.lower()
+            is_preferred = any(marker in evidence_window for marker in (
+                "nice to have", "nice-to-have", "preferred", "bonus", "plus", "desirable"
+            ))
+            (preferred_skills if is_preferred else required_skills).append(canonical)
 
-    # 1. Skills score (0.0 - 0.40)
-    if matching_skills:
-        skill_ratio = min(1.0, len(matching_skills) / max(len(matching_skills) + len(missing_skills), 3))
-        skills_score = round(0.15 + skill_ratio * 0.25, 2)
+    matching_skills = [skill for skill in required_skills if skill in candidate_capabilities]
+    missing_skills = [skill for skill in required_skills if skill not in candidate_capabilities]
+    matching_preferred = [skill for skill in preferred_skills if skill in candidate_capabilities]
+
+    # User-requested keywords now directly affect the ranking.
+    requested = []
+    for keyword in (target_keywords or []):
+        term = str(keyword).strip()
+        if term and term.lower() not in {x.lower() for x in requested}:
+            requested.append(term)
+    matched_targets = [term for term in requested if _contains_term(full_text, term)]
+    missing_targets = [term for term in requested if term not in matched_targets]
+    target_coverage = (len(matched_targets) / len(requested)) if requested else None
+
+    # Skills: if the listing names no skills, use a neutral score rather than inventing alignment.
+    if required_skills:
+        skills_score = 0.40 * (len(matching_skills) / len(required_skills))
     else:
-        skills_score = 0.10
+        skills_score = 0.20
+    if preferred_skills:
+        skills_score += min(0.04, 0.04 * len(matching_preferred) / len(preferred_skills))
+        skills_score = min(0.40, skills_score)
 
-    # 2. Role relevance score (0.0 - 0.35)
-    role_score = 0.15
-    target_roles = ["python", "full-stack", "full stack", "backend", "ai", "engineer", "developer", "software"]
-    matched_role_terms = sum(1 for r in target_roles if r in title)
-    if matched_role_terms > 0:
-        role_score = min(0.35, 0.20 + (matched_role_terms * 0.05))
+    # Target keyword relevance is blended into the skill/role evidence, never used as candidate skill proof.
+    if target_coverage is not None:
+        skills_score = min(0.40, skills_score * 0.75 + (0.40 * target_coverage) * 0.25)
 
-    # 3. Location / Remote score (0.0 - 0.15)
-    loc_score = 0.10
-    if is_remote or "remote" in full_text or "work from home" in full_text:
+    title_lower = title.lower()
+    role_groups = {
+        "backend": ("backend", "back-end", "server-side"),
+        "frontend": ("frontend", "front-end", "ui engineer"),
+        "full-stack": ("full stack", "full-stack", "fullstack"),
+        "ai-ml": ("ai engineer", "machine learning", "ml engineer", "llm engineer", "applied ai"),
+        "software": ("software engineer", "software developer", "software development"),
+        "python": ("python developer", "python engineer"),
+        "data": ("data engineer", "data scientist", "analytics engineer"),
+    }
+    matched_roles = [
+        role for role, aliases in role_groups.items()
+        if any(_contains_term(title_lower, alias) for alias in aliases)
+    ]
+    role_score = 0.15 + min(0.20, 0.10 * len(matched_roles))
+    if requested and matched_targets:
+        role_score = min(0.35, role_score + min(0.05, 0.05 * target_coverage))
+
+    # This is a preference signal only. Hard applicant eligibility is handled separately.
+    location_text = (job_location or "").lower()
+    if is_remote or _contains_term(full_text, "work from home") or _contains_term(full_text, "remote"):
         loc_score = 0.15
-    elif job_location and any(k in job_location.lower() for k in ["germany", "europe", "worldwide", "anywhere"]):
+    elif any(_contains_term(location_text, term) for term in ("India", "Nepal", "worldwide", "anywhere")):
         loc_score = 0.14
+    else:
+        loc_score = 0.08
 
-    # 4. Compensation / Target fit score (0.0 - 0.10)
-    comp_score = 0.08
-    if salary_min and target_salary_min:
-        if salary_min >= target_salary_min:
-            comp_score = 0.10
-        else:
-            comp_score = 0.05
+    # Do not compare salary values here unless caller has already normalized currency and pay period.
+    comp_score = 0.05
+    if salary_min is not None and target_salary_min is not None:
+        comp_score = 0.10 if salary_min >= target_salary_min else 0.02
 
-    # Overall match score (0.0 to 1.0)
-    total_score = round(min(1.0, skills_score + role_score + loc_score + comp_score), 2)
+    total_score = round(min(1.0, skills_score + role_score + loc_score + comp_score), 3)
+    criteria_breakdown = {
+        "skills_alignment": round(skills_score / 0.40, 3),
+        "role_relevance": round(role_score / 0.35, 3),
+        "location_remote_fit": round(loc_score / 0.15, 3),
+        "compensation_fit": round(comp_score / 0.10, 3),
+    }
 
-    # Generate skills gap analysis explanation
     if missing_skills:
         gap_summary = (
-            f"Strong alignment on core stack ({', '.join(matching_skills[:4])}). "
-            f"Gap identified in secondary requirements: {', '.join(missing_skills[:3])}. "
-            "Recommended to emphasize rapid learning curve and adjacent transferable experience in Docker/Python."
+            f"Required skills not evidenced in candidate profile: {', '.join(missing_skills[:8])}. "
+            f"Profile-supported matches: {', '.join(matching_skills[:8]) or 'none detected'}."
         )
+    elif required_skills:
+        gap_summary = f"All detected required skills appear in the candidate profile: {', '.join(matching_skills)}."
     else:
-        gap_summary = f"Exceptional alignment across all required technologies: {', '.join(matching_skills or ['Python', 'Full-Stack'])}."
+        gap_summary = "The listing did not expose clear technical skill requirements; skill alignment is uncertain."
 
-    match_reason = (
-        f"{int(total_score * 100)}% Match: "
-        f"{'Remote opportunity with strong ' if is_remote else ''}"
-        f"overlap in {', '.join(matching_skills[:3]) or 'software engineering'}. "
-        f"Title '{job_title}' aligns well with full-stack and AI engineering profile."
-    )
-
-    criteria_breakdown = {
-        "skills_alignment": round(skills_score / 0.40, 2),
-        "role_relevance": round(role_score / 0.35, 2),
-        "location_remote_fit": round(loc_score / 0.15, 2),
-        "compensation_fit": round(comp_score / 0.10, 2),
-    }
+    reason_parts = []
+    if matching_skills:
+        reason_parts.append("profile-supported skills: " + ", ".join(matching_skills[:5]))
+    if matched_roles:
+        reason_parts.append("role signals: " + ", ".join(matched_roles))
+    if matched_targets:
+        reason_parts.append("query terms: " + ", ".join(matched_targets))
+    if not reason_parts:
+        reason_parts.append("limited direct evidence; inspect the job description manually")
 
     return {
         "score": total_score,
         "criteria_breakdown": criteria_breakdown,
         "matching_skills": matching_skills,
         "missing_skills": missing_skills,
+        "matching_preferred_skills": matching_preferred,
+        "matching_target_keywords": matched_targets,
+        "missing_target_keywords": missing_targets,
+        "matched_role_groups": matched_roles,
         "skills_gap_analysis": gap_summary,
-        "match_reason": match_reason,
+        "match_reason": f"{int(total_score * 100)}% preliminary match based on " + "; ".join(reason_parts) + ".",
     }
-
 
 def generate_tailored_application(job: Job, profile_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
