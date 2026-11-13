@@ -12,7 +12,7 @@ class SearchQuery(BaseModel):
     """
     keywords: List[str] = Field(default_factory=lambda: ["python", "developer"])
     location: Optional[str] = None
-    country_code: Optional[str] = None  # e.g. "de", "us", "in", "gb"
+    country_code: Optional[str] = None  # e.g. "de", "us", "in", "gb"\n    applicant_countries: List[str] = Field(default_factory=lambda: ["Nepal", "India"])
     is_remote: Optional[bool] = None
     salary_min: Optional[float] = None
     salary_currency: Optional[str] = None
