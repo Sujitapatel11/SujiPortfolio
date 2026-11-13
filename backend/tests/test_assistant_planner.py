@@ -18,7 +18,7 @@ def test_planner_accepts_registered_tool_shape_for_later_policy_validation():
 
 
 def test_planner_rejects_unregistered_tool_shape():
-    with pytest.raises(ValueError):
+    with pytest.raises(PlannerUnavailable):
         _parse_planner_content(
             '{"kind":"action","message":"Run command","tool":"shell.exec",'
             '"arguments":{"command":"whoami"}}'
