@@ -1,4 +1,5 @@
 from typing import Optional
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -8,6 +9,7 @@ from app.database import get_db
 from app.agent import run_agent_message
 from app.admin.auth import JWT_SECRET_KEY, JWT_ALGORITHM, ADMIN_USERNAME
 
+logger = logging.getLogger("sujis_world.chat")
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
 class ChatRequest(BaseModel):
@@ -50,8 +52,9 @@ def chat_with_agent(req: ChatRequest, request: Request, db: Session = Depends(ge
             is_admin_context=is_admin
         )
         return ChatResponse(reply=reply, conversation_id=cid)
-    except Exception as e:
+    except Exception:
+        logger.exception("Chat agent request failed.")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Chat agent error: {str(e)}"
+            detail="The assistant is temporarily unavailable. Please try again shortly."
         )
