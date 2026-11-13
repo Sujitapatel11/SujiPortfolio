@@ -93,6 +93,29 @@ class TestJobHunterFullSuite(unittest.TestCase):
         self.assertEqual(filters["location"], "Singapore")
         self.assertIsNone(filters["country_code"])
 
+    def test_applicant_eligibility_worldwide(self):
+        from app.admin.connectors.helpers import assess_applicant_eligibility
+        self.assertEqual(assess_applicant_eligibility("Worldwide"), "eligible")
+
+    def test_applicant_eligibility_nepal_and_india_restriction(self):
+        from app.admin.connectors.helpers import assess_applicant_eligibility
+        self.assertEqual(
+            assess_applicant_eligibility("Candidates must be based in Nepal or India"),
+            "eligible",
+        )
+
+    def test_applicant_eligibility_explicit_us_only(self):
+        from app.admin.connectors.helpers import assess_applicant_eligibility
+        self.assertEqual(
+            assess_applicant_eligibility("Applicants must be based in the United States only"),
+            "ineligible",
+        )
+
+    def test_applicant_eligibility_ambiguous_location_is_unknown(self):
+        from app.admin.connectors.helpers import assess_applicant_eligibility
+        self.assertEqual(assess_applicant_eligibility("United States time-zone overlap"), "unknown")
+        self.assertEqual(assess_applicant_eligibility(None), "unknown")
+
     # 2. Mocked Provider Integrations
     @patch("urllib.request.urlopen")
     def test_adzuna_connector_mocked(self, mock_urlopen):
