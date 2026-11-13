@@ -189,6 +189,7 @@ class JobDiscoveryOrchestrator:
                         norm_job.raw_metadata.get("candidate_required_location")
                         or norm_job.raw_metadata.get("applicant_location")
                         or norm_job.raw_metadata.get("eligibility")
+                        or norm_job.description
                     )
                     eligibility = assess_applicant_eligibility(
                         candidate_scope,
