@@ -726,7 +726,8 @@ export const Dashboard = () => {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "1rem", alignItems: "center" }}>
                     <span style={{ fontFamily: "var(--bp-font-mono)", fontSize: "0.64rem", color: "var(--bp-grey)" }}>Providers:</span>
                     {providerHealth.map((p) => {
-                      const hasKey = p.is_enabled;\n                      const isHealthy = p.is_healthy;
+                      const hasKey = p.is_enabled;
+                      const isHealthy = p.is_healthy;
                       return (
                         <span
                           key={p.platform}
@@ -737,10 +738,10 @@ export const Dashboard = () => {
                           }}
                           title={!hasKey ? `Missing: ${(p.missing_credentials || []).join(", ")}` : isHealthy ? "Configured and last health check passed" : (p.last_error || "Configured, but last health check failed")}
                         >
-                          <span style={{ color: hasKey ? "#10b981" : "#f59e0b", marginRight: "4px" }}>
-                            {hasKey ? "●" : "○"}
+                          <span style={{ color: !hasKey ? "#f59e0b" : p.is_healthy === null || p.is_healthy === undefined ? "#94a3b8" : isHealthy ? "#10b981" : "#ef4444", marginRight: "4px" }}>
+                            {!hasKey ? "○" : p.is_healthy === null || p.is_healthy === undefined ? "?" : isHealthy ? "●" : "!"}
                           </span>
-                          {p.platform} {hasKey ? "" : "(Needs Key)"}
+                          {p.platform} {!hasKey ? "(Needs Key)" : p.is_healthy === null || p.is_healthy === undefined ? "(Not checked)" : !isHealthy ? "(Check)" : ""}
                         </span>
                       );
                     })}
@@ -837,6 +838,14 @@ export const Dashboard = () => {
                                   {j.company && <span>🏢 {j.company}</span>}
                                   {j.is_remote && <span style={{ color: "#38bdf8" }}>🌐 Remote</span>}
                                   {j.job_type && <span>💼 {j.job_type}</span>}
+                                  {j.raw_metadata?.applicant_eligibility && (
+                                    <span
+                                      title={j.raw_metadata.candidate_required_location || j.raw_metadata.eligibility || "Eligibility inferred from available listing text"}
+                                      style={{ color: j.raw_metadata.applicant_eligibility === "eligible" ? "#10b981" : j.raw_metadata.applicant_eligibility === "ineligible" ? "#ef4444" : "#f59e0b" }}
+                                    >
+                                      🌍 {j.raw_metadata.applicant_eligibility === "eligible" ? "Applicant eligible" : j.raw_metadata.applicant_eligibility === "ineligible" ? "Location restricted" : "Eligibility unclear"}
+                                    </span>
+                                  )}
                                 </div>
                               </td>
                               <td>
