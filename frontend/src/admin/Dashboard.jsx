@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "./AdminAuthContext";
 import "./admin.css";
@@ -22,6 +22,8 @@ export const Dashboard = () => {
   const [agentBusy, setAgentBusy] = useState(false);
   const [agentSearchBusy, setAgentSearchBusy] = useState(false);
   const [agentKeywords, setAgentKeywords] = useState("python, fastapi, django, react, typescript, machine learning, AI engineer");
+  const [refreshError, setRefreshError] = useState(null);
+  const agentStatusRequestId = useRef(0);
 
   // Admin AI Chat State
   const [adminChatMessages, setAdminChatMessages] = useState([
@@ -57,41 +59,50 @@ export const Dashboard = () => {
   useEffect(() => { if (isAuthenticated && adminToken) fetchDashboardData(); }, [isAuthenticated, adminToken]);
 
   useEffect(() => {
-    if (isAuthenticated && adminToken) fetchAgentStatus();
+    if (isAuthenticated && adminToken) {
+      fetchAgentStatus().catch((err) => showToast(`Job Hunter status unavailable: ${err.message}`));
+    }
   }, [isAuthenticated, adminToken]);
 
   const fetchDashboardData = async () => {
     setDataLoading(true);
     try {
       const headers = { Authorization: `Bearer ${adminToken}` };
-      const [inqRes, jobsRes, propRes, apptRes] = await Promise.all([
-        fetch(`${API_BASE}/admin/inquiries`, { headers }).catch(() => null),
-        fetch(`${API_BASE}/admin/jobs`, { headers }).catch(() => null),
-        fetch(`${API_BASE}/admin/proposals`, { headers }).catch(() => null),
-        fetch(`${API_BASE}/admin/appointments`, { headers }).catch(() => null),
-      ]);
-      if (inqRes && inqRes.ok) setInquiries(await inqRes.json());
-      if (jobsRes && jobsRes.ok) setJobs(await jobsRes.json());
-      if (propRes && propRes.ok) setProposals(await propRes.json());
-      if (apptRes && apptRes.ok) setAppointments(await apptRes.json());
-    } catch (err) { console.error("Error fetching dashboard data:", err); }
-    finally { setDataLoading(false); }
-  };
-
-  const fetchAgentStatus = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/admin/jobs/agent/status`, {
-        headers: { Authorization: `Bearer ${adminToken}` },
-      });
-      if (!res.ok) throw new Error(`Agent status request failed (${res.status}).`);
-      setAgentStatus(await res.json());
+      const endpoints = ["inquiries", "jobs", "proposals", "appointments"];
+      const responses = await Promise.all(endpoints.map((endpoint) =>
+        fetch(`${API_BASE}/admin/${endpoint}`, { headers })
+      ));
+      const failed = responses.find((response) => !response.ok);
+      if (failed) throw new Error(`Dashboard refresh failed (${failed.status}).`);
+      const [nextInquiries, nextJobs, nextProposals, nextAppointments] = await Promise.all(
+        responses.map((response) => response.json())
+      );
+      setInquiries(nextInquiries);
+      setJobs(nextJobs);
+      setProposals(nextProposals);
+      setAppointments(nextAppointments);
+      return true;
     } catch (err) {
-      console.error("Could not load Job Hunter status:", err);
-      showToast(`Job Hunter status unavailable: ${err.message}`);
+      console.error("Error fetching dashboard data:", err);
+      throw err;
+    } finally {
+      setDataLoading(false);
     }
   };
 
+  const fetchAgentStatus = async () => {
+    const requestId = ++agentStatusRequestId.current;
+    const res = await fetch(`${API_BASE}/admin/jobs/agent/status`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    if (!res.ok) throw new Error(`Agent status request failed (${res.status}).`);
+    const data = await res.json();
+    if (requestId === agentStatusRequestId.current) setAgentStatus(data);
+    return data;
+  };
+
   const controlAgent = async (action) => {
+    agentStatusRequestId.current += 1;
     setAgentBusy(true);
     try {
       const res = await fetch(`${API_BASE}/admin/jobs/agent/${action}`, {
@@ -100,12 +111,25 @@ export const Dashboard = () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `Could not ${action} the scheduler.`);
+      agentStatusRequestId.current += 1;
       setAgentStatus(data);
       showToast(action === "start" ? "Scheduled Job Hunter started." : "Scheduled Job Hunter stopped.");
     } catch (err) {
       showToast(`Job Hunter error: ${err.message}`);
+      fetchAgentStatus().catch(() => {});
     } finally {
       setAgentBusy(false);
+    }
+  };
+
+  const refreshJobHunterData = async () => {
+    setRefreshError(null);
+    try {
+      await Promise.all([fetchDashboardData(), fetchAgentStatus()]);
+      showToast("Jobs, proposals and agent status refreshed.");
+    } catch (err) {
+      setRefreshError(err.message);
+      showToast(`Refresh failed: ${err.message}`);
     }
   };
 
@@ -116,6 +140,7 @@ export const Dashboard = () => {
       return;
     }
     setAgentSearchBusy(true);
+    setRefreshError(null);
     try {
       const res = await fetch(`${API_BASE}/admin/jobs/search-now`, {
         method: "POST",
@@ -127,13 +152,18 @@ export const Dashboard = () => {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `Job search failed (${res.status}).`);
-      await Promise.all([fetchDashboardData(), fetchAgentStatus()]);
       const totals = Object.values(data.summary || {}).reduce((acc, item) => ({
         fetched: acc.fetched + (item.fetched || 0),
         matched: acc.matched + (item.matched || 0),
         drafted: acc.drafted + (item.drafted || 0),
       }), { fetched: 0, matched: 0, drafted: 0 });
-      showToast(`Scan complete: ${totals.fetched} fetched, ${totals.matched} matched, ${totals.drafted} drafts created.`);
+      try {
+        await Promise.all([fetchDashboardData(), fetchAgentStatus()]);
+        showToast(`Scan complete: ${totals.fetched} fetched, ${totals.matched} matched, ${totals.drafted} drafts created.`);
+      } catch (refreshErr) {
+        setRefreshError(refreshErr.message);
+        showToast(`Scan succeeded (${totals.matched} matches), but dashboard refresh failed. Retry refresh without scanning again.`);
+      }
     } catch (err) {
       showToast(`Job search error: ${err.message}`);
     } finally {
@@ -465,6 +495,7 @@ export const Dashboard = () => {
                       ))}
                     </div>
                     {agentStatus?.last_error && <p style={{ color: "#ef4444", fontSize: ".78rem" }}>Last error: {agentStatus.last_error}</p>}
+                    {refreshError && <div role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: ".75rem", color: "#ef4444", fontSize: ".78rem", marginTop: ".6rem" }}><span>Dashboard refresh failed: {refreshError}</span><button className="admin-btn-secondary" onClick={refreshJobHunterData}>Retry refresh</button></div>}
                     <p style={{ color: "var(--bp-grey)", fontSize: ".72rem", margin: ".8rem 0 0" }}>{agentStatus?.note || "Scheduler runs only while this API process is alive. Configure SERPAPI_API_KEY for Google Jobs results."}</p>
                   </section>
                   <div className="admin-data-panel">
