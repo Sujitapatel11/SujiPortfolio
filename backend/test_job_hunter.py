@@ -273,6 +273,36 @@ class TestJobHunterFullSuite(unittest.TestCase):
         self.assertIn("match_reason", fit)
         self.assertIn("skills_gap_analysis", fit)
 
+    def test_matcher_uses_requested_keywords(self):
+        fit = evaluate_job_fit(
+            job_title="Backend Developer",
+            job_description="Build APIs with Python and FastAPI.",
+            target_keywords=["python", "fastapi", "machine learning"],
+        )
+        self.assertIn("python", fit["matching_target_keywords"])
+        self.assertIn("fastapi", fit["matching_target_keywords"])
+        self.assertIn("machine learning", fit["missing_target_keywords"])
+
+    def test_matcher_does_not_match_ai_inside_retail(self):
+        fit = evaluate_job_fit(
+            job_title="Retail Assistant",
+            job_description="Customer service and retail operations.",
+            target_keywords=["ai"],
+        )
+        self.assertNotIn("AI / LLM Agents", fit["matching_skills"])
+        self.assertNotIn("ai", fit["matching_target_keywords"])
+        self.assertLess(fit["score"], 0.60)
+
+    def test_matcher_reports_missing_required_skills(self):
+        fit = evaluate_job_fit(
+            job_title="Backend Engineer",
+            job_description="Required: Kubernetes, GraphQL and Python.",
+            target_keywords=["python"],
+        )
+        self.assertIn("Python", fit["matching_skills"])
+        self.assertIn("Kubernetes", fit["missing_skills"])
+        self.assertIn("GraphQL", fit["missing_skills"])
+
     # 5. Tailored Application Assistance (No Fabrication)
     def test_generate_tailored_application(self):
         """Test truthful proposal, cover letter, resume suggestions, and interview questions."""
