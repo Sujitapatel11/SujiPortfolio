@@ -1,7 +1,7 @@
 """expand job hunter schema
 
-Revision ID: 005_expand_job_hunter_schema
-Revises: 004_add_appointments_table
+Revision ID: 006_expand_job_hunter_schema
+Revises: 005_add_inquiries_table
 Create Date: 2026-11-14 00:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = '005_expand_job_hunter_schema'
-down_revision: Union[str, None] = '004_add_appointments_table'
+revision: str = '006_expand_job_hunter_schema'
+down_revision: Union[str, None] = '005_add_inquiries_table'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -20,7 +20,7 @@ def upgrade() -> None:
     with op.batch_alter_table('jobs', schema=None) as batch_op:
         batch_op.add_column(sa.Column('company', sa.String(length=255), nullable=True))
         batch_op.add_column(sa.Column('location', sa.String(length=255), nullable=True))
-        batch_op.add_column(sa.Column('is_remote', sa.Boolean(), nullable=True, server_default=sa.text('0')))
+        batch_op.add_column(sa.Column('is_remote', sa.Boolean(), nullable=True, server_default=sa.false()))
         batch_op.add_column(sa.Column('job_type', sa.String(length=100), nullable=True))
         batch_op.add_column(sa.Column('canonical_url', sa.String(length=500), nullable=True))
         batch_op.add_column(sa.Column('salary_min', sa.Float(), nullable=True))
@@ -60,7 +60,7 @@ def upgrade() -> None:
         'provider_health_records',
         sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
         sa.Column('platform', sa.String(length=100), nullable=False),
-        sa.Column('is_enabled', sa.Boolean(), nullable=False, server_default=sa.text('1')),
+        sa.Column('is_enabled', sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column('is_healthy', sa.Boolean(), nullable=False, server_default=sa.text('1')),
         sa.Column('missing_credentials', sa.JSON(), nullable=True),
         sa.Column('last_sync_at', sa.DateTime(timezone=True), nullable=True),
