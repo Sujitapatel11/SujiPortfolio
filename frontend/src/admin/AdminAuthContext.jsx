@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 const AdminAuthContext = createContext(null);
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export const AdminAuthProvider = ({ children }) => {
   const [adminToken, setAdminToken] = useState(() => localStorage.getItem("admin_token"));
@@ -46,11 +46,19 @@ export const AdminAuthProvider = ({ children }) => {
   }, [adminToken]);
 
   const login = async (username, password) => {
-    const res = await fetch(`${API_BASE}/admin/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+    } catch (err) {
+      console.error("Admin login could not reach the API:", err);
+      throw new Error(
+        "Cannot connect to the backend at " + API_BASE + ". Start FastAPI on port 8000 locally, or set VITE_API_URL to the deployed backend URL and redeploy the frontend."
+      );
+    }
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
