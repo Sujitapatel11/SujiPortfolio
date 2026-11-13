@@ -13,6 +13,7 @@ import Experience from './components/Experience';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
 import ChatDrawer from './components/ChatDrawer';
+import JobHunterOrb from './components/JobHunterOrb';
 import { AdminAuthProvider } from './admin/AdminAuthContext';
 
 // Lazy-load private admin modules for code-splitting
@@ -48,6 +49,7 @@ function PublicPortfolio() {
         <Contact />
       </main>
       <Footer />
+      <JobHunterOrb />
       <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
       {!chatOpen && (
         <button
