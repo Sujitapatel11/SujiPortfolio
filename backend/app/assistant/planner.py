@@ -6,6 +6,7 @@ Every model output is parsed and revalidated by deterministic policy code.
 import json
 
 import httpx
+from pydantic import ValidationError
 
 from app.config import OPENAI_API_KEY
 from app.assistant.schemas import ActionProposalRequest
@@ -40,10 +41,14 @@ def _parse_planner_content(content: str) -> dict:
     if result["kind"] == "action":
         if not isinstance(result.get("tool"), str) or not isinstance(result.get("arguments"), dict):
             raise PlannerUnavailable("The AI planner returned an incomplete action.")
+        try:
+            request = ActionProposalRequest(tool=result["tool"], arguments=result["arguments"])
+        except ValidationError as exc:
+            raise PlannerUnavailable("The AI planner proposed an unregistered or malformed tool.") from exc
         return {
             "kind": "action",
             "message": message[:1000],
-            "request": ActionProposalRequest(tool=result["tool"], arguments=result["arguments"]),
+            "request": request,
         }
     return {"kind": result["kind"], "message": message[:1000]}
 
