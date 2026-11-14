@@ -272,3 +272,45 @@ def test_startup_does_not_start_worker_for_incomplete_saved_connection(monkeypat
         pass
 
     assert started == []
+
+
+def test_worker_restarts_after_reconnect_during_pending_shutdown(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "old-token"
+    state.backend_device_id = "device-12345678"
+    entered_old_poll = companion.threading.Event()
+    release_old_poll = companion.threading.Event()
+    replacement_started = companion.threading.Event()
+    calls = []
+
+    def fake_poll_once():
+        calls.append(True)
+        if len(calls) == 1:
+            entered_old_poll.set()
+            assert release_old_poll.wait(2)
+        else:
+            replacement_started.set()
+        return False
+
+    monkeypatch.setattr(companion, "_poll_once", fake_poll_once)
+    monkeypatch.setattr(companion, "POLL_INTERVAL_SECONDS", 60)
+
+    companion._start_worker()
+    assert entered_old_poll.wait(2)
+
+    # Disconnect requests cancellation while the original poll is still active.
+    state.stop_event.set()
+    # A new connection arrives before the old worker has exited.
+    with state.lock:
+        state.backend_token = "new-token"
+    companion._start_worker()
+    assert len(calls) == 1
+
+    release_old_poll.set()
+    assert replacement_started.wait(2)
+    worker = state.worker
+    state.stop_event.set()
+    if worker:
+        worker.join(timeout=2)
+    assert len(calls) == 2
