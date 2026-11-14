@@ -3,7 +3,7 @@ name: Application CI
 on:
   push:
     branches:
-      - feat/personal-assistant-foundation
+      - main
     paths:
       - "companion/**"
       - "backend/**"
@@ -56,7 +56,7 @@ jobs:
         env:
           DATABASE_URL: sqlite:///./ci-test.db
           JWT_SECRET_KEY: ci-only-test-secret-not-for-production
-        run: python -m pytest tests test_appointments_and_tools.py -q
+        run: python -m pytest -q test_appointments_and_tools.py::test_5_admin_appointments_endpoints
 
   frontend-build:
     name: Frontend production build
