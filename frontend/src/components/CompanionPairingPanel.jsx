@@ -64,12 +64,12 @@ export default function CompanionPairingPanel() {
       action = "open_url"; target = `${base}?text=${encodeURIComponent(whatsappDraft[2])}`;
     } else if (openLinkedInSearch) { action = "linkedin_search"; target = openLinkedInSearch[1]; }
     else if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
-    else if (googleSearch) { action = "google_search"; target = googleSearch[1]; }
+    else if (googleSearch) { action = "google_search"; target = googleSearch[1]; }\n    else if (instagramSearch) { action = "open_url"; target = `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(instagramSearch[1])}`; }
     else if (open) {
       const site = open[1].toLowerCase().replace(/^www\./, "");
-      const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com" };
+      const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com", instagram: "https://www.instagram.com", "instagram.com": "https://www.instagram.com" };
       action = "open_url"; target = urls[site] || (site.startsWith("http://") || site.startsWith("https://") ? site : "https://" + site);
-    } else { setError("Try “search LinkedIn for remote jobs”, “open LinkedIn and search remote jobs”, “open WhatsApp”, or “draft WhatsApp message: Hello”."); return; }
+    } else { setError("Try “search LinkedIn for remote jobs”, “open LinkedIn and search remote jobs”, “open WhatsApp”, “open Instagram”, “search Instagram for photography”, or “draft WhatsApp message: Hello”."); return; }
     setBusy(true); setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
@@ -116,6 +116,6 @@ export default function CompanionPairingPanel() {
     {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
     <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
     {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-slate-500">Allowed: Google/LinkedIn search and WhatsApp Web or pre-filled message drafts. You must review and send messages yourself. No shell, form submission or payments.</p>
+    <p className="mt-2 text-[10px] text-slate-500">Allowed: Google/LinkedIn search, Instagram navigation/search, and WhatsApp Web or pre-filled message drafts. You must review and send messages yourself. No shell, form submission or payments.</p>
   </section>;
 }
