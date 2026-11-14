@@ -254,14 +254,14 @@ def _worker_finished() -> None:
         _start_worker()
 
 
-def _poll_loop() -> None:
+def _poll_loop(stop_event: threading.Event) -> None:
     try:
-        while not STATE.stop_event.is_set():
+        while not stop_event.is_set():
             try:
                 _poll_once()
             except Exception:
                 pass
-            STATE.stop_event.wait(POLL_INTERVAL_SECONDS)
+            stop_event.wait(POLL_INTERVAL_SECONDS)
     finally:
         _worker_finished()
 
@@ -269,13 +269,19 @@ def _poll_loop() -> None:
 def _start_worker() -> None:
     with STATE.lock:
         if STATE.worker and STATE.worker.is_alive():
-            # A stopping worker owns shutdown. Its finally block will restart
-            # polling if a replacement connection was established meanwhile.
+            # The existing worker owns shutdown. Its finally block starts a
+            # replacement if a new connection exists after cancellation.
             return
         if not (STATE.backend_api_url and STATE.backend_token and STATE.backend_device_id):
             return
-        STATE.stop_event.clear()
-        worker = threading.Thread(target=_poll_loop, name="suji-command-poller", daemon=True)
+        # Each worker owns its event. A reconnect must never clear the old
+        # worker's cancellation signal and accidentally revive that thread.
+        stop_event = threading.Event()
+        STATE.stop_event = stop_event
+        worker = threading.Thread(
+            target=_poll_loop, args=(stop_event,),
+            name="suji-command-poller", daemon=True
+        )
         STATE.worker = worker
         worker.start()
 
