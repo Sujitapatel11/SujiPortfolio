@@ -134,7 +134,6 @@ def test_poll_once_executes_and_reports_backend_command(monkeypatch):
         "nonce": "n" * 64,
         "expires_at": "2099-01-01T00:00:00+00:00",
     }
-        "expires_at": "2099-01-01T00:00:00+00:00",
     command["payload_sha256"] = companion._command_hash(command)
     calls = []
     def fake_request(method, url, token, payload=None):
