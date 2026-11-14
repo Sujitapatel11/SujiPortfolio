@@ -28,7 +28,7 @@ ORIGINS = sorted({
     ).split(",")
     if value.strip() and value.strip() != "*"
 })
-ALLOWED_HOSTS = {"google.com", "www.google.com", "linkedin.com", "www.linkedin.com", "whatsapp.com", "web.whatsapp.com", "wa.me"}
+ALLOWED_HOSTS = {"google.com", "www.google.com", "linkedin.com", "www.linkedin.com", "whatsapp.com", "web.whatsapp.com", "wa.me", "instagram.com", "www.instagram.com"}
 
 
 def load_saved_token() -> str:
@@ -146,7 +146,7 @@ def run_action(payload: ActionRequest, request: Request):
             or parsed.username
             or parsed.password
         ):
-            raise HTTPException(400, "Only Google, LinkedIn, and WhatsApp URLs are allowed")
+            raise HTTPException(400, "Only Google, LinkedIn, WhatsApp, and Instagram URLs are allowed")
         target = value
 
     if not webbrowser.open(target, new=2):
