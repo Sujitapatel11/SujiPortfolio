@@ -132,6 +132,7 @@ def test_poll_once_executes_and_reports_backend_command(monkeypatch):
         "arguments": {"url": "https://example.com"},
         "payload_sha256": "",
         "nonce": "n" * 64,
+        "expires_at": "2099-01-01T00:00:00+00:00",
     }
         "expires_at": "2099-01-01T00:00:00+00:00",
     command["payload_sha256"] = companion._command_hash(command)
@@ -161,6 +162,7 @@ def test_poll_once_rejects_payload_tampering(monkeypatch):
         "arguments": {"url": "https://example.com"},
         "payload_sha256": "0" * 64,
         "nonce": "n" * 64,
+        "expires_at": "2099-01-01T00:00:00+00:00",
     }
     monkeypatch.setattr(companion, "_api_request", lambda *args, **kwargs: {"command": command})
     import pytest
@@ -192,6 +194,7 @@ def test_poll_once_rejects_expired_command(monkeypatch):
         "arguments": {"url": "https://example.com"},
         "payload_sha256": "",
         "nonce": "n" * 64,
+        "expires_at": "2099-01-01T00:00:00+00:00",
         "expires_at": "2000-01-01T00:00:00+00:00",
     }
     command["payload_sha256"] = companion._command_hash(command)
