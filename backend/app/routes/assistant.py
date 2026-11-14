@@ -432,6 +432,8 @@ def claim_next_command(
         AssistantAction.status == "approved",
         AssistantAction.target_device_id == device.id,
         AssistantSession.owner_username == device.owner_username,
+        AssistantSession.status == "active",
+        AssistantSession.expires_at > now,
         AssistantAction.expires_at > now,
     ).order_by(AssistantAction.approved_at.asc()).with_for_update(skip_locked=True).first()
     if not action:
