@@ -56,7 +56,7 @@ export default function CompanionPairingPanel() {
       || value.match(/^find\s+(?:on\s+)?linkedin\s+(.+)$/i);
     const openLinkedInSearch = value.match(/^(?:open|go to|visit)\s+linkedin\s+and\s+search\s+(.+)$/i);
     const googleSearch = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
-    const whatsappDraft = value.match(/^draft\s+(?:a\s+)?whatsapp\s+message(?:\s+to\s+([+0-9]{8,15}))?\s*[:,-]?\s+(.+)$/i);
+    const whatsappDraft = value.match(/^draft\\s+(?:a\\s+)?whatsapp\\s+message(?:\\s+to\\s+(\\+?[0-9]{8,15}))?\\s*[:,-]?\\s+(.+)$/i);
     const open = value.match(/^(?:open|go to|visit)\s+(.+)$/i);
     if (whatsappDraft) {
       const number = whatsappDraft[1] ? whatsappDraft[1].replace(/\D/g, "") : "";
