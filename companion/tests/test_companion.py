@@ -53,8 +53,9 @@ def test_linkedin_search_and_disconnect(monkeypatch):
 def test_repairing_not_required_and_second_pair_rejected(monkeypatch):
     state = reset(monkeypatch)
     client = TestClient(companion.app)
-    first = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge})
-    second = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge})
+    challenge = state.challenge
+    first = client.post("/v1/pair", headers=HEADERS, json={"challenge": challenge})
+    second = client.post("/v1/pair", headers=HEADERS, json={"challenge": challenge})
     assert first.status_code == 200
     assert second.status_code == 409
 
