@@ -1,5 +1,6 @@
 import urllib.error
 import urllib.request
+from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -335,7 +336,7 @@ def test_claim_returned_after_disconnect_is_not_executed(monkeypatch):
         "tool": "browser.open_url",
         "arguments": {"url": "https://example.com"},
         "expires_at": (companion.datetime.now(companion.timezone.utc)
-                       + companion.timedelta(minutes=5)).isoformat(),
+                       + timedelta(minutes=5)).isoformat(),
     }
     command["payload_sha256"] = companion._command_hash(command)
 
