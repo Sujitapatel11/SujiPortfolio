@@ -10,6 +10,7 @@ import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.admin.auth import get_current_admin
@@ -333,6 +334,11 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
         db.commit()
         raise HTTPException(status_code=410, detail="Action proposal has expired")
 
+    decision_values = {
+        "updated_at": now,
+    }
+    event = "action.rejected"
+
     if payload.decision == "approve":
         device_id = session.device_id
         if not device_id:
@@ -344,24 +350,62 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
         ).first()
         if not device:
             raise HTTPException(status_code=409, detail="Target device is not active")
-        action.status = "approved"
-        action.approved_by = current_admin["username"]
-        action.approved_at = now
-        action.target_device_id = device.id
-        action.command_id = str(uuid4())
-        action.execution_nonce = secrets.token_hex(32)
+
+        # Generate credentials for this attempt, then persist them only if this
+        # request wins the conditional state transition below.
+        command_id = str(uuid4())
+        execution_nonce = secrets.token_hex(32)
+        decision_values.update({
+            "status": "approved",
+            "approved_by": current_admin["username"],
+            "approved_at": now,
+            "target_device_id": device.id,
+            "command_id": command_id,
+            "execution_nonce": execution_nonce,
+        })
         event = "action.approved_and_queued"
     else:
-        action.status = "rejected"
-        action.rejected_reason = payload.reason
-        event = "action.rejected"
+        decision_values.update({
+            "status": "rejected",
+            "rejected_reason": payload.reason,
+        })
 
-    action.updated_at = now
+    # The status predicate makes approval/rejection a single-winner transition.
+    # Concurrent requests may both read awaiting_approval above, but only one
+    # UPDATE can change that state and attach command credentials.
+    transition = db.execute(
+        update(AssistantAction)
+        .where(
+            AssistantAction.id == action.id,
+            AssistantAction.status == "awaiting_approval",
+            AssistantAction.expires_at > now,
+        )
+        .values(**decision_values)
+    )
+    if transition.rowcount != 1:
+        db.rollback()
+        latest = db.query(AssistantAction).filter(
+            AssistantAction.id == action_id,
+        ).first()
+        if latest and latest.status == "awaiting_approval":
+            latest_expiry = latest.expires_at
+            if latest_expiry.tzinfo is None:
+                latest_expiry = latest_expiry.replace(tzinfo=timezone.utc)
+            if latest_expiry <= now:
+                latest.status = "expired"
+                latest.updated_at = now
+                _audit(db, latest.session_id, latest.id, current_admin["username"], "action.expired")
+                db.commit()
+                raise HTTPException(status_code=410, detail="Action proposal has expired")
+        current_status = latest.status if latest else "unavailable"
+        raise HTTPException(status_code=409, detail=f"Action is already {current_status}")
+
     _audit(db, action.session_id, action.id, current_admin["username"], event, {
         "reason": payload.reason if payload.decision == "reject" else None,
         "payload_sha256": action.payload_sha256,
     })
     db.commit()
+    db.refresh(action)
     return {
         "action_id": action.id,
         "status": action.status,
