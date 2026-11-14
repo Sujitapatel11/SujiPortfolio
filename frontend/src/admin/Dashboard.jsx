@@ -58,6 +58,13 @@ export const Dashboard = () => {
 
   useEffect(() => { if (!loading && !isAuthenticated) navigate("/admin/login"); }, [loading, isAuthenticated, navigate]);
 
+  useEffect(() => {
+    const openOperator = () => setActiveTab("personal_operator");
+    window.addEventListener("suji:open-personal-operator", openOperator);
+    return () => window.removeEventListener("suji:open-personal-operator", openOperator);
+  }, []);
+
+
   useEffect(() => { if (isAuthenticated && adminToken) fetchDashboardData(); }, [isAuthenticated, adminToken]);
 
   useEffect(() => {
