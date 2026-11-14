@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "./AdminAuthContext";
 import "./admin.css";
 import PersonalAssistantOrb from "../components/PersonalAssistantOrb";
+import PersonalOperatorDevices from "./PersonalOperatorDevices";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -344,6 +345,7 @@ export const Dashboard = () => {
     { id: "inquiries", label: "Inquiries", count: inquiries.length },
     { id: "admin_chat", label: "Ask Suji" },
     { id: "settings", label: "Settings" },
+    { id: "personal_operator", label: "Personal Operator" },
   ];
 
   if (loading || !isAuthenticated) {
@@ -358,6 +360,7 @@ export const Dashboard = () => {
     inquiries: "Inquiries",
     admin_chat: "Ask Suji — Admin Chat",
     settings: "Settings",
+    personal_operator: "Personal Operator · Private Device Setup",
   };
 
   return (
@@ -687,6 +690,11 @@ export const Dashboard = () => {
                       <button type="submit" className="admin-btn-primary" disabled={adminChatLoading || !adminChatInput.trim()}>Send</button>
                     </form>
                   </div>
+                )}
+
+                {/* ═══ PRIVATE PERSONAL OPERATOR ═══ */}
+                {activeTab === "personal_operator" && (
+                  <PersonalOperatorDevices adminToken={adminToken} />
                 )}
 
                 {/* ═══ SETTINGS ═══ */}
