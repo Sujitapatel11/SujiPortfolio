@@ -131,7 +131,7 @@ def test_session_expires_and_disconnect_revokes(monkeypatch):
     ).json()
     auth = {"Authorization": f"Bearer {paired['session_token']}"}
 
-    disconnected = client.post("/v1/pairing/disconnect", headers=auth)
+    disconnected = client.post("/v1/pairing/disconnect", headers={**HEADERS, **auth})
     assert disconnected.status_code == 200
     assert client.get("/v1/capabilities", headers=auth).status_code == 401
 
