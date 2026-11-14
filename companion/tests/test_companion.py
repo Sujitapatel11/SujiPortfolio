@@ -96,3 +96,72 @@ def test_instagram_url_is_allowlisted(monkeypatch):
     })
     assert result.status_code == 200
     assert opened[0] == "https://www.instagram.com/"
+
+
+
+def test_command_hash_and_browser_adapter_are_allowlisted(monkeypatch):
+    command = {
+        "tool": "browser.open_url",
+        "arguments": {"url": "https://example.com"},
+    }
+    monkeypatch.setattr(companion, "_is_public_url", lambda value: True)
+    monkeypatch.setattr(companion.webbrowser, "open", lambda *args, **kwargs: True)
+    assert len(companion._command_hash(command)) == 64
+    assert companion.execute_approved_command(command)[0] == "opened"
+
+
+def test_command_adapter_rejects_unknown_tools():
+    import pytest
+    with pytest.raises(ValueError):
+        companion.execute_approved_command({
+            "tool": "shell.run",
+            "arguments": {"command": "whoami"},
+        })
+
+
+def test_poll_once_executes_and_reports_backend_command(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "device-secret-token"
+    state.backend_device_id = "device-12345678"
+    command = {
+        "command_id": "command-12345678",
+        "action_id": "action-12345678",
+        "device_id": state.backend_device_id,
+        "tool": "browser.open_url",
+        "arguments": {"url": "https://example.com"},
+        "payload_sha256": "",
+        "nonce": "n" * 64,
+    }
+    command["payload_sha256"] = companion._command_hash(command)
+    calls = []
+    def fake_request(method, url, token, payload=None):
+        calls.append((method, url, token, payload))
+        if method == "GET":
+            return {"command": command}
+        return {"status": "completed"}
+    monkeypatch.setattr(companion, "_api_request", fake_request)
+    monkeypatch.setattr(companion, "execute_approved_command", lambda item: ("opened", "Opened"))
+    assert companion._poll_once() is True
+    assert len(calls) == 2
+    assert calls[1][3]["command_id"] == command["command_id"]
+    assert calls[1][3]["outcome"] == "completed"
+
+
+def test_poll_once_rejects_payload_tampering(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "device-secret-token"
+    state.backend_device_id = "device-12345678"
+    command = {
+        "command_id": "command-12345678",
+        "device_id": state.backend_device_id,
+        "tool": "browser.open_url",
+        "arguments": {"url": "https://example.com"},
+        "payload_sha256": "0" * 64,
+        "nonce": "n" * 64,
+    }
+    monkeypatch.setattr(companion, "_api_request", lambda *args, **kwargs: {"command": command})
+    import pytest
+    with pytest.raises(RuntimeError, match="payload_hash"):
+        companion._poll_once()
