@@ -258,6 +258,17 @@ def _start_worker() -> None:
     STATE.worker.start()
 
 
+@app.on_event("startup")
+def resume_saved_backend_connection() -> None:
+    """Resume outbound polling after restart only when all credentials were restored."""
+    with STATE.lock:
+        connection_ready = bool(
+            STATE.backend_api_url and STATE.backend_token and STATE.backend_device_id
+        )
+    if connection_ready:
+        _start_worker()
+
+
 def check_origin(request: Request) -> None:
     origin = request.headers.get("origin", "")
     parts = urlsplit(origin)
