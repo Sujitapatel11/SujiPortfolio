@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional, List, Literal
 from pydantic import BaseModel, EmailStr, Field
 
+
 class InquiryCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255, example="Sujita Sharma")
     email: EmailStr = Field(..., example="sujita@example.com")
@@ -9,6 +10,7 @@ class InquiryCreate(BaseModel):
     budget: Optional[str] = Field(None, example="$5,000 - $10,000")
     message: str = Field(..., min_length=1, example="I want to build a custom 3D web experience with an AI chatbot.")
     source: Optional[str] = Field("form", description="Origin of inquiry: 'form' or 'chat'")
+
 
 class InquiryResponse(BaseModel):
     id: int
@@ -23,7 +25,7 @@ class InquiryResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# Profile Schemas
+
 class ProjectItem(BaseModel):
     title: str
     description: str
@@ -31,11 +33,13 @@ class ProjectItem(BaseModel):
     link: Optional[str] = None
     featured: bool = True
 
+
 class ServiceItem(BaseModel):
     name: str
     description: str
     price_range: str
     deliverables: List[str]
+
 
 class ProfileResponse(BaseModel):
     name: str
@@ -46,10 +50,11 @@ class ProfileResponse(BaseModel):
     projects: List[ProjectItem]
     contact: dict
 
-# Admin Schemas
+
 class AdminLoginRequest(BaseModel):
     username: str
     password: str
+
 
 class AdminLoginResponse(BaseModel):
     access_token: str
@@ -57,132 +62,18 @@ class AdminLoginResponse(BaseModel):
     username: str
     role: str = "admin"
 
+
 class AdminUserResponse(BaseModel):
     username: str
     role: str = "admin"
 
-# Job Schemas
-class JobCreate(BaseModel):
-    platform: Optional[str] = "Direct"
-    external_id: Optional[str] = None
-    title: str
-    company: Optional[str] = None
-    location: Optional[str] = None
-    is_remote: Optional[bool] = False
-    job_type: Optional[str] = None
-    description: Optional[str] = None
-    url: Optional[str] = None
-    canonical_url: Optional[str] = None
-    budget: Optional[str] = None
-    salary_min: Optional[float] = None
-    salary_max: Optional[float] = None
-    salary_currency: Optional[str] = None
-    posted_at: Optional[datetime] = None
-    match_score: Optional[float] = 0.0
-    status: Optional[str] = "DISCOVERED"
 
-class JobResponse(BaseModel):
-    id: int
-    platform: str
-    external_id: Optional[str] = None
-    title: str
-    company: Optional[str] = None
-    location: Optional[str] = None
-    is_remote: Optional[bool] = False
-    job_type: Optional[str] = None
-    description: Optional[str] = None
-    url: Optional[str] = None
-    canonical_url: Optional[str] = None
-    budget: Optional[str] = None
-    salary_min: Optional[float] = None
-    salary_max: Optional[float] = None
-    salary_currency: Optional[str] = None
-    posted_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
-    match_score: Optional[float] = 0.0
-    match_explanation: Optional[dict] = None
-    skills_gap: Optional[dict] = None
-    raw_metadata: Optional[dict] = None
-    status: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-class JobSearchRequest(BaseModel):
-    query: Optional[str] = Field(None, description="Natural language search query e.g. 'Find remote Python jobs in Germany with salary above €40,000'")
-    keywords: Optional[List[str]] = Field(default=None, description="Explicit keyword filters e.g. ['python', 'fastapi']")
-    location: Optional[str] = None
-    is_remote: Optional[bool] = None
-    salary_min: Optional[float] = None
-    job_type: Optional[str] = None
-    max_days_old: Optional[int] = None
-
-class JobSearchStats(BaseModel):
-    fetched: int
-    matched: int
-    drafted: int
-
-class JobSearchResponse(BaseModel):
-    summary: dict
-    total_fetched: Optional[int] = 0
-    total_matched: Optional[int] = 0
-    parsed_filters: Optional[dict] = None
-    unsupported_explanations: Optional[List[str]] = None
-
-# Proposal Schemas
-class ProposalCreate(BaseModel):
-    job_id: int
-    draft_text: str
-    edited_text: Optional[str] = None
-    cover_letter: Optional[str] = None
-    status: Optional[str] = "draft"
-
-class ProposalUpdate(BaseModel):
-    edited_text: Optional[str] = None
-    cover_letter: Optional[str] = None
-    status: Optional[str] = None
-
-class ProposalResponse(BaseModel):
-    id: int
-    job_id: int
-    draft_text: str
-    edited_text: Optional[str] = None
-    cover_letter: Optional[str] = None
-    tailored_resume_suggestions: Optional[list] = None
-    interview_questions: Optional[list] = None
-    status: str
-    generated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-# Manual Paste Job Schemas
-class JobPasteRequest(BaseModel):
-    platform: str = Field(..., description="Platform name e.g. Upwork, Fiverr, Other")
-    title: str = Field(..., min_length=2, example="Full-Stack Developer for FastAPI & React Platform")
-    company: Optional[str] = Field(None, example="Acme Corp")
-    location: Optional[str] = Field(None, example="Remote")
-    description: str = Field(..., min_length=5, example="Looking for a Python/FastAPI backend engineer with React skills.")
-    url: Optional[str] = Field(None, example="https://www.upwork.com/jobs/~0123456789")
-    budget: Optional[str] = Field(None, example="$3,000")
-
-class JobPasteResponse(BaseModel):
-    job: JobResponse
-    proposal: ProposalResponse
-
-class JobStatusUpdate(BaseModel):
-    status: str = Field(..., example="SUBMITTED", description="Status: DISCOVERED, MATCHED, SAVED, DRAFTED, PENDING_APPROVAL, APPROVED, SUBMITTED, REJECTED, EXPIRED")
-
-class SchedulerIntervalUpdate(BaseModel):
-    interval_hours: int = Field(..., ge=1, le=168, description="Frequency in hours between background scans")
-
-# Appointment Schemas
 class AppointmentCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=255, example="Jane Doe")
     email: EmailStr = Field(..., example="jane@example.com")
     preferred_time: Optional[str] = Field(None, example="Tomorrow 2pm")
     purpose: Optional[str] = Field(None, example="Discussing a new SaaS MVP")
+
 
 class AppointmentUpdate(BaseModel):
     status: Literal["confirmed", "declined", "rescheduled"] = Field(
@@ -190,6 +81,7 @@ class AppointmentUpdate(BaseModel):
         example="confirmed",
         description="New status: confirmed, declined, or rescheduled",
     )
+
 
 class AppointmentResponse(BaseModel):
     id: int
@@ -202,5 +94,3 @@ class AppointmentResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
