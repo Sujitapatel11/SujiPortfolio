@@ -116,7 +116,9 @@ def test_approved_command_is_claimed_once_and_result_is_one_time():
             json=result_payload,
             headers=headers,
         )
-        assert duplicate.status_code == 409
+        assert duplicate.status_code == 200
+        assert duplicate.json()["status"] == "completed"
+        assert duplicate.json()["duplicate"] is True
 
         db = TestingSessionLocal()
         try:
