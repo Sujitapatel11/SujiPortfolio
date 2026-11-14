@@ -8,7 +8,6 @@ import time
 import webbrowser
 import keyring
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Annotated
 from urllib.parse import quote_plus, urlsplit
 
@@ -119,12 +118,7 @@ def pair(payload: PairRequest, request: Request):
             STATE.token = ""
             raise HTTPException(503, "Windows Credential Manager could not save the pairing. Check the companion installation.") from exc
         STATE.challenge = ""
-        return {
-            "token": STATE.token,
-            "expires_at": datetime.fromtimestamp(
-                time.time() + SESSION_TTL, timezone.utc
-            ).isoformat(),
-        }
+        return {"token": STATE.token, "status": "paired"}
 
 
 @app.post("/v1/action", dependencies=[Depends(require_pairing)])
