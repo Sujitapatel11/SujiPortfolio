@@ -1,31 +1,118 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Link2, Unlink, ShieldCheck, Loader2, RefreshCw, AlertTriangle, Globe, Search } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Mic, MicOff, Search, Globe, Link2, Unlink, Loader2, AlertTriangle } from "lucide-react";
 
-const COMPANION_BASE = "http://127.0.0.1:8765";
-async function companionRequest(path, { method = "GET", token, body } = {}) {
-  const headers = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (token) headers.Authorization = `Bearer ${token}`;
+const BASE = "http://127.0.0.1:8765";
+async function request(path, token, body) {
   let response;
-  try { response = await fetch(`${COMPANION_BASE}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), mode: "cors", credentials: "omit", cache: "no-store" }); }
-  catch { throw new Error("Cannot reach the local companion. Start it on this computer and allow local-network access in your browser."); }
+  try {
+    response = await fetch(BASE + path, {
+      method: "POST",
+      mode: "cors",
+      credentials: "omit",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("Local companion is not reachable. Start companion.py on this computer.");
+  }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.detail || `Companion request failed (${response.status}).`);
+  if (!response.ok) throw new Error(data.detail || `Request failed (${response.status})`);
   return data;
 }
+
 export default function CompanionPairingPanel() {
-  const [challenge,setChallenge]=useState(""); const [token,setToken]=useState(""); const [deviceId,setDeviceId]=useState(""); const [expiresAt,setExpiresAt]=useState(""); const [capabilities,setCapabilities]=useState([]); const [command,setCommand]=useState(""); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [notice,setNotice]=useState(""); const tokenRef=useRef("");
-  useEffect(()=>{tokenRef.current=token;},[token]);
-  useEffect(()=>()=>{tokenRef.current="";},[]);
-  const checkCompanion=async()=>{setBusy(true);setError("");setNotice("");try{const h=await companionRequest("/health");setNotice(`Companion reachable · browser control: ${h.execution_enabled?"available":"disabled"}`);}catch(e){setError(e.message);}finally{setBusy(false);}};
-  const pair=async(e)=>{e.preventDefault();if(!challenge.trim())return;setBusy(true);setError("");setNotice("");try{const r=await companionRequest("/v1/pairing/complete",{method:"POST",body:{challenge:challenge.trim()}});setToken(r.session_token);tokenRef.current=r.session_token;setDeviceId(r.device_id);setExpiresAt(r.expires_at);setChallenge("");const info=await companionRequest("/v1/capabilities",{token:r.session_token});setCapabilities(info.capabilities||[]);setNotice("This browser is paired with your Windows companion.");}catch(err){setToken("");tokenRef.current="";setDeviceId("");setExpiresAt("");setCapabilities([]);setError(err.message);}finally{setBusy(false);}};
-  const run=async(action)=>{if(!command.trim()||!tokenRef.current)return;setBusy(true);setError("");setNotice("");try{const r=await companionRequest("/v1/actions/browser",{method:"POST",token:tokenRef.current,body:{action,value:command.trim()}});setNotice(`Opened: ${r.title||r.url} · ${r.url}`);setCommand("");}catch(e){setError(e.message);}finally{setBusy(false);}};
-  const disconnect=async()=>{const t=tokenRef.current;if(!t)return;setBusy(true);try{await companionRequest("/v1/pairing/disconnect",{method:"POST",token:t,body:{}});setNotice("Device disconnected.");}catch(e){setError(e.message);}finally{setToken("");tokenRef.current="";setDeviceId("");setExpiresAt("");setCapabilities([]);setBusy(false);}};
-  return <section className="mt-3 rounded-2xl border border-cyan-300/20 bg-cyan-400/5 p-3">
-    <div className="flex items-center justify-between gap-2"><p className="flex items-center gap-2 text-xs font-semibold text-cyan-100"><Link2 size={14}/> WINDOWS BROWSER CONTROL</p><span className={`rounded-full px-2 py-1 text-[10px] ${token?"bg-emerald-400/15 text-emerald-200":"bg-white/10 text-slate-300"}`}>{token?"Paired":"Not paired"}</span></div>
-    <p className="mt-2 text-[11px] text-slate-400">Pair once with the local companion to open websites and search Google in a visible Chrome window.</p>
-    {!token?<form onSubmit={pair} className="mt-3 space-y-2"><button type="button" onClick={checkCompanion} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg border border-cyan-300/20 px-3 py-2 text-xs text-cyan-100"><RefreshCw size={13}/> Check local companion</button><label className="block text-[10px] text-slate-400" htmlFor="assistant-pairing-challenge">One-time challenge from companion terminal</label><input id="assistant-pairing-challenge" value={challenge} onChange={e=>setChallenge(e.target.value)} autoComplete="off" placeholder="Paste pairing challenge" className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white"/><button type="submit" disabled={busy||challenge.trim().length<30} className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-500/20 px-3 py-2 text-xs text-cyan-100 disabled:opacity-40">{busy?<Loader2 size={13} className="animate-spin"/>:<ShieldCheck size={13}/>} Pair this computer</button></form>:<div className="mt-3 space-y-2"><p className="text-[10px] text-slate-400">Device {deviceId} · expires {new Date(expiresAt).toLocaleTimeString()}</p><p className="text-[10px] text-emerald-200">Ready: {capabilities.join(", ")}</p><form onSubmit={e=>{e.preventDefault();run("google_search");}} className="flex gap-2"><input value={command} onChange={e=>setCommand(e.target.value)} placeholder="Search Google for..." className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white"/><button disabled={busy||!command.trim()} className="rounded-lg bg-violet-500/30 px-3 text-violet-100 disabled:opacity-40"><Search size={15}/></button></form><form onSubmit={e=>{e.preventDefault();run("open_url");}} className="flex gap-2"><input value={command} onChange={e=>setCommand(e.target.value)} placeholder="https://linkedin.com" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white"/><button disabled={busy||!command.trim()} className="rounded-lg bg-cyan-500/20 px-3 text-cyan-100 disabled:opacity-40"><Globe size={15}/></button></form><button onClick={disconnect} disabled={busy} className="flex w-full items-center justify-center gap-2 rounded-lg border border-rose-300/20 px-3 py-2 text-xs text-rose-100"><Unlink size={13}/> Disconnect</button></div>}
-    {notice&&<p role="status" className="mt-2 text-[10px] text-emerald-200">{notice}</p>}{error&&<p role="alert" className="mt-2 flex gap-1.5 text-[10px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-amber-100/70">First milestone supports visible Chrome navigation and Google search only. No admin login is needed by the local companion after pairing; the portfolio UI still currently inherits the existing owner-login gate.</p>
+  const [challenge, setChallenge] = useState("");
+  const [token, setToken] = useState("");
+  const [command, setCommand] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [message, setMessage] = useState("Pair this browser with your Windows companion.");
+  const [error, setError] = useState("");
+  const tokenRef = useRef("");
+
+  const pair = async (event) => {
+    event.preventDefault();
+    setBusy(true); setError("");
+    try {
+      const result = await request("/v1/pair", "", { challenge: challenge.trim() });
+      tokenRef.current = result.token;
+      setToken(result.token);
+      setChallenge("");
+      setMessage("Connected. Try: “Search Google for Python internships”.");
+    } catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const execute = async (text = command) => {
+    const value = text.trim();
+    if (!value || !tokenRef.current || busy) return;
+    let action, target;
+    const search = value.match(/^(?:search|google search)\\s+(?:google\\s+for\\s+)?(.+)$/i);
+    const linkedin = value.match(/^(?:search|find)\\s+(?:on\\s+)?linkedin\\s+(?:for\\s+)?(.+)$/i);
+    const open = value.match(/^(?:open|go to|visit)\\s+(.+)$/i);
+    if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
+    else if (search) { action = "google_search"; target = search[1]; }
+    else if (open) {
+      const site = open[1].toLowerCase().replace(/^www\\./, "");
+      const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com" };
+      action = "open_url"; target = urls[site] || (site.startsWith("http://") || site.startsWith("https://") ? site : "https://" + site);
+    } else {
+      setError("Try “search Google for …”, “search LinkedIn for …”, or “open Google/LinkedIn”.");
+      return;
+    }
+    setBusy(true); setError("");
+    try {
+      const result = await request("/v1/action", tokenRef.current, { action, value: target });
+      setMessage("Opened in your default browser: " + result.url);
+      setCommand("");
+    } catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  };
+
+  const listen = () => {
+    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Speech) { setError("Speech recognition is not supported here. Use Chrome or type a command."); return; }
+    const recognition = new Speech();
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
+    recognition.onstart = () => setListening(true);
+    recognition.onend = () => setListening(false);
+    recognition.onerror = (event) => setError("Microphone error: " + event.error);
+    recognition.onresult = (event) => {
+      const text = event.results[0][0].transcript;
+      setCommand(text);
+      execute(text);
+    };
+    recognition.start();
+  };
+
+  const disconnect = async () => {
+    setBusy(true);
+    try { await request("/v1/disconnect", tokenRef.current, {}); setMessage("Device disconnected."); }
+    catch (e) { setError(e.message); }
+    finally { tokenRef.current = ""; setToken(""); setBusy(false); }
+  };
+
+  return <section className="mt-3 rounded-2xl border border-violet-300/20 bg-violet-400/5 p-3">
+    <div className="flex items-center justify-between"><p className="flex items-center gap-2 text-xs font-semibold text-violet-100"><Link2 size={14}/> SUJI · DEVICE OPERATOR</p><span className="text-[10px] text-slate-400">{token ? "CONNECTED" : "NOT CONNECTED"}</span></div>
+    {!token ? <form onSubmit={pair} className="mt-3 space-y-2">
+      <p className="text-xs text-slate-400">Start the companion on this Windows computer, then paste its one-time pairing challenge.</p>
+      <input value={challenge} onChange={e=>setChallenge(e.target.value)} placeholder="One-time pairing challenge" className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white"/>
+      <button disabled={busy || challenge.trim().length < 30} className="w-full rounded-lg bg-violet-500/30 px-3 py-2 text-xs text-white disabled:opacity-40">{busy ? "Connecting…" : "Connect this computer"}</button>
+    </form> : <>
+      <form onSubmit={e=>{e.preventDefault();execute();}} className="mt-3 flex gap-2">
+        <input value={command} onChange={e=>setCommand(e.target.value)} placeholder="Say or type a command…" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-sm text-white"/>
+        <button disabled={busy || !command.trim()} className="rounded-lg bg-violet-500/30 px-3 text-white"><Search size={16}/></button>
+      </form>
+      <div className="mt-2 flex gap-2">
+        <button onClick={listen} disabled={busy || listening} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-violet-300/20 px-3 py-2 text-xs text-violet-100"><Mic size={14}/> Voice command</button>
+        <button onClick={disconnect} disabled={busy} className="flex items-center gap-2 rounded-lg border border-rose-300/20 px-3 py-2 text-xs text-rose-100"><Unlink size={14}/> Disconnect</button>
+      </div>
+    </>}
+    {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
+    <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
+    {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
+    <p className="mt-2 text-[10px] text-slate-500">First milestone: Google search, LinkedIn job search and opening Google/LinkedIn. No shell, messages, forms or payments.</p>
   </section>;
 }
