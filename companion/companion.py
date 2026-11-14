@@ -27,6 +27,7 @@ HOST = "127.0.0.1:8765"
 PAIR_TTL = 120
 SERVICE_NAME = "SujiLocalCompanion"
 TOKEN_ACCOUNT = "paired-device-token"
+BACKEND_TOKEN_ACCOUNT = "backend-api-device-token"
 DEVICE_ID_ACCOUNT = "backend-device-id"
 API_URL_ACCOUNT = "backend-api-url"
 POLL_INTERVAL_SECONDS = 2
@@ -65,7 +66,18 @@ class Pairing:
     lock: threading.Lock = field(default_factory=threading.Lock)
 
 
-STATE = Pairing(backend_token=load_saved_value(TOKEN_ACCOUNT), backend_device_id=load_saved_value(DEVICE_ID_ACCOUNT), backend_api_url=load_saved_value(API_URL_ACCOUNT))
+def load_saved_value(account: str) -> str:
+    try:
+        return keyring.get_password(SERVICE_NAME, account) or ""
+    except keyring.errors.NoKeyringError:
+        return ""
+
+
+STATE = Pairing(
+    backend_token=load_saved_value(BACKEND_TOKEN_ACCOUNT),
+    backend_device_id=load_saved_value(DEVICE_ID_ACCOUNT),
+    backend_api_url=load_saved_value(API_URL_ACCOUNT),
+)
 app = FastAPI(title="Suji Local Companion", docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(
     CORSMiddleware,
@@ -95,11 +107,6 @@ class BackendConnectRequest(BaseModel):
     device_token: str = Field(min_length=40, max_length=200)
 
 
-def load_saved_value(account: str) -> str:
-    try:
-        return keyring.get_password(SERVICE_NAME, account) or ""
-    except keyring.errors.NoKeyringError:
-        return ""
 
 
 def _validate_api_base(value: str) -> str:
@@ -239,7 +246,7 @@ def require_pairing(authorization: Annotated[str | None, Header()] = None) -> No
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "paired": bool(STATE.token), "execution_enabled": True}
+    return {"status": "ok", "paired": bool(STATE.backend_token), "execution_enabled": bool(STATE.backend_token), "device_id": STATE.backend_device_id or None}
 
 
 @app.get("/v1/status", dependencies=[Depends(require_pairing)])
@@ -267,6 +274,45 @@ def pair(payload: PairRequest, request: Request):
             raise HTTPException(503, "Windows Credential Manager could not save the pairing. Check the companion installation.") from exc
         STATE.challenge = ""
         return {"token": STATE.token, "status": "paired"}
+
+
+
+@app.post("/v1/backend/connect")
+def connect_backend(payload: BackendConnectRequest, request: Request):
+    check_origin(request)
+    api_url = _validate_api_base(payload.api_base_url)
+    try:
+        _api_request("GET", f"{api_url}/api/assistant/device/commands/next", payload.device_token)
+    except RuntimeError as exc:
+        raise HTTPException(401, "Backend rejected the device credential or is unreachable") from exc
+    try:
+        keyring.set_password(SERVICE_NAME, BACKEND_TOKEN_ACCOUNT, payload.device_token)
+        keyring.set_password(SERVICE_NAME, DEVICE_ID_ACCOUNT, payload.device_id)
+        keyring.set_password(SERVICE_NAME, API_URL_ACCOUNT, api_url)
+    except Exception as exc:
+        raise HTTPException(503, "Windows Credential Manager could not store backend pairing") from exc
+    with STATE.lock:
+        STATE.backend_token = payload.device_token
+        STATE.backend_device_id = payload.device_id
+        STATE.backend_api_url = api_url
+    _start_worker()
+    return {"status": "connected", "device_id": payload.device_id, "polling": True}
+
+
+@app.post("/v1/backend/disconnect")
+def disconnect_backend(request: Request):
+    check_origin(request)
+    STATE.stop_event.set()
+    with STATE.lock:
+        STATE.backend_token = ""
+        STATE.backend_device_id = ""
+        STATE.backend_api_url = ""
+    for account in (BACKEND_TOKEN_ACCOUNT, DEVICE_ID_ACCOUNT, API_URL_ACCOUNT):
+        try:
+            keyring.delete_password(SERVICE_NAME, account)
+        except Exception:
+            pass
+    return {"status": "disconnected"}
 
 
 @app.post("/v1/action", dependencies=[Depends(require_pairing)])
