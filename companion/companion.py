@@ -244,7 +244,20 @@ def _poll_once(generation: int | None = None, stop_event: threading.Event | None
     if not secrets.compare_digest(str(command.get("payload_sha256", "")), _command_hash(command)):
         raise RuntimeError("command_payload_hash_mismatch")
     try:
-        result_code, message = execute_approved_command(command)
+        # Linearize execution against disconnect/reconnect: once this lock is
+        # acquired and the generation is verified, a disconnect cannot retire
+        # the connection until this approved action has started and returned.
+        with STATE.lock:
+            connection_is_current = (
+                generation == STATE.connection_generation
+                and api_url == STATE.backend_api_url
+                and token == STATE.backend_token
+                and device_id == STATE.backend_device_id
+                and (stop_event is None or not stop_event.is_set())
+            )
+            if not connection_is_current:
+                return False
+            result_code, message = execute_approved_command(command)
         outcome = "completed"
     except Exception as exc:
         outcome, result_code = "failed", str(exc)[:80] or "execution_failed"
