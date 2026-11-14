@@ -66,6 +66,10 @@ class Pairing:
     stop_event: threading.Event = field(default_factory=threading.Event)
     restart_requested: bool = False
     connection_generation: int = 0
+    pending_result: dict | None = None
+    pending_result_url: str = ""
+    pending_result_token: str = ""
+    pending_result_device_id: str = ""
     lock: threading.Lock = field(default_factory=threading.Lock)
 
 
@@ -213,8 +217,30 @@ def _poll_once(generation: int | None = None, stop_event: threading.Event | None
     with STATE.lock:
         api_url, token, device_id = STATE.backend_api_url, STATE.backend_token, STATE.backend_device_id
         current_generation = STATE.connection_generation
+        pending_result = STATE.pending_result
+        pending_url = STATE.pending_result_url
+        pending_token = STATE.pending_result_token
+        pending_device_id = STATE.pending_result_device_id
     if generation is None:
         generation = current_generation
+    if pending_result is not None:
+        # Retry delivery before claiming anything else. The action has already
+        # run, so retrying this payload must never execute the command again.
+        if device_id != pending_device_id or not token or not api_url:
+            return False
+        _api_request(
+            "POST",
+            pending_url,
+            pending_token,
+            pending_result,
+        )
+        with STATE.lock:
+            if STATE.pending_result == pending_result:
+                STATE.pending_result = None
+                STATE.pending_result_url = ""
+                STATE.pending_result_token = ""
+                STATE.pending_result_device_id = ""
+        return True
     if not (api_url and token and device_id):
         return False
     data = _api_request("GET", f"{api_url}/api/assistant/device/commands/next", token)
@@ -272,7 +298,18 @@ def _poll_once(generation: int | None = None, stop_event: threading.Event | None
         "nonce": command["nonce"], "outcome": outcome,
         "result_code": result_code, "message": message
     }
-    _api_request("POST", f"{api_url}/api/assistant/device/commands/{command['command_id']}/result", token, result)
+    result_url = f"{api_url}/api/assistant/device/commands/{command['command_id']}/result"
+    try:
+        _api_request("POST", result_url, token, result)
+    except Exception:
+        # Keep the exact result for retry; never re-run the side effect merely
+        # because result delivery failed. This queue is process-memory only.
+        with STATE.lock:
+            STATE.pending_result = result
+            STATE.pending_result_url = result_url
+            STATE.pending_result_token = token
+            STATE.pending_result_device_id = device_id
+        return True
     return True
 
 
