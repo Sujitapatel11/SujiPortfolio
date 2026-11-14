@@ -56,26 +56,56 @@ export default function CompanionPairingPanel() {
       || value.match(/^find\s+(?:on\s+)?linkedin\s+(.+)$/i);
     const openLinkedInSearch = value.match(/^(?:open|go to|visit)\s+linkedin\s+and\s+search\s+(.+)$/i);
     const googleSearch = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
+    const instagramSearch = value.match(/^search\s+instagram\s+for\s+(.+)$/i);
     const whatsappDraft = value.match(/^draft\s+(?:a\s+)?whatsapp\s+message(?:\s+to\s+([+0-9]{8,15}))?\s*[:,-]?\s+(.+)$/i);
     const open = value.match(/^(?:open|go to|visit)\s+(.+)$/i);
     if (whatsappDraft) {
       const number = whatsappDraft[1] ? whatsappDraft[1].replace(/\D/g, "") : "";
-      const base = number ? `https://wa.me/${number}` : "https://wa.me/";
-      action = "open_url"; target = `${base}?text=${encodeURIComponent(whatsappDraft[2])}`;
-    } else if (openLinkedInSearch) { action = "linkedin_search"; target = openLinkedInSearch[1]; }
-    else if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
-    else if (googleSearch) { action = "google_search"; target = googleSearch[1]; }\n    else if (instagramSearch) { action = "open_url"; target = `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(instagramSearch[1])}`; }
-    else if (open) {
+      const base = number ? \`https://wa.me/\${number}\` : "https://wa.me/";
+      action = "open_url";
+      target = \`\${base}?text=\${encodeURIComponent(whatsappDraft[2])}\`;
+    } else if (openLinkedInSearch) {
+      action = "linkedin_search";
+      target = openLinkedInSearch[1];
+    } else if (linkedin) {
+      action = "linkedin_search";
+      target = linkedin[1];
+    } else if (googleSearch) {
+      action = "google_search";
+      target = googleSearch[1];
+    } else if (instagramSearch) {
+      action = "open_url";
+      target = \`https://www.instagram.com/explore/search/keyword/?q=\${encodeURIComponent(instagramSearch[1])}\`;
+    } else if (open) {
       const site = open[1].toLowerCase().replace(/^www\./, "");
-      const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com", instagram: "https://www.instagram.com", "instagram.com": "https://www.instagram.com" };
-      action = "open_url"; target = urls[site] || (site.startsWith("http://") || site.startsWith("https://") ? site : "https://" + site);
-    } else { setError("Try “search LinkedIn for remote jobs”, “open LinkedIn and search remote jobs”, “open WhatsApp”, “open Instagram”, “search Instagram for photography”, or “draft WhatsApp message: Hello”."); return; }
-    setBusy(true); setError("");
+      const urls = {
+        google: "https://www.google.com",
+        "google.com": "https://www.google.com",
+        linkedin: "https://www.linkedin.com",
+        "linkedin.com": "https://www.linkedin.com",
+        whatsapp: "https://web.whatsapp.com",
+        "whatsapp web": "https://web.whatsapp.com",
+        "web.whatsapp.com": "https://web.whatsapp.com",
+        instagram: "https://www.instagram.com",
+        "instagram.com": "https://www.instagram.com",
+      };
+      action = "open_url";
+      target = urls[site] || (site.startsWith("http://") || site.startsWith("https://") ? site : "https://" + site);
+    } else {
+      setError("Try “search LinkedIn for remote jobs”, “open LinkedIn and search remote jobs”, “open WhatsApp”, “open Instagram”, “search Instagram for photography”, or “draft WhatsApp message: Hello”.");
+      return;
+    }
+    setBusy(true);
+    setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
-      setMessage("Opened in your default browser: " + result.url); setCommand("");
-    } catch (e) { setError(e.message); }
-    finally { setBusy(false); }
+      setMessage("Opened in your default browser: " + result.url);
+      setCommand("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const listen = () => {
