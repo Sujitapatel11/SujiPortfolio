@@ -228,3 +228,47 @@ This is a static review of the named Git branches and files retrieved from GitHu
 ## Final recommendation
 
 Do not start adding more tools yet. First resolve branch divergence, private-route exposure, router mounting, companion API drift and the missing execution boundary. Those are foundational defects; adding more commands before fixing them will create a larger assistant that still cannot reliably perform its core job.
+
+
+## 13. Runtime verification addendum — 2026-11-14
+
+### GitHub Actions CI: PASS
+
+The latest workflow run visible for `feat/personal-assistant-foundation` at commit `c6862b87162f04e8be263deec5856a85ace3efd0` is run **#18**, conclusion **success**.
+
+Run URL: https://github.com/Sujitapatel11/SujiPortfolio/actions/runs/43591467831
+
+All three jobs completed successfully:
+- **Frontend production build:** `npm ci` and `npm run build` passed.
+- **Companion unit tests:** dependency installation and `pytest companion/tests -q` passed.
+- **Backend dependency and test check:** dependency installation, `python -m compileall -q backend/app`, and `pytest tests test_appointments_and_tools.py -q` passed.
+
+This is genuine automated execution on GitHub Actions for the commit above. It verifies the CI workflow's defined checks only; it does not prove deployed service behavior, browser microphone behavior, native Windows application launch, or action execution.
+
+The workflow was configured to run on pushes to `feat/personal-assistant-foundation` and pull requests. The audit branch itself has not had its own workflow run.
+
+### Render environment: NOT VERIFIED
+
+The connected Render workspace lists a web service named `aiDepressionProject`, but it is linked to repository `Sujitapatel11/aiDepressionProject`, not `Sujitapatel11/SujiPortfolio`. No Render web service linked to the audited repository appeared in the service listing.
+
+A Render Postgres instance named `sujiportfolio-db` exists and reports status `available`, but read-only SQL verification was blocked because its IP allowlist is empty and the hosted Render integration's outbound IP cannot be allowlisted. Therefore the live migration version and assistant table presence remain **unknown**. Do not change the database allowlist merely for this audit; use a trusted local connection or a deliberate temporary allowlist change only if needed and approved.
+
+The repository's `render.yaml` describes a service named `suji-job-hunter-backend` with a **Standard** plan and several job-provider secrets. That is a proposed Blueprint configuration, not evidence that the service exists or is deployed. No deploy was triggered.
+
+### Physical Windows / browser runtime: NOT VERIFIED
+
+No access to the user's laptop, microphone, installed applications, browser profile, or local companion process is available from this remote repository audit. The existing CI companion tests use mocks for browser opening. Native app launch, voice recognition, speech output, pairing from the deployed Vercel origin, and end-to-end approved execution must be tested on the actual Windows machine.
+
+### Important correction to the static audit
+
+The latest fetched `backend/app/main.py` on `feat/personal-assistant-foundation` still does not include `assistant.router`; it imports only inquiries, chat and admin routers, calls `Base.metadata.create_all()`, and configures wildcard CORS with credentials. The latest CI run passing does not override this source finding. The test suite's pass should not be interpreted as proof that the production application entrypoint exposes the assistant endpoints.
+
+### Runtime verification verdict
+
+- GitHub CI checks on the latest assistant-foundation commit: **PASS**.
+- Live Render backend for this repository: **NOT FOUND / NOT VERIFIED**.
+- Render Postgres migration and table state: **BLOCKED / UNKNOWN**.
+- Real Windows voice and device action execution: **NOT VERIFIED**.
+- End-to-end assistant task execution: **NOT IMPLEMENTED / NOT VERIFIED**.
+
+The audit is therefore **partially runtime-verified**, not production-verified.
