@@ -1,112 +1,128 @@
-# Suji Personal AI Operator — Product Contract
+# Hey Suji — Personal AI Operator System Design
 
-**Target clients:** Native Android app + Windows companion only.  
-**Portfolio integration:** Explicitly out of scope. The portfolio and Job Hunter remain independent.  
-**Account model:** One owner account, multiple explicitly paired devices.  
-**Interaction:** Tap-to-talk first; wake-word activation is a later opt-in capability.
+**Product:** Hey Suji, a cross-device personal AI operator.  
+**Core brain:** Existing FastAPI backend.  
+**Activation surfaces:** Portfolio floating orb, Android wake phrase / tap-to-talk, Windows wake phrase / hotkey.  
+**Clients:** Lightweight device executors; they are not separate assistant brains.
 
-## Product goal
+## Product outcome
 
-Build a personal AI operator that understands natural-language requests, plans multi-step work, uses approved tools on the correct device, reports what it actually completed, and pauses for owner approval before consequential external actions.
+The owner can activate the same assistant from the portfolio or supported device context, speak naturally in Hindi or English, and ask it to complete multi-step tasks. The assistant plans work, uses explicitly registered tools, verifies results, and reports what actually happened.
 
-Example request: "Fiverr kholo, mere skills ke according relevant jobs dhundo, har job analyse karo, proposal draft karo, aur application form prepare karo." The operator may search, rank, draft, and fill permitted fields. The final application submission remains a user action.
+Examples:
+- "Hey Suji, open Instagram."
+- "Search for AI Engineer internships, compare requirements, and shortlist relevant roles."
+- "Open my GitHub and investigate the failed workflow."
+- "On my portfolio, find the project details and prepare an updated description."
 
-## Client responsibilities
+## System architecture
 
-### Android
-- Native Kotlin application.
-- Tap-to-talk Hindi/English speech input and visible listening state.
-- Device-local allowlisted app opening.
-- Secure device pairing and command/result channel in a later slice.
-- Wake-word only after foreground voice flow, battery, privacy, and Android background-execution constraints are tested.
-- No hidden microphone recording.
+```text
+Portfolio floating orb ─┐
+Android companion ──────┼── HTTPS/WebSocket ── FastAPI assistant brain
+Windows companion ──────┘                         │
+                                                  ├── Authentication & device registry
+                                                  ├── Conversation/session memory
+                                                  ├── Intent planner and task orchestrator
+                                                  ├── Deterministic tool registry + policy engine
+                                                  ├── Approval queue + audit log
+                                                  └── Execution queue
+                                                       │
+                                  ┌────────────────────┴────────────────────┐
+                                  │                                         │
+                           Android executor                         Windows executor
+                       app launch, accessibility                browser, desktop, files
+                       (permission-gated)                         (allowlisted tools)
+```
 
-### Windows
-- Local companion process; outbound HTTPS connection only.
-- Credentials stored in Windows Credential Manager through the OS keyring.
-- Fixed, schema-validated tool adapters; no arbitrary shell, PowerShell, or script execution.
-- Persistent execution-result journal before production dispatch.
-- Device revocation and disconnect must stop future claims.
+The portfolio orb is an activation surface, not a separate AI. It uses the same authenticated FastAPI session and approval workflow. The public portfolio must not expose private operator APIs or device credentials to anonymous visitors.
 
-### Shared backend / AI brain
-- Authenticated owner sessions, paired-device registry, revocation, command queue, immutable action proposals, approval records, execution results, and audit events.
-- Planner output is untrusted. Every proposed tool call is checked against a deterministic registry and JSON schema.
-- Every command is bound to owner, device, tool, canonical arguments, payload hash, expiry, and one-time nonce.
-- Devices initiate outbound requests; cloud services never attempt to connect inbound to a user's laptop or phone.
+## Responsibilities
 
-## Autonomy model
+### FastAPI brain
+- Owns identity, authorization, session history, planning, memory, tool registry, action proposals, approvals, device routing and audit.
+- Treats model output as untrusted input; validates every tool and argument deterministically.
+- Routes a command only to an active, owner-paired device with a matching capability.
+- Persists action state and execution results; never claims success without executor evidence.
+- Uses one shared account and consistent task history across devices.
 
-The operator should perform as much reversible preparation as possible without asking repeatedly:
-- Search and research public information.
-- Open apps and navigate supported interfaces.
-- Compare opportunities against the owner's saved skills/profile.
-- Draft tailored proposals and cover letters.
-- Prepare forms and attach only user-approved files.
-- Summarize the exact pending action and evidence before handoff.
+### Portfolio activation surface
+- Floating "Hey Suji" orb appears on the portfolio.
+- A click opens the assistant panel and begins browser-supported voice capture only after the user's gesture.
+- Typed input remains available as a fallback.
+- Requires an authenticated owner session; if not authenticated, direct the owner to sign in rather than exposing an unauthenticated control plane.
+- Displays task status, approval details, and verified results.
+- Does not gain permission to control the user's phone or desktop merely because it is embedded in a website. Device actions require a paired local executor.
 
-The operator must pause for explicit owner confirmation before:
-- Sending or submitting applications, messages, posts, comments, or forms.
-- Purchases, payments, subscriptions, or financial transfers.
-- Account/security changes, deleting data, or sharing private files.
-- Any action with legal, financial, reputational, or irreversible consequences.
+### Android executor
+- Minimal native Android component for microphone permission, app launch, foreground interaction, notification/status and device-bound command polling.
+- AccessibilityService is optional, explicit, visible and user-enabled; it may interact only with supported UI elements and must respect Android security boundaries.
+- Wake-word detection is opt-in and must be evaluated for battery, false activations, privacy and Android background restrictions. No hidden or continuous recording.
+- No arbitrary shell execution, OTP/CAPTCHA handling, or bypass of app protections.
 
-The final submit control must be operated by the owner. Do not automate CAPTCHA, OTP, anti-bot controls, or bypass a website's terms/access restrictions. If a platform blocks automation, explain the limitation and provide a prepared draft or manual handoff.
+### Windows executor
+- Background companion with explicit start/stop, OS credential storage, outbound HTTPS polling, persistent result journal and a strict tool allowlist.
+- No arbitrary shell, PowerShell, script or executable-path execution.
+- Browser automation is visible and scoped to supported sites and actions.
 
-## Initial supported tool families
+## Task lifecycle
 
-1. Device: open a fixed allowlisted application.
-2. Browser: open a validated public HTTPS URL and perform supported navigation/search.
-3. Research: search, extract, compare, summarize, and cite sources.
-4. Files: list/read user-selected files; create/edit drafts in an explicitly approved workspace. Destructive file operations require separate confirmation.
-5. Coding: inspect selected repositories, propose diffs, run tests in a bounded workspace, and request approval before pushing/merging/deploying.
-6. Job workflow: discover roles, score fit, flag suspicious listings, draft truthful tailored proposals, prepare application fields, and stop before final submission.
+1. Capture voice/text with explicit activation.
+2. Resolve owner, active device and available capabilities.
+3. Plan a multi-step task; ask a single clarification if required.
+4. Validate each proposed tool call against deterministic policy and schemas.
+5. Execute reversible, permitted steps on the selected device.
+6. Verify each step from actual executor/browser evidence.
+7. Pause for owner approval before consequential external actions.
+8. Persist result and audit record; report completed, partial, blocked or failed accurately.
 
-No job application may contain invented experience, skills, qualifications, portfolio links, or availability. Missing facts must be left blank or asked about.
+## Approval boundaries
 
-## Delivery phases and gates
+Require explicit owner approval before sending/submitting messages, applications, posts or forms; purchases/payments/subscriptions; account/security changes; deleting data; sharing private files; or any irreversible/reputational/legal/financial action. The final application Submit action remains manual. Never automate CAPTCHA, OTP or anti-bot bypass.
 
-### Phase 1 — Reliable local voice foundation
-- Improve Android intent parsing beyond substring matching.
-- Add English/Hindi command normalization, explicit unsupported-command feedback, and tests.
-- Build and install on a real Android device.
-- Verify allowlisted app launch and permission denial paths.
-- Windows companion smoke tests for existing safe local actions.
+## Security requirements
 
-### Phase 2 — One account, two paired devices
-- Implement secure one-time pairing, credential rotation, revocation, device list, and owner/device binding.
-- Remove browser-localStorage as a trusted device credential store.
-- Add atomic claim/result transitions and replay/tamper/expiry tests.
-- Persist Windows pending results before acknowledging execution.
-- Add Android outbound command polling with a strict local tool allowlist.
-- End-to-end test both clients against a disposable backend.
+- Short-lived authenticated sessions; no anonymous assistant control API.
+- Device pairing is one-time, owner-authorized, revocable and device-bound.
+- Store device credentials in OS credential storage; never in browser localStorage.
+- Bind commands to owner, device, tool, canonical arguments, payload hash, expiry and one-time nonce.
+- Atomic command claim/result transitions; reject replay, tampering, expired commands and revoked devices.
+- Persist pending execution results before acknowledging them.
+- Never log secrets, access tokens, private transcripts or application content.
+- Restrict CORS to exact portfolio origins; HTTPS in production.
+- Keep a visible microphone indicator and immediate mute/disable control.
 
-### Phase 3 — Browser operator
-- Add a visible browser automation adapter with per-site capability rules.
-- Support search, navigation, and form preparation where permitted.
-- Use screenshots/DOM evidence to verify each step; never claim an action succeeded without confirmation.
-- Keep sensitive actions in a review queue.
+## Delivery plan and release gates
 
-### Phase 4 — Personal knowledge and productivity tools
-- User-selected file access, coding/GitHub workflows, project management, research and structured memory.
-- Scoped permissions per tool and workspace.
-- Audit log and undo/recovery guidance where technically possible.
+### Slice A — Portfolio activation + reliable voice
+- Render the existing orb on the public portfolio.
+- Authenticated owner-only voice/text panel using existing FastAPI session/message/approval APIs.
+- Correct Java/Kotlin target compatibility and pass Android CI.
+- Verify the portfolio build and existing frontend tests.
 
-### Phase 5 — Job application copilot
-- Build a user-approved profile from verified resume/portfolio facts.
-- Search and rank suitable roles on permitted sources.
-- Draft a distinct truthful proposal for each role.
-- Fill allowed form fields and attach only approved documents.
-- Show role, company, compensation (if stated), requirements, proposal, attachments, and all form values in a final review.
-- Owner manually clicks Submit.
+### Slice B — Unified device pairing and dispatch
+- Harden pairing, revocation, atomic queue, nonce/hash/expiry validation and persistent result journal.
+- Add Android outbound polling and safe local execution.
+- Verify both Android and Windows clients against a disposable backend.
 
-### Phase 6 — Wake word and advanced autonomy
-- Add opt-in wake-word only after measured battery use, false activations, privacy controls, and platform policy review.
-- Keep a visible microphone indicator and an immediate mute/disable control.
+### Slice C — Browser and productivity operator
+- Visible browser automation with site-specific capability policies and step evidence.
+- Scoped file access, research, coding/GitHub and project workflows.
+- Profile facts are sourced from owner-approved resume/portfolio data.
 
-## Release rules
+### Slice D — Job research copilot
+- Search permitted sources, rank roles, explain fit, draft truthful proposals and prepare forms.
+- Never invent experience or credentials; leave unknown facts blank.
+- Owner manually submits each application.
 
-- Work only on `feat/unified-device-aware-companion` until the owner reviews the branch.
-- Do not merge, deploy, modify the portfolio website, or touch the Job Hunter feature without separate approval.
-- A passing CI run is not proof of real-device functionality. Report CI, emulator, physical-device, and production verification separately.
-- No secrets, tokens, transcripts, or private application content in logs.
-- Every external action must have an auditable proposal, explicit approval state, and truthful execution result.
+### Slice E — Wake phrase
+- Add opt-in "Hey Suji" only after physical-device battery, false-trigger, privacy and OS-background testing.
+- The website orb remains a click-to-activate surface; it cannot listen continuously when the browser is closed.
+
+## Verification and release rules
+
+- Work only on `feat/unified-device-aware-companion`.
+- Do not merge or deploy without a separate explicit release decision.
+- CI, browser test, emulator test and physical-device test are separate evidence; report each separately.
+- A green CI run does not prove Android wake-word or accessibility functionality.
+- No success claim without a verified execution result.
