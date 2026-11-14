@@ -97,8 +97,8 @@ def validate_production_config() -> None:
 
     if errors:
         raise RuntimeError(
-            "Production configuration validation failed:\\n"
-            + "\\n".join(f"  - {error}" for error in errors)
+            "Production configuration validation failed:\n"
+            + "\n".join(f"  - {error}" for error in errors)
         )
 
     logger.info("Production configuration validated successfully.")
