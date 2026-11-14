@@ -58,3 +58,23 @@ Before execution is added, a separate design must bind the approved immutable ac
 Test exact-origin acceptance; missing/null/wrong Origin rejection; wrong Host rejection; invalid content type rejection; challenge expiry; one-time consumption; attempt lockout; session expiry; immediate disconnect revocation; no token in health/logs; execution always disabled. Run unit tests and browser integration tests on Windows before treating pairing as production-ready.
 
 Do not merge or deploy as part of this phase.
+
+
+## Current implementation notes
+
+The companion currently implements:
+- `POST /v1/pairing/complete` with exact allowlisted Origin, exact `127.0.0.1:8765` Host, JSON content type, and optional valid Fetch Metadata.
+- A 120-second one-time challenge, five failed-attempt maximum, and in-memory 15-minute session credential.
+- `GET /v1/capabilities` protected by the paired credential.
+- `POST /v1/pairing/disconnect` protected by the paired credential and browser-request validation.
+- `GET /health` with no credential material and `execution_enabled: false`.
+
+The local challenge is printed only when running `py companion.py` directly. Set `ASSISTANT_ALLOWED_ORIGINS` to the exact real portfolio origin before starting. The current default allowlist is for local development only.
+
+Not yet implemented:
+- Pairing UI and in-memory token handling in the React frontend.
+- Pairing event/audit integration with the hosted backend.
+- Windows browser integration tests.
+- Persistent device registry or multi-device management.
+
+Pairing is an initial local prototype, not production-ready. Do not enable desktop execution based on pairing alone.
