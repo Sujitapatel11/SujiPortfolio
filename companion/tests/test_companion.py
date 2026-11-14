@@ -282,6 +282,7 @@ def test_worker_restarts_after_reconnect_during_pending_shutdown(monkeypatch):
     entered_old_poll = companion.threading.Event()
     release_old_poll = companion.threading.Event()
     replacement_started = companion.threading.Event()
+    release_replacement_poll = companion.threading.Event()
     calls = []
 
     def fake_poll_once():
@@ -291,6 +292,7 @@ def test_worker_restarts_after_reconnect_during_pending_shutdown(monkeypatch):
             assert release_old_poll.wait(2)
         else:
             replacement_started.set()
+            assert release_replacement_poll.wait(2)
         return False
 
     monkeypatch.setattr(companion, "_poll_once", fake_poll_once)
@@ -311,6 +313,7 @@ def test_worker_restarts_after_reconnect_during_pending_shutdown(monkeypatch):
     assert replacement_started.wait(2)
     worker = state.worker
     state.stop_event.set()
+    release_replacement_poll.set()
     if worker:
         worker.join(timeout=2)
     assert len(calls) == 2
