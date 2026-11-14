@@ -241,21 +241,43 @@ def _poll_once() -> bool:
     return True
 
 
+def _worker_finished() -> None:
+    """Clear the exiting worker and resume only if a connection is still active."""
+    current = threading.current_thread()
+    with STATE.lock:
+        if STATE.worker is current:
+            STATE.worker = None
+        connection_ready = bool(
+            STATE.backend_api_url and STATE.backend_token and STATE.backend_device_id
+        )
+    if connection_ready:
+        _start_worker()
+
+
 def _poll_loop() -> None:
-    while not STATE.stop_event.is_set():
-        try:
-            _poll_once()
-        except Exception:
-            pass
-        STATE.stop_event.wait(POLL_INTERVAL_SECONDS)
+    try:
+        while not STATE.stop_event.is_set():
+            try:
+                _poll_once()
+            except Exception:
+                pass
+            STATE.stop_event.wait(POLL_INTERVAL_SECONDS)
+    finally:
+        _worker_finished()
 
 
 def _start_worker() -> None:
-    if STATE.worker and STATE.worker.is_alive():
-        return
-    STATE.stop_event.clear()
-    STATE.worker = threading.Thread(target=_poll_loop, name="suji-command-poller", daemon=True)
-    STATE.worker.start()
+    with STATE.lock:
+        if STATE.worker and STATE.worker.is_alive():
+            # A stopping worker owns shutdown. Its finally block will restart
+            # polling if a replacement connection was established meanwhile.
+            return
+        if not (STATE.backend_api_url and STATE.backend_token and STATE.backend_device_id):
+            return
+        STATE.stop_event.clear()
+        worker = threading.Thread(target=_poll_loop, name="suji-command-poller", daemon=True)
+        STATE.worker = worker
+        worker.start()
 
 
 @app.on_event("startup")
