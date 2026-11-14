@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, timezone
+import os
+import tempfile
 
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -11,8 +13,13 @@ from app.admin.auth import get_current_admin
 from app.assistant.models import AssistantAction, AssistantAuditEvent, AssistantSession
 
 
-def _client():
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+def _client(file_backed=False):
+    if file_backed:
+        fd, db_path = tempfile.mkstemp(suffix=".sqlite3")
+        os.close(fd)
+        engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False})
+    else:
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
 
@@ -32,7 +39,13 @@ def _client():
 def _cleanup(engine):
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
+    db_path = engine.url.database
     engine.dispose()
+    if db_path and db_path != ":memory:":
+        try:
+            os.unlink(db_path)
+        except FileNotFoundError:
+            pass
 
 
 def test_device_command_requires_bearer_token():
@@ -222,6 +235,84 @@ def test_action_decision_is_single_winner_and_does_not_replace_command_credentia
             assert len(events) == 1
         finally:
             db.close()
+    finally:
+        client.close()
+        _cleanup(engine)
+
+
+def test_competing_stale_approvals_have_one_database_winner():
+    """Two independent DB sessions that both read pending cannot both approve."""
+    client, engine, TestingSessionLocal = _client(file_backed=True)
+    try:
+        registered = client.post("/api/assistant/devices", json={"name": "Concurrent approval laptop"})
+        assert registered.status_code == 201, registered.text
+        device_id = registered.json()["device_id"]
+        session = client.post(
+            "/api/assistant/sessions",
+            json={"input_mode": "text", "device_id": device_id},
+        )
+        assert session.status_code == 201, session.text
+        proposal = client.post(
+            f"/api/assistant/sessions/{session.json()['session_id']}/actions",
+            json={"tool": "desktop.open_application", "arguments": {"app_id": "calculator"}},
+        )
+        assert proposal.status_code == 201, proposal.text
+        action_id = proposal.json()["action_id"]
+
+        first_db = TestingSessionLocal()
+        second_db = TestingSessionLocal()
+        try:
+            first_snapshot = first_db.query(AssistantAction).filter_by(id=action_id).one()
+            second_snapshot = second_db.query(AssistantAction).filter_by(id=action_id).one()
+            assert first_snapshot.status == second_snapshot.status == "awaiting_approval"
+
+            first_command_id = "winner-command"
+            first_nonce = "winner-nonce"
+            first = first_db.execute(
+                update(AssistantAction)
+                .where(
+                    AssistantAction.id == action_id,
+                    AssistantAction.status == "awaiting_approval",
+                )
+                .values(
+                    status="approved",
+                    command_id=first_command_id,
+                    execution_nonce=first_nonce,
+                )
+                .execution_options(synchronize_session=False)
+            )
+            assert first.rowcount == 1
+            first_db.commit()
+
+            # The second transaction acts on a stale read. The database predicate,
+            # not the stale ORM object, must reject its attempted transition.
+            second = second_db.execute(
+                update(AssistantAction)
+                .where(
+                    AssistantAction.id == action_id,
+                    AssistantAction.status == "awaiting_approval",
+                )
+                .values(
+                    status="approved",
+                    command_id="loser-command",
+                    execution_nonce="loser-nonce",
+                )
+                .execution_options(synchronize_session=False)
+            )
+            assert second.rowcount == 0
+            second_db.rollback()
+        finally:
+            first_db.close()
+            second_db.close()
+
+        verify_db = TestingSessionLocal()
+        try:
+            persisted = verify_db.query(AssistantAction).filter_by(id=action_id).one()
+            assert persisted.status == "approved"
+            assert persisted.command_id == "winner-command"
+            assert persisted.execution_nonce == "winner-nonce"
+        finally:
+            verify_db.close()
     finally:
         client.close()
         _cleanup(engine)
