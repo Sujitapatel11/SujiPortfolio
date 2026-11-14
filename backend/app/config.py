@@ -25,20 +25,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 
-# ── Job Hunter API Provider Credentials ─────────────────────────
-ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "").strip()
-ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "").strip()
-JOOBLE_API_KEY = os.getenv("JOOBLE_API_KEY", "").strip()
-SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY", "").strip()
-USAJOBS_API_KEY = os.getenv("USAJOBS_API_KEY", "").strip()
-USAJOBS_USER_AGENT = os.getenv("USAJOBS_USER_AGENT", "").strip()
-
-# ── Job Hunter Scheduler ─────────────────────────────────────────
-JOB_HUNTER_SCHEDULER_ENABLED = os.getenv("JOB_HUNTER_SCHEDULER_ENABLED", "false").lower() == "true"
-JOB_HUNTER_INTERVAL_HOURS = max(1, int(os.getenv("JOB_HUNTER_INTERVAL_HOURS", "6")))
-JOB_SEARCH_LOCATION = os.getenv("JOB_SEARCH_LOCATION", "Remote").strip() or "Remote"
-JOB_SEARCH_COUNTRY = os.getenv("JOB_SEARCH_COUNTRY", "de").strip() or "de"
-
 # ── Admin Authentication ─────────────────────────────────────────
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "suji")
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
@@ -60,13 +46,6 @@ RATE_LIMIT_CHAT = int(os.getenv("RATE_LIMIT_CHAT", "15"))
 RATE_LIMIT_INQUIRY = int(os.getenv("RATE_LIMIT_INQUIRY", "10"))
 RATE_LIMIT_LOGIN = int(os.getenv("RATE_LIMIT_LOGIN", "5"))
 RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
-
-# ── Twilio / WhatsApp ────────────────────────────────────────────
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "").strip()
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "").strip()
-TWILIO_WHATSAPP_FROM = os.getenv("TWILIO_WHATSAPP_FROM", "").strip()
-ADMIN_WHATSAPP_NUMBER = os.getenv("ADMIN_WHATSAPP_NUMBER", "").strip()
-ADMIN_DASHBOARD_URL = os.getenv("ADMIN_DASHBOARD_URL", "http://localhost:5173/admin").rstrip("/")
 
 # ── Conversation Memory ─────────────────────────────────────────
 MAX_CONVERSATIONS = int(os.getenv("MAX_CONVERSATIONS", "500"))

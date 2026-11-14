@@ -11,10 +11,7 @@ from app.data.profile import PROFILE_DATA
 from app.agent.tools import (
     save_client_inquiry,
     book_appointment_request,
-    trigger_job_search,
     list_recent_inquiries,
-    get_proposal,
-    send_whatsapp_message
 )
 from app.agent.retrieval import retrieve_relevant_chunks
 from app.agent.persona import build_system_prompt, SUJI_PERSONA
@@ -64,51 +61,18 @@ def fallback_conversational_response(user_msg: str, history: List[Dict[str, str]
     conversation_lower = conversation_text.lower()
 
     if is_admin_context:
-        # ADMIN FALLBACK COMMANDS
-        if "search" in msg_lower and ("job" in msg_lower or "target" in msg_lower):
-            res = trigger_job_search.invoke({"keywords": ["python", "fastapi", "react", "ai"]})
-            return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
-
         if "inquir" in msg_lower or "lead" in msg_lower:
             res = list_recent_inquiries.invoke({"limit": 5})
             return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
-
-        if "proposal" in msg_lower:
-            match = re.search(r'proposal\s+(?:for\s+)?([A-Za-z0-9_\s]+)', user_msg, re.IGNORECASE)
-            target = match.group(1).strip() if match else "1"
-            res = get_proposal.invoke({"job_title_or_id": target})
-            return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
-
-        if "whatsapp" in msg_lower or "wa.me" in msg_lower or "message" in msg_lower:
-            # Check for phone number or recipient
-            num_match = re.search(r'(\+?\d[\d\s-]{6,}\d)', user_msg)
-            if num_match:
-                recipient = num_match.group(1)
-                msg_text = "Hi! Following up on your project inquiry with Sujita."
-                if "saying" in msg_lower or "text" in msg_lower:
-                    parts = re.split(r'saying|text', user_msg, flags=re.IGNORECASE)
-                    if len(parts) > 1:
-                        msg_text = parts[1].strip(" '\"")
-                res = send_whatsapp_message.invoke({"recipient_name_or_number": recipient, "message": msg_text})
-                return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
-            else:
-                name_match = re.search(r'(?:to|send)\s+([A-Za-z]+)', user_msg, re.IGNORECASE)
-                recipient = name_match.group(1) if name_match else "Client"
-                res = send_whatsapp_message.invoke({"recipient_name_or_number": recipient, "message": "Hello"})
-                return f"⚡ [ADMIN COMMAND EXECUTED]\n{res}"
-
         return (
             "⚡ **Suji Admin Control Assistant**\n"
-            "Available Admin Commands:\n"
-            "- 'trigger job search' / 'search for new jobs'\n"
-            "- 'list recent inquiries'\n"
-            "- 'get proposal for job #1'\n"
-            "- 'send whatsapp message to +1234567890 saying hello'"
+            "Available command: 'list recent inquiries'. "
+            "Client appointments can be reviewed in the Client Management dashboard."
         )
 
     # PUBLIC VISITOR CONTEXT FALLBACK
     # 1. Refuse admin-style commands cleanly
-    if any(k in msg_lower for k in ["search for job", "trigger job", "list proposal", "send whatsapp", "wa.me"]):
+    if any(k in msg_lower for k in ["search for job", "trigger job", "list proposal", "get proposal", "send whatsapp", "wa.me"]):
         return (
             "I am Sujita's public visitor assistant and do not have permission to execute internal administrative commands. "
             "If you would like to discuss a project or schedule a call with Sujita, I'd be happy to assist you!"
@@ -238,7 +202,7 @@ def run_agent_message(
     Strictly separates Public Visitor tools from Private Admin tools.
 
     - is_admin_context = False (Public): tools = [save_client_inquiry, book_appointment_request]
-    - is_admin_context = True (Admin): tools = [trigger_job_search, list_recent_inquiries, get_proposal, send_whatsapp_message]
+    - is_admin_context = True (Admin): tools = [list_recent_inquiries]
     """
     cid = conversation_id or str(uuid.uuid4())
     if cid not in CONVERSATION_STORE:
@@ -267,7 +231,7 @@ def run_agent_message(
         from langchain_core.messages import HumanMessage, AIMessage
 
         if is_admin_context:
-            tools = [trigger_job_search, list_recent_inquiries, get_proposal, send_whatsapp_message]
+            tools = [list_recent_inquiries]
         else:
             tools = [save_client_inquiry, book_appointment_request]
 
