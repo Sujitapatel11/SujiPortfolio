@@ -183,6 +183,17 @@ def _poll_once() -> bool:
         return False
     if command.get("device_id") != device_id or not command.get("command_id") or not command.get("nonce"):
         raise RuntimeError("command_identity_mismatch")
+    expires_at = command.get("expires_at")
+    if not isinstance(expires_at, str):
+        raise RuntimeError("command_expiry_missing")
+    try:
+        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+    except ValueError as exc:
+        raise RuntimeError("command_expiry_invalid") from exc
+    if expiry <= datetime.now(timezone.utc):
+        raise RuntimeError("command_expired_before_execution")
     if not secrets.compare_digest(str(command.get("payload_sha256", "")), _command_hash(command)):
         raise RuntimeError("command_payload_hash_mismatch")
     try:
@@ -282,9 +293,11 @@ def connect_backend(payload: BackendConnectRequest, request: Request):
     check_origin(request)
     api_url = _validate_api_base(payload.api_base_url)
     try:
-        _api_request("GET", f"{api_url}/api/assistant/device/status", payload.device_token)
+        verified = _api_request("GET", f"{api_url}/api/assistant/device/status", payload.device_token)
     except RuntimeError as exc:
         raise HTTPException(401, "Backend rejected the device credential or is unreachable") from exc
+    if verified.get("device_id") != payload.device_id:
+        raise HTTPException(401, "Device ID does not match the supplied credential")
     try:
         keyring.set_password(SERVICE_NAME, BACKEND_TOKEN_ACCOUNT, payload.device_token)
         keyring.set_password(SERVICE_NAME, DEVICE_ID_ACCOUNT, payload.device_id)
