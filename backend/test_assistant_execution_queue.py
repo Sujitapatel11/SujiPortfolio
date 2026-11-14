@@ -170,3 +170,58 @@ def test_device_cannot_submit_result_for_other_device():
     finally:
         client.close()
         _cleanup(engine)
+
+
+def test_action_decision_is_single_winner_and_does_not_replace_command_credentials():
+    client, engine, TestingSessionLocal = _client()
+    try:
+        registered = client.post("/api/assistant/devices", json={"name": "Approval race laptop"})
+        assert registered.status_code == 201, registered.text
+        device_id = registered.json()["device_id"]
+
+        session = client.post(
+            "/api/assistant/sessions",
+            json={"input_mode": "text", "device_id": device_id},
+        )
+        assert session.status_code == 201, session.text
+        session_id = session.json()["session_id"]
+
+        proposal = client.post(
+            f"/api/assistant/sessions/{session_id}/actions",
+            json={"tool": "desktop.open_application", "arguments": {"app_id": "calculator"}},
+        )
+        assert proposal.status_code == 201, proposal.text
+        action_id = proposal.json()["action_id"]
+
+        first = client.post(
+            f"/api/assistant/actions/{action_id}/decision",
+            json={"decision": "approve"},
+        )
+        assert first.status_code == 200, first.text
+        first_body = first.json()
+        assert first_body["status"] == "approved"
+        assert first_body["command_id"]
+
+        # A second decision cannot overwrite the command ID or mint a new nonce.
+        second = client.post(
+            f"/api/assistant/actions/{action_id}/decision",
+            json={"decision": "approve"},
+        )
+        assert second.status_code == 409
+
+        db = TestingSessionLocal()
+        try:
+            action = db.query(AssistantAction).filter_by(id=action_id).one()
+            assert action.status == "approved"
+            assert action.command_id == first_body["command_id"]
+            assert action.execution_nonce
+            events = db.query(AssistantAuditEvent).filter_by(
+                action_id=action_id,
+                event_type="action.approved_and_queued",
+            ).all()
+            assert len(events) == 1
+        finally:
+            db.close()
+    finally:
+        client.close()
+        _cleanup(engine)
