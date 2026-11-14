@@ -441,3 +441,38 @@ def test_disconnect_waits_until_already_started_action_finishes(monkeypatch):
     assert disconnect_finished.is_set()
     assert len(posted) == 1
     assert posted[0]["outcome"] == "completed"
+
+
+def test_backend_disconnect_only_clears_matching_device(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "current-device-secret-token"
+    state.backend_device_id = "current-device-123456"
+    deleted = []
+    monkeypatch.setattr(
+        companion.keyring, "delete_password",
+        lambda service, account: deleted.append((service, account)),
+    )
+    client = TestClient(companion.app)
+
+    other = client.post(
+        "/v1/backend/disconnect", headers=HEADERS,
+        json={"device_id": "different-device-123456"},
+    )
+    assert other.status_code == 200
+    assert other.json()["status"] == "not_current_device"
+    assert state.backend_device_id == "current-device-123456"
+    assert state.backend_token == "current-device-secret-token"
+    assert state.backend_api_url == "https://api.example.com"
+    assert deleted == []
+
+    current = client.post(
+        "/v1/backend/disconnect", headers=HEADERS,
+        json={"device_id": "current-device-123456"},
+    )
+    assert current.status_code == 200
+    assert current.json()["status"] == "disconnected"
+    assert state.backend_device_id == ""
+    assert state.backend_token == ""
+    assert state.backend_api_url == ""
+    assert len(deleted) == 3
