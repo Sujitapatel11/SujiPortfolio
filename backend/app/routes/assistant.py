@@ -435,6 +435,18 @@ def _authenticated_device(authorization: str | None, db: Session) -> AssistantDe
     return device
 
 
+@router.get("/device/status")
+def device_status(
+    db: Session = Depends(get_db),
+    authorization: str | None = Header(default=None),
+):
+    device = _authenticated_device(authorization, db)
+    now = datetime.now(timezone.utc)
+    device.last_seen_at = now
+    db.commit()
+    return {"device_id": device.id, "status": "active"}
+
+
 @router.get("/device/commands/next")
 def claim_next_command(
     db: Session = Depends(get_db),
