@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../admin/AdminAuthContext";
+import CompanionPairingPanel from "./CompanionPairingPanel";
 import {
   createAssistantSession,
   sendAssistantMessage,
@@ -192,6 +193,7 @@ export default function PersonalAssistantOrb() {
               </article>
             ))}
             {busy && <p className="flex items-center gap-2 text-xs text-violet-200"><Loader2 size={14} className="animate-spin" /> Working…</p>}
+            <CompanionPairingPanel />
           </div>
 
           <div className="border-t border-white/10 p-3">
