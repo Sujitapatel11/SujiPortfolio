@@ -64,6 +64,7 @@ class Pairing:
     backend_api_url: str = ""
     worker: threading.Thread | None = None
     stop_event: threading.Event = field(default_factory=threading.Event)
+    restart_requested: bool = False
     lock: threading.Lock = field(default_factory=threading.Lock)
 
 
@@ -242,15 +243,17 @@ def _poll_once() -> bool:
 
 
 def _worker_finished() -> None:
-    """Clear the exiting worker and resume only if a connection is still active."""
+    """Restart only when a reconnect arrived while the prior worker was stopping."""
     current = threading.current_thread()
     with STATE.lock:
-        if STATE.worker is current:
-            STATE.worker = None
-        connection_ready = bool(
+        if STATE.worker is not current:
+            return
+        STATE.worker = None
+        should_restart = STATE.restart_requested and bool(
             STATE.backend_api_url and STATE.backend_token and STATE.backend_device_id
         )
-    if connection_ready:
+        STATE.restart_requested = False
+    if should_restart:
         _start_worker()
 
 
@@ -269,8 +272,9 @@ def _poll_loop(stop_event: threading.Event) -> None:
 def _start_worker() -> None:
     with STATE.lock:
         if STATE.worker and STATE.worker.is_alive():
-            # The existing worker owns shutdown. Its finally block starts a
-            # replacement if a new connection exists after cancellation.
+            # Only queue a replacement when this live worker is already stopping.
+            if STATE.stop_event.is_set():
+                STATE.restart_requested = True
             return
         if not (STATE.backend_api_url and STATE.backend_token and STATE.backend_device_id):
             return
