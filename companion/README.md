@@ -32,3 +32,10 @@ Pairing is revoked only when you choose Disconnect. If you clear browser storage
 The service binds only to `127.0.0.1:8765`, checks the exact configured Origin and Host, and stores the pairing secret in Windows Credential Manager through Python keyring. It cannot run shell commands, read files, send messages, submit forms, make payments, or control arbitrary applications.
 
 For production hosting, set `ASSISTANT_ALLOWED_ORIGINS` to the exact HTTPS portfolio origin. Never use `*`.
+
+
+## Hosted assistant execution queue (Step 4.2)
+
+The companion can be connected to the hosted assistant queue through its loopback-only API. The backend must first register the device and return its one-time device ID and credential. Send those values only to the local companion's `/v1/backend/connect` endpoint from the authenticated owner UI; the companion validates the credential against the backend and stores it in Windows Credential Manager. The companion then polls the backend outbound over HTTPS and runs only the fixed allowlist: public HTTP(S) browser URLs, Windows Calculator, and Notepad. No shell commands or arbitrary executable paths are supported.
+
+The hosted queue connection is separate from the legacy browser-pairing token. Use `/v1/backend/disconnect` to stop polling and remove the backend credential. The local server remains bound to loopback only.
