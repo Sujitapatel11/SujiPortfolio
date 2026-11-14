@@ -4,13 +4,16 @@ This module deliberately does not execute browser or desktop actions.
 """
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
+import hashlib
+import hmac
+import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.admin.auth import get_current_admin
-from app.assistant.models import AssistantAction, AssistantAuditEvent, AssistantMessage, AssistantSession
+from app.assistant.models import AssistantAction, AssistantAuditEvent, AssistantMessage, AssistantSession, AssistantDevice
 from app.assistant.policy import PolicyViolation, build_action_proposal
 from app.assistant.planner import PlannerUnavailable, plan_user_message
 from app.assistant.schemas import ActionProposalRequest
@@ -73,6 +76,14 @@ def _audit(db: Session, session_id: str, action_id: str | None, actor: str, even
 
 @router.post("/sessions", status_code=status.HTTP_201_CREATED)
 def create_session(payload: SessionCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+    if payload.device_id:
+        device = db.query(AssistantDevice).filter(
+            AssistantDevice.id == payload.device_id,
+            AssistantDevice.owner_username == current_admin["username"],
+            AssistantDevice.is_active.is_(True),
+        ).first()
+        if not device:
+            raise HTTPException(status_code=422, detail="Device is not paired and active for this owner")
     now = datetime.now(timezone.utc)
     item = AssistantSession(
         id=str(uuid4()),
@@ -307,10 +318,23 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
         raise HTTPException(status_code=410, detail="Action proposal has expired")
 
     if payload.decision == "approve":
+        device_id = session.device_id
+        if not device_id:
+            raise HTTPException(status_code=409, detail="Pair a device and create a device-bound session before approving execution")
+        device = db.query(AssistantDevice).filter(
+            AssistantDevice.id == device_id,
+            AssistantDevice.owner_username == current_admin["username"],
+            AssistantDevice.is_active.is_(True),
+        ).first()
+        if not device:
+            raise HTTPException(status_code=409, detail="Target device is not active")
         action.status = "approved"
         action.approved_by = current_admin["username"]
         action.approved_at = now
-        event = "action.approved"
+        action.target_device_id = device.id
+        action.command_id = str(uuid4())
+        action.execution_nonce = secrets.token_hex(32)
+        event = "action.approved_and_queued"
     else:
         action.status = "rejected"
         action.rejected_reason = payload.reason
@@ -322,7 +346,152 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
         "payload_sha256": action.payload_sha256,
     })
     db.commit()
-    return {"action_id": action.id, "status": action.status}
+    return {
+        "action_id": action.id,
+        "status": action.status,
+        "command_id": action.command_id,
+        "target_device_id": action.target_device_id,
+    }
+
+
+@router.post("/devices", status_code=status.HTTP_201_CREATED)
+def register_device(
+    payload: "DeviceRegister",
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin),
+):
+    raw_token = secrets.token_urlsafe(48)
+    device = AssistantDevice(
+        id=str(uuid4()),
+        owner_username=current_admin["username"],
+        name=payload.name,
+        token_sha256=hashlib.sha256(raw_token.encode()).hexdigest(),
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(device)
+    db.commit()
+    return {"device_id": device.id, "name": device.name, "device_token": raw_token}
+
+
+@router.post("/devices/{device_id}/revoke")
+def revoke_device(
+    device_id: str,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin),
+):
+    device = db.query(AssistantDevice).filter(
+        AssistantDevice.id == device_id,
+        AssistantDevice.owner_username == current_admin["username"],
+    ).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    device.is_active = False
+    device.revoked_at = datetime.now(timezone.utc)
+    _audit(db, None, None, current_admin["username"], "device.revoked", {"device_id": device.id})
+    db.commit()
+    return {"device_id": device.id, "status": "revoked"}
+
+
+def _authenticated_device(authorization: str | None, db: Session) -> AssistantDevice:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Device bearer token required")
+    raw = authorization[7:].strip()
+    digest = hashlib.sha256(raw.encode()).hexdigest()
+    device = db.query(AssistantDevice).filter(AssistantDevice.token_sha256 == digest).first()
+    if not device or not device.is_active:
+        raise HTTPException(status_code=401, detail="Device credential is invalid or revoked")
+    if not hmac.compare_digest(device.token_sha256, digest):
+        raise HTTPException(status_code=401, detail="Device credential is invalid")
+    return device
+
+
+@router.get("/device/commands/next")
+def claim_next_command(
+    db: Session = Depends(get_db),
+    authorization: str | None = Header(default=None),
+):
+    device = _authenticated_device(authorization, db)
+    now = datetime.now(timezone.utc)
+    # PostgreSQL row locking prevents two pollers claiming the same command.
+    action = db.query(AssistantAction).join(AssistantSession).filter(
+        AssistantAction.status == "approved",
+        AssistantAction.target_device_id == device.id,
+        AssistantSession.owner_username == device.owner_username,
+        AssistantAction.expires_at > now,
+    ).order_by(AssistantAction.approved_at.asc()).with_for_update(skip_locked=True).first()
+    if not action:
+        return {"command": None}
+    action.status = "executing"
+    action.claimed_at = now
+    action.updated_at = now
+    device.last_seen_at = now
+    _audit(db, action.session_id, action.id, "device:" + device.id, "action.claimed", {
+        "command_id": action.command_id,
+        "payload_sha256": action.payload_sha256,
+    })
+    db.commit()
+    return {"command": {
+        "command_id": action.command_id,
+        "action_id": action.id,
+        "device_id": device.id,
+        "tool": action.tool,
+        "arguments": action.arguments,
+        "payload_sha256": action.payload_sha256,
+        "nonce": action.execution_nonce,
+        "expires_at": action.expires_at,
+    }}
+
+
+class DeviceRegister(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=120)
+
+
+class DeviceResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    command_id: str
+    payload_sha256: str = Field(pattern="^[a-f0-9]{64}$")
+    nonce: str = Field(min_length=32, max_length=64)
+    outcome: str = Field(pattern="^(completed|failed)$")
+    result_code: str = Field(min_length=1, max_length=80)
+    message: str = Field(min_length=1, max_length=300)
+
+
+@router.post("/device/commands/{command_id}/result")
+def submit_command_result(
+    command_id: str,
+    payload: DeviceResult,
+    db: Session = Depends(get_db),
+    authorization: str | None = Header(default=None),
+):
+    device = _authenticated_device(authorization, db)
+    if payload.command_id != command_id:
+        raise HTTPException(status_code=422, detail="Command ID mismatch")
+    action = db.query(AssistantAction).filter(
+        AssistantAction.command_id == command_id,
+        AssistantAction.target_device_id == device.id,
+    ).with_for_update().first()
+    if not action:
+        raise HTTPException(status_code=404, detail="Command not found for this device")
+    if action.status != "executing":
+        raise HTTPException(status_code=409, detail="Command is not awaiting a result")
+    if not hmac.compare_digest(action.payload_sha256, payload.payload_sha256):
+        raise HTTPException(status_code=409, detail="Payload hash mismatch")
+    if not action.execution_nonce or not hmac.compare_digest(action.execution_nonce, payload.nonce):
+        raise HTTPException(status_code=409, detail="Execution nonce mismatch or replay")
+    now = datetime.now(timezone.utc)
+    action.status = payload.outcome
+    action.result = {"code": payload.result_code, "message": payload.message[:300]}
+    action.completed_at = now
+    action.updated_at = now
+    _audit(db, action.session_id, action.id, "device:" + device.id, "action." + payload.outcome, {
+        "command_id": command_id,
+        "payload_sha256": payload.payload_sha256,
+        "result_code": payload.result_code,
+    })
+    db.commit()
+    return {"command_id": command_id, "status": action.status}
 
 
 @router.get("/sessions/{session_id}/audit")
