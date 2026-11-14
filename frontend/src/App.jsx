@@ -14,6 +14,7 @@ import Contact from './components/Contact';
 import Footer from './components/Footer';
 import ChatDrawer from './components/ChatDrawer';
 import JobHunterOrb from './components/JobHunterOrb';
+import PersonalAssistantOrb from './components/PersonalAssistantOrb';
 import { AdminAuthProvider } from './admin/AdminAuthContext';
 
 // Lazy-load private admin modules for code-splitting
@@ -50,6 +51,7 @@ function PublicPortfolio() {
       </main>
       <Footer />
       <JobHunterOrb />
+      <PersonalAssistantOrb />
       <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
       {!chatOpen && (
         <button
