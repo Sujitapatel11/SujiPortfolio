@@ -133,6 +133,7 @@ def test_poll_once_executes_and_reports_backend_command(monkeypatch):
         "payload_sha256": "",
         "nonce": "n" * 64,
     }
+        "expires_at": "2099-01-01T00:00:00+00:00",
     command["payload_sha256"] = companion._command_hash(command)
     calls = []
     def fake_request(method, url, token, payload=None):
@@ -164,4 +165,37 @@ def test_poll_once_rejects_payload_tampering(monkeypatch):
     monkeypatch.setattr(companion, "_api_request", lambda *args, **kwargs: {"command": command})
     import pytest
     with pytest.raises(RuntimeError, match="payload_hash"):
+        companion._poll_once()
+
+
+def test_connect_rejects_device_id_mismatch(monkeypatch):
+    reset(monkeypatch)
+    monkeypatch.setattr(companion, "_api_request", lambda *args, **kwargs: {"device_id": "different-device"})
+    client = TestClient(companion.app)
+    response = client.post("/v1/backend/connect", headers=HEADERS, json={
+        "api_base_url": "https://api.example.com",
+        "device_id": "device-12345678",
+        "device_token": "x" * 48,
+    })
+    assert response.status_code == 401
+
+
+def test_poll_once_rejects_expired_command(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "device-secret-token"
+    state.backend_device_id = "device-12345678"
+    command = {
+        "command_id": "command-12345678",
+        "device_id": state.backend_device_id,
+        "tool": "browser.open_url",
+        "arguments": {"url": "https://example.com"},
+        "payload_sha256": "",
+        "nonce": "n" * 64,
+        "expires_at": "2000-01-01T00:00:00+00:00",
+    }
+    command["payload_sha256"] = companion._command_hash(command)
+    monkeypatch.setattr(companion, "_api_request", lambda *args, **kwargs: {"command": command})
+    import pytest
+    with pytest.raises(RuntimeError, match="command_expired_before_execution"):
         companion._poll_once()
