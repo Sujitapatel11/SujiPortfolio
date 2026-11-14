@@ -56,12 +56,18 @@ export default function CompanionPairingPanel() {
     const openLinkedInSearch = value.match(/^(?:open|go to|visit)\s+linkedin\s+and\s+search\s+(.+)$/i);
     const googleSearch = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
     const instagramSearch = value.match(/^search\s+instagram\s+for\s+(.+)$/i);
+    const instagramProfile = value.match(/^(?:open|visit|show)\s+(?:instagram\s+)?@?([a-zA-Z0-9._]{1,30})\s+profile$/i);
+    const instagramTag = value.match(/^(?:search|open)\s+instagram\s+hashtag\s+#?([a-zA-Z0-9_]+)$/i);
     const whatsappDraft = value.match(/^draft\s+(?:a\s+)?whatsapp\s+message(?:\s+to\s+(\+?[0-9]{8,15}))?\s*[:,-]?\s+(.+)$/i);
     const open = value.match(/^(?:open|go to|visit)\s+(.+)$/i);
     if (whatsappDraft) {
       const number = whatsappDraft[1] ? whatsappDraft[1].replace(/\D/g, "") : "";
       const base = number ? "https://wa.me/" + number : "https://wa.me/";
       action = "open_url"; target = base + "?text=" + encodeURIComponent(whatsappDraft[2]);
+    } else if (instagramProfile) {
+      action = "open_url"; target = "https://www.instagram.com/" + encodeURIComponent(instagramProfile[1]) + "/";
+    } else if (instagramTag) {
+      action = "open_url"; target = "https://www.instagram.com/explore/tags/" + encodeURIComponent(instagramTag[1]) + "/";
     } else if (openLinkedInSearch) { action = "linkedin_search"; target = openLinkedInSearch[1]; }
     else if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
     else if (googleSearch) { action = "google_search"; target = googleSearch[1]; }
@@ -70,7 +76,7 @@ export default function CompanionPairingPanel() {
       const site = open[1].toLowerCase().replace(/^www\./, "");
       const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com", instagram: "https://www.instagram.com", "instagram.com": "https://www.instagram.com" };
       action = "open_url"; target = urls[site] || (site.startsWith("http://") || site.startsWith("https://") ? site : "https://" + site);
-    } else { setError("Try search LinkedIn for remote jobs, open LinkedIn and search remote jobs, open WhatsApp, open Instagram, search Instagram for photography, or draft WhatsApp message: Hello."); return; }
+    } else { setError("Try open Instagram, search Instagram for travel, open Instagram hashtag #travel, open @username profile, or use LinkedIn/WhatsApp commands."); return; }
     setBusy(true); setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
