@@ -31,11 +31,20 @@ ORIGINS = sorted({
 ALLOWED_HOSTS = {"google.com", "www.google.com", "linkedin.com", "www.linkedin.com"}
 
 
+def load_saved_token() -> str:
+    """Read the token from the OS credential store when a backend is available."""
+    try:
+        return keyring.get_password(SERVICE_NAME, TOKEN_ACCOUNT) or ""
+    except keyring.errors.NoKeyringError:
+        # Headless Linux CI has no OS keyring; Windows users get Credential Manager.
+        return ""
+
+
 @dataclass
 class Pairing:
     challenge: str = field(default_factory=lambda: secrets.token_urlsafe(32))
     challenge_expires: float = field(default_factory=lambda: time.monotonic() + PAIR_TTL)
-    token: str = field(default_factory=lambda: keyring.get_password(SERVICE_NAME, TOKEN_ACCOUNT) or "")
+    token: str = field(default_factory=load_saved_token)
     attempts: int = 0
     lock: threading.Lock = field(default_factory=threading.Lock)
 
