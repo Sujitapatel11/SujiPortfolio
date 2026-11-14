@@ -1,26 +1,17 @@
-from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.database import Base, get_db
+from app.database import Base
 from app.main import app
-from app.models import Appointment, Inquiry
+from app.models import Appointment
 
 
 def test_public_appointment_tool_records_request(monkeypatch):
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     Base.metadata.create_all(bind=engine)
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-    def override_db():
-        db = Session()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_db
+    monkeypatch.setattr("app.agent.tools.SessionLocal", Session)
     try:
         from app.agent.tools import book_appointment_request
         result = book_appointment_request.invoke({
@@ -38,7 +29,6 @@ def test_public_appointment_tool_records_request(monkeypatch):
         finally:
             db.close()
     finally:
-        app.dependency_overrides.clear()
         Base.metadata.drop_all(bind=engine)
         engine.dispose()
 

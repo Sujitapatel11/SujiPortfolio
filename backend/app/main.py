@@ -44,4 +44,4 @@ def health_check():
 def get_profile():
     """Single source of truth profile data endpoint."""
     return PROFILE_DATA
-\n
+
