@@ -1,55 +1,31 @@
 # Suji Personal Assistant Companion (Windows-first)
 
-Local-only pairing foundation. This companion exposes status and capability metadata only. It cannot execute desktop actions.
+This version pairs the portfolio browser with a local Windows companion and can open URLs or perform Google searches in a visible Google Chrome window.
 
-## Security boundary
-
-- Binds only to `127.0.0.1:8765`; never change to `0.0.0.0`.
-- No long-lived bearer token is stored on disk.
-- On direct startup, a one-time pairing challenge is printed to the local terminal. It expires after 120 seconds and is single-use.
-- Configure exact website origins with `ASSISTANT_ALLOWED_ORIGINS`, comma-separated. Example:
-  `$env:ASSISTANT_ALLOWED_ORIGINS = "https://your-real-portfolio-domain.example"`
-  Replace the example with the actual origin. Do not use wildcard origins.
-- Pairing returns a random session token valid for 15 minutes. Keep it in browser memory only. Never commit it, paste it into chat, put it in a URL, or persist it in browser storage.
-- Restarting the companion invalidates all sessions and creates a new challenge.
-- `/health` is minimal and unauthenticated. `/v1/capabilities` and disconnect require the paired session token.
-- No shell, PowerShell, process launch, file access, browser control, microphone, or desktop action endpoints exist.
-- Do not expose port 8765 through router port forwarding, tunnels, reverse proxies, or LAN binding.
-
-## Run on Windows
+## Setup (Windows PowerShell)
 
 ```powershell
 cd companion
-$env:ASSISTANT_ALLOWED_ORIGINS = "https://your-real-portfolio-domain.example"
+$env:ASSISTANT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+py -m playwright install chromium
 py companion.py
 ```
 
-The companion prints a one-time challenge locally. Open your portfolio in the browser, sign in to the private owner account, open the Personal AI orb, expand **Local Device Pairing**, and paste the challenge into the pairing field. Do not share the challenge.
+The terminal prints a one-time challenge valid for 120 seconds. Keep it private. Open the portfolio locally, open Personal AI, and pair using that challenge. Pairing expires after 15 minutes and is cleared on companion restart.
 
-## Endpoints
+## Available actions
+- `open_url`: opens a supplied HTTP(S) URL in visible Chrome.
+- `google_search`: searches Google in visible Chrome.
 
-- `GET http://127.0.0.1:8765/health` — minimal status; no credentials.
-- `POST /v1/pairing/complete` — exact trusted Origin, expected Host, JSON body `{"challenge":"..."}`; returns device ID, short-lived session token and expiry once.
-- `GET /v1/capabilities` — requires `Authorization: Bearer <session_token>`.
-- `POST /v1/pairing/disconnect` — requires the paired token and trusted browser request headers; immediately revokes the in-memory session.
+The companion binds only to 127.0.0.1:8765 and requires exact allowed Origin, Host, JSON requests and a short-lived paired bearer token. No shell/PowerShell, file access, messages, form submissions, payments, or destructive actions are exposed. Navigation is initiated by an explicit user command. Do not expose this port through tunnels, router forwarding or LAN binding.
 
-## Current limitations
-
-- Pairing state and credentials are in memory; restarting requires re-pairing.
-- One paired browser session is supported at a time.
-- Website UI integration is not implemented yet.
-- Browser integration tests on Windows have not yet been run. A successful local health check and pairing must still be confirmed in a real browser.
-- Pairing does not authorize execution. The response always advertises `execution_enabled: false`.
-
-## Tests
-
-From the repository root, install the companion requirements and run:
-
-```powershell
-py -m pytest companion/tests -q
-```
-
-Do not treat pairing as production-ready until these tests pass on Windows and browser integration verifies the actual Origin/Host/fetch-metadata behavior.
+## Important limitations
+- This is a first Windows browser-control milestone, not unrestricted desktop control.
+- It controls Chrome, not arbitrary native apps or mobile applications.
+- It uses a visible Playwright-managed Chrome instance; it does not attach to your existing Chrome profile or reuse its logged-in sessions.
+- Website local-network permission/CORS behavior must be tested in your actual browser.
+- Pairing is in-memory and one companion instance supports one paired session.
+- Install Google Chrome for the configured `channel="chrome"` launcher.
