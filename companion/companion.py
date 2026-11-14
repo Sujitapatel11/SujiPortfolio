@@ -65,6 +65,7 @@ class Pairing:
     worker: threading.Thread | None = None
     stop_event: threading.Event = field(default_factory=threading.Event)
     restart_requested: bool = False
+    connection_generation: int = 0
     lock: threading.Lock = field(default_factory=threading.Lock)
 
 
@@ -203,14 +204,29 @@ def execute_approved_command(command: dict) -> tuple[str, str]:
     raise ValueError("tool_or_arguments_not_allowed")
 
 
-def _poll_once() -> bool:
+def _poll_once(generation: int | None = None, stop_event: threading.Event | None = None) -> bool:
     with STATE.lock:
         api_url, token, device_id = STATE.backend_api_url, STATE.backend_token, STATE.backend_device_id
+        current_generation = STATE.connection_generation
+    if generation is None:
+        generation = current_generation
     if not (api_url and token and device_id):
         return False
     data = _api_request("GET", f"{api_url}/api/assistant/device/commands/next", token)
     command = data.get("command")
     if not command:
+        return False
+    # A disconnect or credential rotation may happen while the claim request
+    # is in flight. Never execute a claim from an obsolete connection.
+    with STATE.lock:
+        connection_is_current = (
+            generation == STATE.connection_generation
+            and api_url == STATE.backend_api_url
+            and token == STATE.backend_token
+            and device_id == STATE.backend_device_id
+            and (stop_event is None or not stop_event.is_set())
+        )
+    if not connection_is_current:
         return False
     if command.get("device_id") != device_id or not command.get("command_id") or not command.get("nonce"):
         raise RuntimeError("command_identity_mismatch")
@@ -257,11 +273,11 @@ def _worker_finished() -> None:
         _start_worker()
 
 
-def _poll_loop(stop_event: threading.Event) -> None:
+def _poll_loop(stop_event: threading.Event, generation: int) -> None:
     try:
         while not stop_event.is_set():
             try:
-                _poll_once()
+                _poll_once(generation, stop_event)
             except Exception:
                 pass
             stop_event.wait(POLL_INTERVAL_SECONDS)
@@ -282,8 +298,9 @@ def _start_worker() -> None:
         # worker's cancellation signal and accidentally revive that thread.
         stop_event = threading.Event()
         STATE.stop_event = stop_event
+        generation = STATE.connection_generation
         worker = threading.Thread(
-            target=_poll_loop, args=(stop_event,),
+            target=_poll_loop, args=(stop_event, generation),
             name="suji-command-poller", daemon=True
         )
         STATE.worker = worker
@@ -378,6 +395,10 @@ def connect_backend(payload: BackendConnectRequest, request: Request):
     except Exception as exc:
         raise HTTPException(503, "Windows Credential Manager could not store backend pairing") from exc
     with STATE.lock:
+        # Retire any in-flight poll from the previous credentials before
+        # publishing the new connection generation.
+        STATE.stop_event.set()
+        STATE.connection_generation += 1
         STATE.backend_token = payload.device_token
         STATE.backend_device_id = payload.device_id
         STATE.backend_api_url = api_url
@@ -388,8 +409,9 @@ def connect_backend(payload: BackendConnectRequest, request: Request):
 @app.post("/v1/backend/disconnect")
 def disconnect_backend(request: Request):
     check_origin(request)
-    STATE.stop_event.set()
     with STATE.lock:
+        STATE.stop_event.set()
+        STATE.connection_generation += 1
         STATE.backend_token = ""
         STATE.backend_device_id = ""
         STATE.backend_api_url = ""
