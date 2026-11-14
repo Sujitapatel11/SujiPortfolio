@@ -377,3 +377,67 @@ def test_claim_returned_after_disconnect_is_not_executed(monkeypatch):
     assert result == [False]
     assert executed == []
     assert posted == []
+
+
+def test_disconnect_waits_until_already_started_action_finishes(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "device-token"
+    state.backend_device_id = "device-12345678"
+    action_started = companion.threading.Event()
+    release_action = companion.threading.Event()
+    disconnect_finished = companion.threading.Event()
+    posted = []
+    command = {
+        "command_id": "command-87654321",
+        "device_id": state.backend_device_id,
+        "nonce": "nonce-87654321",
+        "tool": "browser.open_url",
+        "arguments": {"url": "https://example.com"},
+        "expires_at": (companion.datetime.now(companion.timezone.utc)
+                       + timedelta(minutes=5)).isoformat(),
+    }
+    command["payload_sha256"] = companion._command_hash(command)
+
+    def fake_request(method, url, token, payload=None):
+        if method == "GET":
+            return {"command": command}
+        posted.append(payload)
+        return {"status": "ok"}
+
+    def fake_execute(_command):
+        action_started.set()
+        assert release_action.wait(2)
+        return "opened", "ok"
+
+    monkeypatch.setattr(companion, "_api_request", fake_request)
+    monkeypatch.setattr(companion, "execute_approved_command", fake_execute)
+
+    poller = companion.threading.Thread(
+        target=lambda: companion._poll_once(state.connection_generation, state.stop_event)
+    )
+    poller.start()
+    assert action_started.wait(2)
+
+    def disconnect():
+        with state.lock:
+            state.stop_event.set()
+            state.connection_generation += 1
+            state.backend_token = ""
+            state.backend_device_id = ""
+            state.backend_api_url = ""
+        disconnect_finished.set()
+
+    disconnector = companion.threading.Thread(target=disconnect)
+    disconnector.start()
+    assert not disconnect_finished.wait(0.1)
+
+    release_action.set()
+    poller.join(timeout=2)
+    disconnector.join(timeout=2)
+
+    assert not poller.is_alive()
+    assert not disconnector.is_alive()
+    assert disconnect_finished.is_set()
+    assert len(posted) == 1
+    assert posted[0]["outcome"] == "completed"
