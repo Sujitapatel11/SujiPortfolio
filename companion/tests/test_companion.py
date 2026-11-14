@@ -317,3 +317,62 @@ def test_worker_restarts_after_reconnect_during_pending_shutdown(monkeypatch):
     if worker:
         worker.join(timeout=2)
     assert len(calls) == 2
+
+
+def test_claim_returned_after_disconnect_is_not_executed(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "old-token"
+    state.backend_device_id = "device-12345678"
+    entered_claim = companion.threading.Event()
+    release_claim = companion.threading.Event()
+    executed = []
+    posted = []
+    command = {
+        "command_id": "command-12345678",
+        "device_id": "device-12345678",
+        "nonce": "nonce-12345678",
+        "tool": "browser.open_url",
+        "arguments": {"url": "https://example.com"},
+        "expires_at": (companion.datetime.now(companion.timezone.utc)
+                       + companion.timedelta(minutes=5)).isoformat(),
+    }
+    command["payload_sha256"] = companion._command_hash(command)
+
+    def fake_request(method, url, token, payload=None):
+        if method == "GET":
+            entered_claim.set()
+            assert release_claim.wait(2)
+            return {"command": command}
+        posted.append((method, url, token, payload))
+        return {"status": "ok"}
+
+    monkeypatch.setattr(companion, "_api_request", fake_request)
+    monkeypatch.setattr(
+        companion, "execute_approved_command",
+        lambda value: executed.append(value) or ("opened", "ok"),
+    )
+    result = []
+    worker = companion.threading.Thread(
+        target=lambda: result.append(companion._poll_once(
+            state.connection_generation, state.stop_event
+        ))
+    )
+    worker.start()
+    assert entered_claim.wait(2)
+
+    # Simulate disconnect/credential retirement while the claim is in flight.
+    with state.lock:
+        state.stop_event.set()
+        state.connection_generation += 1
+        state.backend_token = ""
+        state.backend_device_id = ""
+        state.backend_api_url = ""
+
+    release_claim.set()
+    worker.join(timeout=2)
+
+    assert not worker.is_alive()
+    assert result == [False]
+    assert executed == []
+    assert posted == []
