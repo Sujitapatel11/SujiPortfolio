@@ -9,7 +9,7 @@ import About from './components/About';
 import Skills from './components/Skills';
 import Projects from './components/Projects';
 import EngineeringLab from './components/EngineeringLab';
-import JobHunter from './components/JobHunter';
+import PersonalAssistantOrb from './components/PersonalAssistantOrb';
 import Experience from './components/Experience';
 import Contact from './components/Contact';
 import Footer from './components/Footer';
@@ -45,11 +45,11 @@ function PublicPortfolio() {
         <Skills />
         <Projects />
         <EngineeringLab />
-        <JobHunter />
         <Experience />
         <Contact />
       </main>
       <Footer />
+      <PersonalAssistantOrb />
       <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
       {!chatOpen && (
         <button
