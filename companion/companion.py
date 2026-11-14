@@ -9,7 +9,7 @@ import os
 import secrets
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Annotated
 from urllib.parse import urlsplit
@@ -59,7 +59,7 @@ class PairingState:
     device_id: str | None = None
     session_token: str | None = None
     session_expires_at: float = 0.0
-    lock: threading.Lock = threading.Lock()
+    lock: threading.Lock = field(default_factory=threading.Lock)
 
     @classmethod
     def fresh(cls) -> "PairingState":
@@ -183,7 +183,8 @@ def capabilities():
 
 
 @app.post("/v1/pairing/disconnect", dependencies=[Depends(require_session)])
-def disconnect_pairing():
+def disconnect_pairing(request: Request):
+    validate_browser_request(request)
     with STATE.lock:
         STATE.clear_session()
     return {"status": "disconnected", "execution_enabled": False}
