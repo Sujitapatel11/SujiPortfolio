@@ -38,12 +38,13 @@ async function localConnect(deviceId, deviceToken) {
   return data;
 }
 
-async function localDisconnect() {
+async function localDisconnect(deviceId) {
   let response;
   try {
     response = await fetch(`${COMPANION}/v1/backend/disconnect`, {
       method: "POST", mode: "cors", credentials: "omit", cache: "no-store",
-      headers: { "Content-Type": "application/json" }, body: "{}",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_id: deviceId }),
     });
   } catch {
     throw new Error("Local companion is unreachable; revoke the device below to disable its backend credential.");
@@ -168,7 +169,7 @@ export default function PersonalOperatorDevices({ adminToken }) {
   const disconnect = async (deviceId) => {
     setBusy(true); setError(""); setMessage("");
     try {
-      try { await localDisconnect(); } catch (err) {
+      try { await localDisconnect(deviceId); } catch (err) {
         if (!window.confirm(`${err.message}\n\nRevoke this device on the backend anyway?`)) return;
       }
       await api(`/devices/${encodeURIComponent(deviceId)}/revoke`, adminToken, { method: "POST" });
