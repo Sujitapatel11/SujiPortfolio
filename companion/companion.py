@@ -282,7 +282,7 @@ def connect_backend(payload: BackendConnectRequest, request: Request):
     check_origin(request)
     api_url = _validate_api_base(payload.api_base_url)
     try:
-        _api_request("GET", f"{api_url}/api/assistant/device/commands/next", payload.device_token)
+        _api_request("GET", f"{api_url}/api/assistant/device/status", payload.device_token)
     except RuntimeError as exc:
         raise HTTPException(401, "Backend rejected the device credential or is unreachable") from exc
     try:
