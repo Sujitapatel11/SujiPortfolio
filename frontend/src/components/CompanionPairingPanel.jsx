@@ -52,16 +52,24 @@ export default function CompanionPairingPanel() {
     const value = text.trim();
     if (!value || !tokenRef.current || busy) return;
     let action, target;
-    const search = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
-    const linkedin = value.match(/^(?:search|find)\s+(?:on\s+)?linkedin\s+(?:for\s+)?(.+)$/i);
+    const linkedin = value.match(/^search\s+linkedin\s+for\s+(.+)$/i)
+      || value.match(/^find\s+(?:on\s+)?linkedin\s+(.+)$/i);
+    const openLinkedInSearch = value.match(/^(?:open|go to|visit)\s+linkedin\s+and\s+search\s+(.+)$/i);
+    const googleSearch = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
+    const whatsappDraft = value.match(/^draft\s+(?:a\s+)?whatsapp\s+message(?:\s+to\s+([+0-9]{8,15}))?\s*[:,-]?\s+(.+)$/i);
     const open = value.match(/^(?:open|go to|visit)\s+(.+)$/i);
-    if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
-    else if (search) { action = "google_search"; target = search[1]; }
+    if (whatsappDraft) {
+      const number = whatsappDraft[1] ? whatsappDraft[1].replace(/\D/g, "") : "";
+      const base = number ? `https://wa.me/${number}` : "https://wa.me/";
+      action = "open_url"; target = `${base}?text=${encodeURIComponent(whatsappDraft[2])}`;
+    } else if (openLinkedInSearch) { action = "linkedin_search"; target = openLinkedInSearch[1]; }
+    else if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
+    else if (googleSearch) { action = "google_search"; target = googleSearch[1]; }\n    else if (instagramSearch) { action = "open_url"; target = `https://www.instagram.com/explore/search/keyword/?q=${encodeURIComponent(instagramSearch[1])}`; }
     else if (open) {
       const site = open[1].toLowerCase().replace(/^www\./, "");
-      const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com" };
+      const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com", instagram: "https://www.instagram.com", "instagram.com": "https://www.instagram.com" };
       action = "open_url"; target = urls[site] || (site.startsWith("http://") || site.startsWith("https://") ? site : "https://" + site);
-    } else { setError("Try “search Google for …”, “search LinkedIn for …”, or “open Google/LinkedIn”."); return; }
+    } else { setError("Try “search LinkedIn for remote jobs”, “open LinkedIn and search remote jobs”, “open WhatsApp”, “open Instagram”, “search Instagram for photography”, or “draft WhatsApp message: Hello”."); return; }
     setBusy(true); setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
@@ -108,6 +116,6 @@ export default function CompanionPairingPanel() {
     {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
     <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
     {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-slate-500">Allowed: Google and LinkedIn navigation/search only. No shell, messages, forms or payments.</p>
+    <p className="mt-2 text-[10px] text-slate-500">Allowed: Google/LinkedIn search, Instagram navigation/search, and WhatsApp Web or pre-filled message drafts. You must review and send messages yourself. No shell, form submission or payments.</p>
   </section>;
 }

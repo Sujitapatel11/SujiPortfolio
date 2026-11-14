@@ -66,3 +66,33 @@ def test_open_url_allowlist(monkeypatch):
     auth = {**HEADERS, "Authorization": f"Bearer {token}"}
     bad = client.post("/v1/action", headers=auth, json={"action": "open_url", "value": "https://evil.example"})
     assert bad.status_code == 400
+
+
+def test_whatsapp_web_and_prefilled_message_url_are_allowlisted(monkeypatch):
+    state = reset(monkeypatch)
+    client = TestClient(companion.app)
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    opened = []
+    monkeypatch.setattr(companion.webbrowser, "open", lambda url, **kwargs: opened.append(url) or True)
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    result = client.post("/v1/action", headers=auth, json={
+        "action": "open_url",
+        "value": "https://wa.me/919876543210?text=Hello%20there",
+    })
+    assert result.status_code == 200
+    assert opened[0].startswith("https://wa.me/919876543210?text=")
+
+
+def test_instagram_url_is_allowlisted(monkeypatch):
+    state = reset(monkeypatch)
+    client = TestClient(companion.app)
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    opened = []
+    monkeypatch.setattr(companion.webbrowser, "open", lambda url, **kwargs: opened.append(url) or True)
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    result = client.post("/v1/action", headers=auth, json={
+        "action": "open_url",
+        "value": "https://www.instagram.com/",
+    })
+    assert result.status_code == 200
+    assert opened[0] == "https://www.instagram.com/"
