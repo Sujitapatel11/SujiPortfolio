@@ -29,8 +29,10 @@ def upgrade() -> None:
     op.create_index("ix_assistant_devices_owner_username", "assistant_devices", ["owner_username"])
     op.create_index("ix_assistant_devices_is_active", "assistant_devices", ["is_active"])
 
-    # Batch mode keeps this migration compatible with SQLite CI and PostgreSQL.
-    with op.batch_alter_table("assistant_actions", recreate="always") as batch:
+    # Alembic batch mode recreates tables only on dialects that require it (such as SQLite).
+    # PostgreSQL uses native ALTER TABLE operations, preserving existing foreign keys
+    # from assistant_audit_events.action_id to assistant_actions.id.
+    with op.batch_alter_table("assistant_actions") as batch:
         batch.add_column(sa.Column("target_device_id", sa.String(36), nullable=True))
         batch.add_column(sa.Column("command_id", sa.String(36), nullable=True))
         batch.add_column(sa.Column("execution_nonce", sa.String(64), nullable=True))
@@ -50,7 +52,8 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("ix_assistant_actions_target_device_id", table_name="assistant_actions")
-    with op.batch_alter_table("assistant_actions", recreate="always") as batch:
+    # Use native ALTER TABLE on PostgreSQL; SQLite falls back to batch recreation.
+    with op.batch_alter_table("assistant_actions") as batch:
         batch.drop_constraint("uq_assistant_actions_execution_nonce", type_="unique")
         batch.drop_constraint("uq_assistant_actions_command_id", type_="unique")
         batch.drop_constraint("fk_assistant_actions_target_device", type_="foreignkey")
