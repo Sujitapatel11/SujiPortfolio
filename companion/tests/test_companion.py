@@ -286,7 +286,7 @@ def test_worker_restarts_after_reconnect_during_pending_shutdown(monkeypatch):
     release_replacement_poll = companion.threading.Event()
     calls = []
 
-    def fake_poll_once():
+    def fake_poll_once(*_args):
         calls.append(True)
         if len(calls) == 1:
             entered_old_poll.set()
