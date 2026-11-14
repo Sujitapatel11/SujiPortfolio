@@ -585,12 +585,22 @@ def submit_command_result(
     ).with_for_update().first()
     if not action:
         raise HTTPException(status_code=404, detail="Command not found for this device")
-    if action.status != "executing":
-        raise HTTPException(status_code=409, detail="Command is not awaiting a result")
     if not hmac.compare_digest(action.payload_sha256, payload.payload_sha256):
         raise HTTPException(status_code=409, detail="Payload hash mismatch")
     if not action.execution_nonce or not hmac.compare_digest(action.execution_nonce, payload.nonce):
         raise HTTPException(status_code=409, detail="Execution nonce mismatch or replay")
+    if action.status != "executing":
+        # A device may have successfully committed a result while the HTTP
+        # response was lost. Accept only an exact replay of that same result.
+        stored_result = action.result or {}
+        same_result = (
+            action.status == payload.outcome
+            and stored_result.get("code") == payload.result_code
+            and stored_result.get("message") == payload.message[:300]
+        )
+        if same_result:
+            return {"command_id": command_id, "status": action.status, "duplicate": True}
+        raise HTTPException(status_code=409, detail="Command already has a different terminal result")
     now = datetime.now(timezone.utc)
     action.status = payload.outcome
     action.result = {"code": payload.result_code, "message": payload.message[:300]}
