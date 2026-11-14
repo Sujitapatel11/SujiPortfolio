@@ -29,31 +29,36 @@ def upgrade() -> None:
     op.create_index("ix_assistant_devices_owner_username", "assistant_devices", ["owner_username"])
     op.create_index("ix_assistant_devices_is_active", "assistant_devices", ["is_active"])
 
-    op.add_column("assistant_actions", sa.Column("target_device_id", sa.String(36), nullable=True))
-    op.add_column("assistant_actions", sa.Column("command_id", sa.String(36), nullable=True))
-    op.add_column("assistant_actions", sa.Column("execution_nonce", sa.String(64), nullable=True))
-    op.add_column("assistant_actions", sa.Column("claimed_at", sa.DateTime(timezone=True), nullable=True))
-    op.add_column("assistant_actions", sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True))
-    op.create_foreign_key(
-        "fk_assistant_actions_target_device",
-        "assistant_actions", "assistant_devices",
-        ["target_device_id"], ["id"], ondelete="SET NULL",
-    )
+    # Batch mode keeps this migration compatible with SQLite CI and PostgreSQL.
+    with op.batch_alter_table("assistant_actions", recreate="always") as batch:
+        batch.add_column(sa.Column("target_device_id", sa.String(36), nullable=True))
+        batch.add_column(sa.Column("command_id", sa.String(36), nullable=True))
+        batch.add_column(sa.Column("execution_nonce", sa.String(64), nullable=True))
+        batch.add_column(sa.Column("claimed_at", sa.DateTime(timezone=True), nullable=True))
+        batch.add_column(sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True))
+        batch.create_foreign_key(
+            "fk_assistant_actions_target_device",
+            "assistant_devices",
+            ["target_device_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+        batch.create_unique_constraint("uq_assistant_actions_command_id", ["command_id"])
+        batch.create_unique_constraint("uq_assistant_actions_execution_nonce", ["execution_nonce"])
     op.create_index("ix_assistant_actions_target_device_id", "assistant_actions", ["target_device_id"])
-    op.create_unique_constraint("uq_assistant_actions_command_id", "assistant_actions", ["command_id"])
-    op.create_unique_constraint("uq_assistant_actions_execution_nonce", "assistant_actions", ["execution_nonce"])
 
 
 def downgrade() -> None:
-    op.drop_constraint("uq_assistant_actions_execution_nonce", "assistant_actions", type_="unique")
-    op.drop_constraint("uq_assistant_actions_command_id", "assistant_actions", type_="unique")
     op.drop_index("ix_assistant_actions_target_device_id", table_name="assistant_actions")
-    op.drop_constraint("fk_assistant_actions_target_device", "assistant_actions", type_="foreignkey")
-    op.drop_column("assistant_actions", "completed_at")
-    op.drop_column("assistant_actions", "claimed_at")
-    op.drop_column("assistant_actions", "execution_nonce")
-    op.drop_column("assistant_actions", "command_id")
-    op.drop_column("assistant_actions", "target_device_id")
+    with op.batch_alter_table("assistant_actions", recreate="always") as batch:
+        batch.drop_constraint("uq_assistant_actions_execution_nonce", type_="unique")
+        batch.drop_constraint("uq_assistant_actions_command_id", type_="unique")
+        batch.drop_constraint("fk_assistant_actions_target_device", type_="foreignkey")
+        batch.drop_column("completed_at")
+        batch.drop_column("claimed_at")
+        batch.drop_column("execution_nonce")
+        batch.drop_column("command_id")
+        batch.drop_column("target_device_id")
     op.drop_index("ix_assistant_devices_is_active", table_name="assistant_devices")
     op.drop_index("ix_assistant_devices_owner_username", table_name="assistant_devices")
     op.drop_table("assistant_devices")
