@@ -76,6 +76,70 @@ export default function PersonalOperatorDevices({ adminToken }) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  const [sessionId, setSessionId] = useState("");
+  const [actions, setActions] = useState([]);
+  const [commandText, setCommandText] = useState("");
+  const [assistantReply, setAssistantReply] = useState("");
+  const [voiceBusy, setVoiceBusy] = useState(false);
+
+  const refreshActions = useCallback(async (id = sessionId) => {
+    if (!id) return;
+    try { setActions(await api(`/sessions/${encodeURIComponent(id)}/actions`, adminToken)); }
+    catch (err) { setError(err.message); }
+  }, [adminToken, sessionId]);
+
+  const startAssistantSession = async (deviceId) => {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const session = await api("/sessions", adminToken, {
+        method: "POST", body: JSON.stringify({ input_mode: "voice", device_id: deviceId }),
+      });
+      setSessionId(session.session_id); setActions([]);
+      setMessage("Voice session ready. Proposed actions require your approval.");
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  };
+
+  const submitCommand = async (text = commandText, inputMode = "text") => {
+    const clean = text.trim();
+    if (!clean || !sessionId || voiceBusy) return;
+    setVoiceBusy(true); setError(""); setAssistantReply("");
+    try {
+      const result = await api(`/sessions/${encodeURIComponent(sessionId)}/messages`, adminToken, {
+        method: "POST", body: JSON.stringify({ text: clean, input_mode: inputMode }),
+      });
+      setAssistantReply(result.message || "Request received.");
+      setCommandText("");
+      await refreshActions(sessionId);
+    } catch (err) { setError(err.message); }
+    finally { setVoiceBusy(false); }
+  };
+
+  const startVoiceCommand = () => {
+    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Speech) { setError("Voice recognition is unavailable here. Use Chrome or Edge."); return; }
+    const recognition = new Speech();
+    recognition.lang = "hi-IN"; recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const spoken = event.results?.[0]?.[0]?.transcript || "";
+      setCommandText(spoken); submitCommand(spoken, "voice");
+    };
+    recognition.onerror = (event) => setError("Microphone error: " + event.error);
+    recognition.start();
+  };
+
+  const decideAction = async (actionId, decision) => {
+    setBusy(true); setError("");
+    try {
+      await api(`/actions/${encodeURIComponent(actionId)}/decision`, adminToken, {
+        method: "POST", body: JSON.stringify({ decision }),
+      });
+      await refreshActions(sessionId);
+      setMessage(decision === "approve" ? "Approved and queued for the paired laptop." : "Action rejected.");
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  };
+
   const pairDevice = async (event) => {
     event.preventDefault();
     setBusy(true); setError(""); setMessage(""); setConnection(null);
@@ -138,6 +202,35 @@ export default function PersonalOperatorDevices({ adminToken }) {
           </div>
           <button className="admin-btn-primary" type="submit" disabled={busy || !deviceName.trim()}>{busy ? "Connecting…" : "Pair this computer"}</button>
         </form>
+        {devices.some((device) => device.is_active) && (
+          <div style={{ borderTop: "1px solid var(--bp-grid-line)", paddingTop: "1rem", display: "grid", gap: "0.8rem" }}>
+            <div className="admin-label">Voice command session</div>
+            {!sessionId ? <p style={{ color: "var(--bp-grey)", fontSize: "0.78rem" }}>Start a device-bound session from a paired device below.</p> : <>
+              <div className="admin-settings-row"><span>Session</span><strong>Active · {sessionId.slice(0, 8)}</strong></div>
+              <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+                <button className="admin-btn-secondary" type="button" disabled={voiceBusy || busy} onClick={startVoiceCommand}>Speak command</button>
+                <button className="admin-btn-secondary" type="button" disabled={voiceBusy || busy} onClick={() => refreshActions()}>Refresh proposals</button>
+              </div>
+              <form onSubmit={(event) => { event.preventDefault(); submitCommand(commandText, "text"); }} style={{ display: "flex", gap: "0.6rem" }}>
+                <input className="admin-input" value={commandText} onChange={(event) => setCommandText(event.target.value)} placeholder="Say or type: open google.com" />
+                <button className="admin-btn-primary" disabled={voiceBusy || !commandText.trim()}>Send</button>
+              </form>
+              {assistantReply && <p role="status" style={{ color: "var(--bp-grey)", fontSize: "0.78rem" }}>{assistantReply}</p>}
+              <div className="admin-label">Action proposals · approval required</div>
+              {actions.length === 0 ? <p style={{ color: "var(--bp-grey)", fontSize: "0.78rem" }}>No proposals yet.</p> : actions.map((action) => (
+                <div key={action.action_id} style={{ border: "1px solid var(--bp-grid-line)", borderRadius: "10px", padding: "0.8rem", display: "grid", gap: "0.45rem" }}>
+                  <strong style={{ fontSize: "0.82rem" }}>{action.summary || action.tool}</strong>
+                  <code style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "0.68rem", color: "var(--bp-grey)" }}>{JSON.stringify(action.arguments, null, 2)}</code>
+                  <span style={{ fontSize: "0.68rem", color: "var(--bp-grey)" }}>Tool: {action.tool} · Risk: {action.risk} · Status: {action.status}</span>
+                  {action.status === "awaiting_approval" && <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button className="admin-btn-success" type="button" disabled={busy} onClick={() => decideAction(action.action_id, "approve")}>Approve exact action</button>
+                    <button className="admin-btn-danger" type="button" disabled={busy} onClick={() => decideAction(action.action_id, "reject")}>Reject</button>
+                  </div>}
+                </div>
+              ))}
+            </>}
+          </div>
+        )}
         <div style={{ borderTop: "1px solid var(--bp-grid-line)", paddingTop: "1rem" }}>
           <div className="admin-label">Paired devices</div>
           {loading ? <p style={{ color: "var(--bp-grey)", fontSize: "0.78rem" }}>Loading devices…</p> :
@@ -150,7 +243,7 @@ export default function PersonalOperatorDevices({ adminToken }) {
                     {device.is_active ? "Active credential" : "Revoked"} · {device.last_seen_at ? `Last seen ${new Date(device.last_seen_at).toLocaleString()}` : "Not yet seen"}
                   </span>
                 </div>
-                {device.is_active && <button className="admin-btn-danger" disabled={busy} onClick={() => disconnect(device.device_id)}>Revoke</button>}
+                {device.is_active && <div style={{ display: "flex", gap: "0.4rem" }}><button className="admin-btn-secondary" disabled={busy} onClick={() => startAssistantSession(device.device_id)}>Start session</button><button className="admin-btn-danger" disabled={busy} onClick={() => disconnect(device.device_id)}>Revoke</button></div>}
               </div>
             ))
           }
