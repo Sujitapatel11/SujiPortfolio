@@ -45,7 +45,7 @@ def test_assistant_sessions_require_authentication():
     # Remove the authenticated-user override: the real HTTP bearer dependency applies.
     app.dependency_overrides.pop(get_current_admin, None)
     response = TestClient(app).post("/api/assistant/sessions", json={"input_mode": "text"})
-    assert response.status_code == 403
+    assert response.status_code == 401
 
 
 def test_owner_can_create_and_read_own_session(test_client):
