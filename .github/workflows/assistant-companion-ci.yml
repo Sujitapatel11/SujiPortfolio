@@ -51,6 +51,12 @@ jobs:
       - run: python -m pip install -r backend/requirements-ci.txt
       - name: Compile backend Python files
         run: python -m compileall -q backend/app
+      - name: Apply database migrations to isolated CI database
+        working-directory: backend
+        env:
+          DATABASE_URL: sqlite:///./ci-test.db
+          JWT_SECRET_KEY: ci-only-test-secret-not-for-production
+        run: python -m alembic -c alembic.ini upgrade head
       - name: Run assistant and client-management tests
         working-directory: backend
         env:
