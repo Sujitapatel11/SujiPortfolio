@@ -34,7 +34,7 @@ def test_public_appointment_tool_records_request(monkeypatch):
 
 
 def test_admin_dashboard_routes_remain_available():
-    paths = {route.path for route in app.routes}
+    paths = {getattr(route, "path", None) for route in app.routes}
     assert "/admin/login" in paths
     assert "/admin/me" in paths
     assert "/admin/inquiries" in paths

@@ -64,15 +64,15 @@ def build_action_proposal(request: ActionProposalRequest) -> ActionProposal:
     )
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
-    summaries = {
-        "browser.open_url": f"Open {arguments['url']} in the paired browser",
-        "desktop.open_application": f"Open the {arguments['app_id']} application on the paired device",
-    }
+    if request.tool == "browser.open_url":
+        summary = f"Open {arguments['url']} in the paired browser"
+    else:
+        summary = f"Open the {arguments['app_id']} application on the paired device"
     return ActionProposal(
         action_id=uuid.uuid4().hex,
         tool=request.tool,
         arguments=arguments,
-        summary=summaries[request.tool],
+        summary=summary,
         risk="low",
         approval_required=True,
         payload_sha256=digest,
