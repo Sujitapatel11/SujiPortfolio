@@ -299,6 +299,7 @@ def list_actions(session_id: str, db: Session = Depends(get_db), current_admin: 
         "summary": a.summary,
         "risk": a.risk,
         "status": a.status,
+        "result": a.result,
         "created_at": a.created_at,
         "expires_at": a.expires_at,
     } for a in actions]
