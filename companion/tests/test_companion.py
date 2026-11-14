@@ -243,3 +243,32 @@ def test_backend_redirect_handler_allows_same_origin_https_redirect():
     assert redirected is not None
     assert redirected.full_url == "https://api.example.com/v2/commands"
     assert redirected.get_header("Authorization") == "Bearer secret"
+
+
+
+def test_startup_resumes_worker_when_saved_backend_credentials_exist(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "saved-device-token"
+    state.backend_device_id = "device-12345678"
+    started = []
+    monkeypatch.setattr(companion, "_start_worker", lambda: started.append(True))
+
+    with TestClient(companion.app):
+        pass
+
+    assert started == [True]
+
+
+def test_startup_does_not_start_worker_for_incomplete_saved_connection(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = ""
+    state.backend_device_id = "device-12345678"
+    started = []
+    monkeypatch.setattr(companion, "_start_worker", lambda: started.append(True))
+
+    with TestClient(companion.app):
+        pass
+
+    assert started == []
