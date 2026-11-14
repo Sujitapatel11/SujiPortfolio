@@ -118,13 +118,42 @@ def _validate_api_base(value: str) -> str:
     return value.strip().rstrip("/")
 
 
+class _SameOriginHTTPSRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Allow only same-origin redirects and never downgrade HTTPS requests."""
+
+    @staticmethod
+    def _origin(value: str) -> tuple[str, str, int | None]:
+        parsed = urlsplit(value)
+        scheme = parsed.scheme.lower()
+        host = (parsed.hostname or "").lower().rstrip(".")
+        try:
+            port = parsed.port
+        except ValueError as exc:
+            raise urllib.error.URLError("invalid_redirect_port") from exc
+        if port is None:
+            port = 443 if scheme == "https" else 80 if scheme == "http" else None
+        return scheme, host, port
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        source = urlsplit(req.full_url)
+        target = urlsplit(newurl)
+        source_origin = self._origin(req.full_url)
+        target_origin = self._origin(newurl)
+        if source.scheme.lower() == "https" and target.scheme.lower() != "https":
+            raise urllib.error.URLError("https_redirect_downgrade_blocked")
+        if source_origin != target_origin:
+            raise urllib.error.URLError("cross_origin_redirect_blocked")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _api_request(method: str, url: str, token: str, payload: dict | None = None) -> dict:
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     request = urllib.request.Request(url, data=data, method=method, headers={
         "Authorization": f"Bearer {token}", "Content-Type": "application/json"
     })
+    opener = urllib.request.build_opener(_SameOriginHTTPSRedirectHandler())
     try:
-        with urllib.request.urlopen(request, timeout=8) as response:
+        with opener.open(request, timeout=8) as response:
             body = response.read(65536)
             return json.loads(body.decode("utf-8")) if body else {}
     except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ValueError) as exc:
