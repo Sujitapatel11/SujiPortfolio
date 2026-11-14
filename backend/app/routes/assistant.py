@@ -455,6 +455,29 @@ def claim_next_command(
 ):
     device = _authenticated_device(authorization, db)
     now = datetime.now(timezone.utc)
+    # A claimed command is never blindly re-queued: after a worker crash, execution
+    # may already have happened. Mark it uncertain/failed and require a fresh proposal.
+    stale_before = now - timedelta(minutes=2)
+    stale_actions = db.query(AssistantAction).filter(
+        AssistantAction.status == "executing",
+        AssistantAction.target_device_id == device.id,
+        AssistantAction.claimed_at.isnot(None),
+        AssistantAction.claimed_at < stale_before,
+    ).with_for_update(skip_locked=True).all()
+    for stale in stale_actions:
+        stale.status = "failed"
+        stale.error_code = "execution_interrupted"
+        stale.result = {
+            "code": "execution_interrupted",
+            "message": "No result was received before the execution lease expired. The action was not retried automatically because it may already have run.",
+        }
+        stale.completed_at = now
+        stale.updated_at = now
+        _audit(db, stale.session_id, stale.id, "device:" + device.id, "action.interrupted", {
+            "command_id": stale.command_id,
+            "claimed_at": stale.claimed_at.isoformat() if stale.claimed_at else None,
+            "automatic_retry": False,
+        })
     # PostgreSQL row locking prevents two pollers claiming the same command.
     action = db.query(AssistantAction).join(AssistantSession).filter(
         AssistantAction.status == "approved",
