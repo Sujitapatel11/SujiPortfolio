@@ -44,15 +44,4 @@ def health_check():
 def get_profile():
     """Single source of truth profile data endpoint."""
     return PROFILE_DATA
-
-
-@app.on_event("startup")
-def start_job_hunter_scheduler():
-    from app.admin.job_scheduler import start_scheduler
-    start_scheduler()
-
-
-@app.on_event("shutdown")
-def stop_job_hunter_scheduler():
-    from app.admin.job_scheduler import stop_scheduler
-    stop_scheduler()
+\n
