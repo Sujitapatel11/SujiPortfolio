@@ -6,6 +6,7 @@ import secrets
 import threading
 import time
 import webbrowser
+import keyring
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Annotated
@@ -17,7 +18,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 HOST = "127.0.0.1:8765"
 PAIR_TTL = 120
-SESSION_TTL = 900
+SERVICE_NAME = "SujiLocalCompanion"
+TOKEN_ACCOUNT = "paired-device-token"
 ALLOWED_SITES = {"same-origin", "same-site", "cross-site"}
 ORIGINS = sorted({
     value.strip().rstrip("/")
@@ -34,8 +36,7 @@ ALLOWED_HOSTS = {"google.com", "www.google.com", "linkedin.com", "www.linkedin.c
 class Pairing:
     challenge: str = field(default_factory=lambda: secrets.token_urlsafe(32))
     challenge_expires: float = field(default_factory=lambda: time.monotonic() + PAIR_TTL)
-    token: str = ""
-    session_expires: float = 0
+    token: str = field(default_factory=lambda: keyring.get_password(SERVICE_NAME, TOKEN_ACCOUNT) or "")
     attempts: int = 0
     lock: threading.Lock = field(default_factory=threading.Lock)
 
@@ -83,29 +84,40 @@ def check_origin(request: Request) -> None:
 
 def require_pairing(authorization: Annotated[str | None, Header()] = None) -> None:
     with STATE.lock:
-        if not STATE.token or time.monotonic() >= STATE.session_expires:
-            STATE.token = ""
-            raise HTTPException(401, "Device is not paired or pairing expired")
+        if not STATE.token:
+            raise HTTPException(401, "Device is not paired")
         if not authorization or not secrets.compare_digest(authorization, f"Bearer {STATE.token}"):
             raise HTTPException(401, "Invalid device pairing")
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "execution_enabled": True}
+    return {"status": "ok", "paired": bool(STATE.token), "execution_enabled": True}
+
+
+@app.get("/v1/status", dependencies=[Depends(require_pairing)])
+def pairing_status(request: Request):
+    check_origin(request)
+    return {"status": "paired"}
 
 
 @app.post("/v1/pair")
 def pair(payload: PairRequest, request: Request):
     check_origin(request)
     with STATE.lock:
+        if STATE.token:
+            raise HTTPException(409, "This companion is already paired. Disconnect it before pairing again.")
         if time.monotonic() >= STATE.challenge_expires or STATE.attempts >= 5:
             raise HTTPException(410, "Pairing challenge expired; restart the companion")
         STATE.attempts += 1
         if not secrets.compare_digest(payload.challenge, STATE.challenge):
             raise HTTPException(401, "Incorrect pairing challenge")
         STATE.token = secrets.token_urlsafe(32)
-        STATE.session_expires = time.monotonic() + SESSION_TTL
+        try:
+            keyring.set_password(SERVICE_NAME, TOKEN_ACCOUNT, STATE.token)
+        except Exception as exc:
+            STATE.token = ""
+            raise HTTPException(503, "Windows Credential Manager could not save the pairing. Check the companion installation.") from exc
         STATE.challenge = ""
         return {
             "token": STATE.token,
@@ -144,7 +156,10 @@ def disconnect(request: Request):
     check_origin(request)
     with STATE.lock:
         STATE.token = ""
-        STATE.session_expires = 0
+        try:
+            keyring.delete_password(SERVICE_NAME, TOKEN_ACCOUNT)
+        except keyring.errors.PasswordDeleteError:
+            pass
     return {"status": "disconnected"}
 
 
