@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.database import Base, get_db
 from app.admin.auth import get_current_admin
-from app.assistant.models import AssistantAction, AssistantSession
+from app.assistant.models import AssistantAction, AssistantAuditEvent, AssistantSession
 
 
 def _client():
