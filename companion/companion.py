@@ -110,6 +110,11 @@ class BackendConnectRequest(BaseModel):
     device_token: str = Field(min_length=40, max_length=200)
 
 
+class BackendDisconnectRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    device_id: str = Field(min_length=8, max_length=64)
+
+
 
 
 def _validate_api_base(value: str) -> str:
@@ -420,9 +425,13 @@ def connect_backend(payload: BackendConnectRequest, request: Request):
 
 
 @app.post("/v1/backend/disconnect")
-def disconnect_backend(request: Request):
+def disconnect_backend(payload: BackendDisconnectRequest, request: Request):
     check_origin(request)
     with STATE.lock:
+        # Revoking a different device must not tear down this companion's
+        # currently paired device or erase its saved credentials.
+        if STATE.backend_device_id != payload.device_id:
+            return {"status": "not_current_device", "device_id": payload.device_id}
         STATE.stop_event.set()
         STATE.connection_generation += 1
         STATE.backend_token = ""
@@ -433,7 +442,7 @@ def disconnect_backend(request: Request):
             keyring.delete_password(SERVICE_NAME, account)
         except Exception:
             pass
-    return {"status": "disconnected"}
+    return {"status": "disconnected", "device_id": payload.device_id}
 
 
 @app.post("/v1/action", dependencies=[Depends(require_pairing)])
