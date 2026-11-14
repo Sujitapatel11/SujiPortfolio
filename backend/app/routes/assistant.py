@@ -328,11 +328,23 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if expires_at <= now:
-        action.status = "expired"
-        action.updated_at = now
-        _audit(db, action.session_id, action.id, current_admin["username"], "action.expired")
-        db.commit()
-        raise HTTPException(status_code=410, detail="Action proposal has expired")
+        expired_transition = db.execute(
+            update(AssistantAction)
+            .where(
+                AssistantAction.id == action.id,
+                AssistantAction.status == "awaiting_approval",
+                AssistantAction.expires_at <= now,
+            )
+            .values(status="expired", updated_at=now)
+        )
+        if expired_transition.rowcount == 1:
+            _audit(db, action.session_id, action.id, current_admin["username"], "action.expired")
+            db.commit()
+            raise HTTPException(status_code=410, detail="Action proposal has expired")
+        db.rollback()
+        latest = db.query(AssistantAction).filter(AssistantAction.id == action_id).first()
+        current_status = latest.status if latest else "unavailable"
+        raise HTTPException(status_code=409, detail=f"Action is already {current_status}")
 
     decision_values = {
         "updated_at": now,
