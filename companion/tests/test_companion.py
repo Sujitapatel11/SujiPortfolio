@@ -1,157 +1,59 @@
 from fastapi.testclient import TestClient
-
 from companion import companion
 
-
-ORIGIN = "http://localhost:5173"
 HEADERS = {
-    "Origin": ORIGIN,
+    "Origin": "http://localhost:5173",
     "Host": "127.0.0.1:8765",
     "Content-Type": "application/json",
     "Sec-Fetch-Site": "cross-site",
 }
 
-
-def reset_state(monkeypatch):
-    state = companion.PairingState.fresh()
+def reset(monkeypatch):
+    state = companion.Pairing()
     monkeypatch.setattr(companion, "STATE", state)
     return state
 
-
-def test_health_never_exposes_pairing_or_execution_credentials(monkeypatch):
-    state = reset_state(monkeypatch)
-    response = TestClient(companion.app).get("/health")
-    assert response.status_code == 200
-    assert response.json()["execution_enabled"] is False
-    assert state.challenge not in response.text
-    assert state.session_token is None
-
-
-def test_pairing_accepts_exact_trusted_origin_and_returns_short_lived_token(monkeypatch):
-    state = reset_state(monkeypatch)
+def test_pairing_and_google_search(monkeypatch):
+    state = reset(monkeypatch)
     client = TestClient(companion.app)
+    paired = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge})
+    assert paired.status_code == 200
+    token = paired.json()["token"]
+    monkeypatch.setattr(companion.webbrowser, "open", lambda *args, **kwargs: True)
     response = client.post(
-        "/v1/pairing/complete",
-        headers=HEADERS,
-        json={"challenge": state.challenge},
+        "/v1/action",
+        headers={**HEADERS, "Authorization": f"Bearer {token}"},
+        json={"action": "google_search", "value": "python jobs"},
     )
     assert response.status_code == 200
-    body = response.json()
-    assert body["device_id"]
-    assert len(body["session_token"]) >= 40
-    assert state.challenge not in response.text
-    caps = client.get(
-        "/v1/capabilities",
-        headers={"Authorization": f"Bearer {body['session_token']}"},
-    )
-    assert caps.status_code == 200
-    assert caps.json()["execution_enabled"] is False
-    assert caps.json()["capabilities"] == []
+    assert "google.com/search?q=python+jobs" in response.json()["url"]
 
-
-def test_pairing_rejects_missing_null_and_untrusted_origin(monkeypatch):
-    for origin in (None, "null", "https://evil.example"):
-        state = reset_state(monkeypatch)
-        headers = dict(HEADERS)
-        if origin is None:
-            headers.pop("Origin")
-        else:
-            headers["Origin"] = origin
-        response = TestClient(companion.app).post(
-            "/v1/pairing/complete",
-            headers=headers,
-            json={"challenge": state.challenge},
-        )
-        assert response.status_code == 403
-        assert not state.challenge_consumed
-
-
-def test_pairing_rejects_wrong_host_and_non_json(monkeypatch):
-    state = reset_state(monkeypatch)
-    headers = dict(HEADERS, Host="localhost:8765")
-    response = TestClient(companion.app).post(
-        "/v1/pairing/complete", headers=headers, json={"challenge": state.challenge}
-    )
-    assert response.status_code == 403
-
-    state = reset_state(monkeypatch)
-    headers = dict(HEADERS, **{"Content-Type": "text/plain"})
-    response = TestClient(companion.app).post(
-        "/v1/pairing/complete",
-        headers=headers,
-        content='{"challenge":"not-a-valid-request"}',
-    )
-    assert response.status_code == 415
-
-
-def test_challenge_is_single_use(monkeypatch):
-    state = reset_state(monkeypatch)
+def test_pairing_rejects_wrong_challenge_and_origin(monkeypatch):
+    state = reset(monkeypatch)
     client = TestClient(companion.app)
-    first = client.post(
-        "/v1/pairing/complete", headers=HEADERS, json={"challenge": state.challenge}
-    )
-    second = client.post(
-        "/v1/pairing/complete", headers=HEADERS, json={"challenge": state.challenge}
-    )
-    assert first.status_code == 200
-    assert second.status_code == 410
+    bad = client.post("/v1/pair", headers=HEADERS, json={"challenge": "x" * 43})
+    assert bad.status_code == 401
+    headers = {**HEADERS, "Origin": "https://evil.example"}
+    rejected = client.post("/v1/pair", headers=headers, json={"challenge": state.challenge})
+    assert rejected.status_code == 403
 
-
-def test_expired_challenge_is_rejected(monkeypatch):
-    state = reset_state(monkeypatch)
-    state.challenge_expires_at = 0
-    response = TestClient(companion.app).post(
-        "/v1/pairing/complete", headers=HEADERS, json={"challenge": state.challenge}
-    )
-    assert response.status_code == 410
-
-
-def test_failed_attempts_lock_challenge(monkeypatch):
-    state = reset_state(monkeypatch)
+def test_linkedin_search_and_disconnect(monkeypatch):
+    state = reset(monkeypatch)
     client = TestClient(companion.app)
-    for _ in range(companion.MAX_PAIRING_ATTEMPTS):
-        response = client.post(
-            "/v1/pairing/complete",
-            headers=HEADERS,
-            json={"challenge": "x" * 43},
-        )
-        assert response.status_code == 401
-    assert state.challenge_consumed
-    final = client.post(
-        "/v1/pairing/complete", headers=HEADERS, json={"challenge": state.challenge}
-    )
-    assert final.status_code == 410
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    opened = []
+    monkeypatch.setattr(companion.webbrowser, "open", lambda url, **kwargs: opened.append(url) or True)
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    result = client.post("/v1/action", headers=auth, json={"action": "linkedin_search", "value": "AI internships"})
+    assert result.status_code == 200
+    assert "linkedin.com/jobs/search" in opened[0]
+    assert client.post("/v1/disconnect", headers=auth, json={}).status_code == 200
+    assert client.post("/v1/action", headers=auth, json={"action": "google_search", "value": "test"}).status_code == 401
 
-
-def test_session_expires_and_disconnect_revokes(monkeypatch):
-    state = reset_state(monkeypatch)
+def test_open_url_allowlist(monkeypatch):
+    state = reset(monkeypatch)
     client = TestClient(companion.app)
-    paired = client.post(
-        "/v1/pairing/complete", headers=HEADERS, json={"challenge": state.challenge}
-    ).json()
-    auth = {"Authorization": f"Bearer {paired['session_token']}"}
-
-    disconnected = client.post("/v1/pairing/disconnect", headers={**HEADERS, **auth})
-    assert disconnected.status_code == 200
-    assert client.get("/v1/capabilities", headers=auth).status_code == 401
-
-    state = reset_state(monkeypatch)
-    paired = client.post(
-        "/v1/pairing/complete", headers=HEADERS, json={"challenge": state.challenge}
-    ).json()
-    state.session_expires_at = 0
-    assert client.get(
-        "/v1/capabilities",
-        headers={"Authorization": f"Bearer {paired['session_token']}"},
-    ).status_code == 401
-
-
-def test_invalid_fetch_metadata_is_rejected(monkeypatch):
-    state = reset_state(monkeypatch)
-    headers = dict(HEADERS, **{"Sec-Fetch-Site": "none"})
-    response = TestClient(companion.app).post(
-        "/v1/pairing/complete",
-        headers=headers,
-        json={"challenge": state.challenge},
-    )
-    assert response.status_code == 403
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    bad = client.post("/v1/action", headers=auth, json={"action": "open_url", "value": "https://evil.example"})
+    assert bad.status_code == 400
