@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Mic, Search, Link2, Unlink, Loader2, AlertTriangle } from "lucide-react";
+import { Mic, Link2, Unlink, Loader2, AlertTriangle, MicOff } from "lucide-react";
 
 const BASE = "http://127.0.0.1:8765";
 const TOKEN_KEY = "suji.local-companion.token";
@@ -86,12 +86,16 @@ export default function CompanionPairingPanel() {
   };
   const listen = () => {
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Speech) { setError("Speech recognition is not supported here. Use Chrome or type a command."); return; }
-    const recognition = new Speech(); recognition.lang = "en-IN"; recognition.interimResults = false;
-    recognition.onstart = () => setListening(true); recognition.onend = () => setListening(false);
-    recognition.onerror = (event) => setError("Microphone error: " + event.error);
-    recognition.onresult = (event) => { const spoken = event.results[0][0].transcript; setCommand(spoken); execute(spoken); };
-    recognition.start();
+    if (!Speech) { setError("Voice recognition is not supported by this browser. Use the latest Chrome or Edge."); return; }
+    const recognition = new Speech();
+    recognition.lang = "hi-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 3;
+    recognition.onstart = () => { setListening(true); setError(""); setMessage("Listening… बोलिए"); };
+    recognition.onend = () => setListening(false);
+    recognition.onerror = (event) => setError(event.error === "not-allowed" ? "Microphone permission blocked. Allow microphone access for this site." : "Microphone error: " + event.error);
+    recognition.onresult = (event) => { const spoken = event.results[0][0].transcript; setMessage("Heard: “" + spoken + "”"); execute(spoken); };
+    try { recognition.start(); } catch (e) { setListening(false); setError("Could not start microphone: " + e.message); }
   };
 
   const disconnect = async () => {
@@ -110,18 +114,18 @@ export default function CompanionPairingPanel() {
       <input value={challenge} onChange={e=>setChallenge(e.target.value)} placeholder="One-time pairing challenge" className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-white"/>
       <button disabled={busy || challenge.trim().length < 30} className="w-full rounded-lg bg-violet-500/30 px-3 py-2 text-xs text-white disabled:opacity-40">{busy ? "Connecting…" : "Connect this computer"}</button>
     </form> : <>
-      <form onSubmit={e=>{e.preventDefault();execute();}} className="mt-3 flex gap-2">
-        <input value={command} onChange={e=>setCommand(e.target.value)} placeholder="Say or type a command…" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-sm text-white"/>
-        <button disabled={busy || !command.trim()} className="rounded-lg bg-violet-500/30 px-3 text-white"><Search size={16}/></button>
-      </form>
-      <div className="mt-2 flex gap-2">
-        <button onClick={listen} disabled={busy || listening} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-violet-300/20 px-3 py-2 text-xs text-violet-100"><Mic size={14}/> Voice command</button>
+      <div className="mt-4 flex flex-col items-center gap-3">
+        <button type="button" onClick={listen} disabled={busy || listening} aria-label="Start voice assistant" title="Click and speak" className={"flex h-16 w-16 items-center justify-center rounded-full border transition " + (listening ? "border-rose-300 bg-rose-500/20 text-rose-100" : "border-violet-300/40 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30")}>
+          {listening ? <MicOff size={25}/> : busy ? <Loader2 size={25} className="animate-spin"/> : <Mic size={25}/>} 
+        </button>
+        <p className="text-xs text-violet-100">{listening ? "Listening… बोलिए" : "Tap the microphone and speak"}</p>
+        <p className="text-[10px] text-slate-400">Hindi / Hinglish voice commands supported. No typing needed.</p>
         <button onClick={disconnect} disabled={busy} className="flex items-center gap-2 rounded-lg border border-rose-300/20 px-3 py-2 text-xs text-rose-100"><Unlink size={14}/> Disconnect</button>
       </div>
     </>}
     {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
     <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
     {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-slate-500">Allowed: Google/LinkedIn search, Instagram navigation/search, and WhatsApp Web or pre-filled message drafts. You must review and send messages yourself. No shell, form submission or payments.</p>
+    <p className="mt-2 text-[10px] text-slate-500">Voice actions: Google/LinkedIn search, Instagram navigation/search, and WhatsApp Web. Message sending, account access, payments and system commands are not automated.</p>
   </section>;
 }
