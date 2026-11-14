@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "./AdminAuthContext";
 import "./admin.css";
+import PersonalAssistantOrb from "../components/PersonalAssistantOrb";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -809,6 +810,7 @@ export const Dashboard = () => {
 
       {/* ═══ TOAST ═══ */}
       {toastMessage && <div className="toast-notification">{toastMessage}</div>}
+      <PersonalAssistantOrb />
     </div>
   );
 };
