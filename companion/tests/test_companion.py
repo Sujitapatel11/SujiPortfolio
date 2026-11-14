@@ -476,3 +476,45 @@ def test_backend_disconnect_only_clears_matching_device(monkeypatch):
     assert state.backend_token == ""
     assert state.backend_api_url == ""
     assert len(deleted) == 3
+
+
+def test_result_delivery_retries_without_reexecuting_command(monkeypatch):
+    state = reset(monkeypatch)
+    state.backend_api_url = "https://api.example.com"
+    state.backend_token = "device-token"
+    state.backend_device_id = "device-12345678"
+    executed = []
+    requests = []
+    command = {
+        "command_id": "command-retry-1234",
+        "device_id": state.backend_device_id,
+        "nonce": "nonce-retry-123456789012345678901234",
+        "tool": "browser.open_url",
+        "arguments": {"url": "https://example.com"},
+        "expires_at": (companion.datetime.now(companion.timezone.utc)
+                       + timedelta(minutes=5)).isoformat(),
+    }
+    command["payload_sha256"] = companion._command_hash(command)
+
+    def fake_request(method, url, token, payload=None):
+        requests.append((method, url, token, payload))
+        if method == "GET":
+            return {"command": command}
+        if sum(1 for item in requests if item[0] == "POST") == 1:
+            raise RuntimeError("temporary_network_failure")
+        return {"status": "completed"}
+
+    monkeypatch.setattr(companion, "_api_request", fake_request)
+    monkeypatch.setattr(
+        companion, "execute_approved_command",
+        lambda value: executed.append(value) or ("opened", "ok"),
+    )
+
+    assert companion._poll_once(state.connection_generation, state.stop_event) is True
+    assert len(executed) == 1
+    assert state.pending_result is not None
+
+    assert companion._poll_once(state.connection_generation, state.stop_event) is True
+    assert len(executed) == 1
+    assert state.pending_result is None
+    assert [item[0] for item in requests] == ["GET", "POST", "POST"]
