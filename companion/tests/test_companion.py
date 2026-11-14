@@ -1,3 +1,7 @@
+import urllib.error
+import urllib.request
+
+import pytest
 from fastapi.testclient import TestClient
 from companion import companion
 
@@ -200,3 +204,42 @@ def test_poll_once_rejects_expired_command(monkeypatch):
     import pytest
     with pytest.raises(RuntimeError, match="command_expired_before_execution"):
         companion._poll_once()
+
+
+
+def test_backend_redirect_handler_rejects_cross_origin_redirect():
+    handler = companion._SameOriginHTTPSRedirectHandler()
+    request = urllib.request.Request(
+        "https://api.example.com/device/commands",
+        headers={"Authorization": "Bearer secret"},
+    )
+    with pytest.raises(urllib.error.URLError, match="cross_origin_redirect_blocked"):
+        handler.redirect_request(
+            request, None, 302, "Found", {}, "https://attacker.example/steal"
+        )
+
+
+def test_backend_redirect_handler_rejects_https_downgrade():
+    handler = companion._SameOriginHTTPSRedirectHandler()
+    request = urllib.request.Request(
+        "https://api.example.com/device/commands",
+        headers={"Authorization": "Bearer secret"},
+    )
+    with pytest.raises(urllib.error.URLError, match="https_redirect_downgrade_blocked"):
+        handler.redirect_request(
+            request, None, 302, "Found", {}, "http://api.example.com/redirected"
+        )
+
+
+def test_backend_redirect_handler_allows_same_origin_https_redirect():
+    handler = companion._SameOriginHTTPSRedirectHandler()
+    request = urllib.request.Request(
+        "https://api.example.com/device/commands",
+        headers={"Authorization": "Bearer secret"},
+    )
+    redirected = handler.redirect_request(
+        request, None, 307, "Temporary Redirect", {}, "https://api.example.com/v2/commands"
+    )
+    assert redirected is not None
+    assert redirected.full_url == "https://api.example.com/v2/commands"
+    assert redirected.get_header("Authorization") == "Bearer secret"
