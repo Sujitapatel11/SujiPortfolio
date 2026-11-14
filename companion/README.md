@@ -27,7 +27,7 @@ pip install -r requirements.txt
 py companion.py
 ```
 
-The companion prints a one-time challenge locally. Enter it manually in the authenticated assistant UI when that UI's pairing screen is implemented. Do not share the challenge.
+The companion prints a one-time challenge locally. Open your portfolio in the browser, sign in to the private owner account, open the Personal AI orb, expand **Local Device Pairing**, and paste the challenge into the pairing field. Do not share the challenge.
 
 ## Endpoints
 
@@ -41,7 +41,7 @@ The companion prints a one-time challenge locally. Enter it manually in the auth
 - Pairing state and credentials are in memory; restarting requires re-pairing.
 - One paired browser session is supported at a time.
 - Website UI integration is not implemented yet.
-- Browser integration tests on Windows have not yet been run.
+- Browser integration tests on Windows have not yet been run. A successful local health check and pairing must still be confirmed in a real browser.
 - Pairing does not authorize execution. The response always advertises `execution_enabled: false`.
 
 ## Tests
