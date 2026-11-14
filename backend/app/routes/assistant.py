@@ -336,6 +336,7 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
                 AssistantAction.expires_at <= now,
             )
             .values(status="expired", updated_at=now)
+            .execution_options(synchronize_session=False)
         )
         if expired_transition.rowcount == 1:
             _audit(db, action.session_id, action.id, current_admin["username"], "action.expired")
@@ -393,6 +394,7 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
             AssistantAction.expires_at > now,
         )
         .values(**decision_values)
+        .execution_options(synchronize_session=False)
     )
     if transition.rowcount != 1:
         db.rollback()
