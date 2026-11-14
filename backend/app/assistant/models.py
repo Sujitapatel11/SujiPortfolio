@@ -1,6 +1,6 @@
 """Persistence models for assistant sessions, messages, actions and audit events."""
 from datetime import datetime, timezone
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text, Index
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, JSON, String, Text, Index, Boolean
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -61,6 +61,11 @@ class AssistantAction(Base):
     rejected_reason = Column(Text, nullable=True)
     result = Column(JSON, nullable=True)
     error_code = Column(String(100), nullable=True)
+    target_device_id = Column(String(36), ForeignKey("assistant_devices.id", ondelete="SET NULL"), nullable=True, index=True)
+    command_id = Column(String(36), nullable=True, unique=True)
+    execution_nonce = Column(String(64), nullable=True, unique=True)
+    claimed_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
 
     session = relationship("AssistantSession", back_populates="actions")
 
@@ -75,3 +80,16 @@ class AssistantAuditEvent(Base):
     event_type = Column(String(64), nullable=False, index=True)
     details = Column(JSON, nullable=False, default=dict)
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+
+class AssistantDevice(Base):
+    __tablename__ = "assistant_devices"
+
+    id = Column(String(36), primary_key=True)
+    owner_username = Column(String(255), nullable=False, index=True)
+    name = Column(String(120), nullable=False)
+    token_sha256 = Column(String(64), nullable=False, unique=True)
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    last_seen_at = Column(DateTime(timezone=True), nullable=True)
