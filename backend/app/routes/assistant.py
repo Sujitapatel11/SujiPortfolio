@@ -389,6 +389,21 @@ def register_device(
     return {"device_id": device.id, "name": device.name, "device_token": raw_token}
 
 
+@router.get("/devices")
+def list_devices(db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+    devices = db.query(AssistantDevice).filter(
+        AssistantDevice.owner_username == current_admin["username"]
+    ).order_by(AssistantDevice.created_at.desc()).all()
+    return [{
+        "device_id": device.id,
+        "name": device.name,
+        "is_active": device.is_active,
+        "created_at": device.created_at,
+        "revoked_at": device.revoked_at,
+        "last_seen_at": device.last_seen_at,
+    } for device in devices]
+
+
 @router.post("/devices/{device_id}/revoke")
 def revoke_device(
     device_id: str,
@@ -436,12 +451,13 @@ def claim_next_command(
         AssistantSession.expires_at > now,
         AssistantAction.expires_at > now,
     ).order_by(AssistantAction.approved_at.asc()).with_for_update(skip_locked=True).first()
+    device.last_seen_at = now
     if not action:
+        db.commit()
         return {"command": None}
     action.status = "executing"
     action.claimed_at = now
     action.updated_at = now
-    device.last_seen_at = now
     _audit(db, action.session_id, action.id, "device:" + device.id, "action.claimed", {
         "command_id": action.command_id,
         "payload_sha256": action.payload_sha256,
