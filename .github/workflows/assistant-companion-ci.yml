@@ -6,10 +6,16 @@ on:
       - feat/personal-assistant-foundation
     paths:
       - "companion/**"
+      - "backend/**"
+      - "frontend/**"
+      - "README.md"
       - ".github/workflows/assistant-companion-ci.yml"
   pull_request:
     paths:
       - "companion/**"
+      - "backend/**"
+      - "frontend/**"
+      - "README.md"
       - ".github/workflows/assistant-companion-ci.yml"
   workflow_dispatch:
 
