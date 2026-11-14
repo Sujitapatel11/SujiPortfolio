@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
-import { Bot, X, Sparkles, Mic, MicOff, Send, ShieldCheck, Loader2, LogIn } from "lucide-react";
-import { createAssistantSession, sendAssistantMessage, decideAssistantAction } from "../api/personalAssistant";
+import { Bot, X, Sparkles, Mic, MicOff, Send, ShieldCheck, Loader2, LogIn, Smartphone } from "lucide-react";
+import { createAssistantSession, sendAssistantMessage, decideAssistantAction, listAssistantDevices } from "../api/personalAssistant";
 
 export default function PersonalAssistantOrb() {
   const [open, setOpen] = useState(false);
@@ -10,10 +10,26 @@ export default function PersonalAssistantOrb() {
   const [status, setStatus] = useState("Ready. Click the orb and speak or type a task.");
   const [proposal, setProposal] = useState(null);
   const [reply, setReply] = useState("");
+  const [devices, setDevices] = useState([]);
+  const [deviceId, setDeviceId] = useState("");
   const recognitionRef = useRef(null);
   const sessionRef = useRef(null);
+  const sessionDeviceRef = useRef("");
 
   const token = () => localStorage.getItem("admin_token") || "";
+
+  const loadDevices = async () => {
+    const auth = token();
+    if (!auth) return;
+    try {
+      const items = await listAssistantDevices(auth);
+      const active = items.filter(item => item.is_active);
+      setDevices(active);
+      if (!deviceId && active.length) setDeviceId(active[0].device_id);
+    } catch (error) {
+      setStatus(error.message || "Could not load paired devices.");
+    }
+  };
 
   const submitTask = useCallback(async (raw) => {
     const text = raw.trim();
@@ -28,9 +44,10 @@ export default function PersonalAssistantOrb() {
     setReply("");
     setStatus("Planning your task…");
     try {
-      if (!sessionRef.current) {
-        const session = await createAssistantSession(auth, "voice");
+      if (!sessionRef.current || sessionDeviceRef.current !== deviceId) {
+        const session = await createAssistantSession(auth, "voice", deviceId || null);
         sessionRef.current = session.session_id;
+        sessionDeviceRef.current = deviceId;
       }
       const result = await sendAssistantMessage(auth, sessionRef.current, text, "voice");
       setReply(result.message || "Task request received.");
@@ -41,11 +58,12 @@ export default function PersonalAssistantOrb() {
       setInput("");
     } catch (error) {
       sessionRef.current = null;
+      sessionDeviceRef.current = "";
       setStatus(error.message || "Assistant request failed.");
     } finally {
       setBusy(false);
     }
-  }, [busy]);
+  }, [busy, deviceId]);
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -78,10 +96,15 @@ export default function PersonalAssistantOrb() {
   };
 
   const activate = () => {
-    setOpen(value => !value);
-    if (!open) {
+    const next = !open;
+    setOpen(next);
+    if (next) {
       const auth = token();
-      setStatus(auth ? "Assistant ready. Tap the microphone or type a task." : "Owner sign-in required to use private assistant controls.");
+      setStatus(auth ? "Loading your paired devices…" : "Owner sign-in required to use private assistant controls.");
+      if (auth) void loadDevices();
+    } else {
+      recognitionRef.current?.stop();
+      setListening(false);
     }
   };
 
@@ -92,7 +115,9 @@ export default function PersonalAssistantOrb() {
     try {
       const result = await decideAssistantAction(auth, proposal.action_id, decision);
       setProposal(null);
-      setReply(result.message || (decision === "approve" ? "Approval recorded. Waiting for the paired device result." : "Action rejected."));
+      setReply(decision === "approve"
+        ? "Approval recorded and command queued. The paired device must be online and report its execution result."
+        : "Action rejected.");
       setStatus(result.status || "Decision recorded.");
     } catch (error) {
       setStatus(error.message || "Could not record your decision.");
@@ -108,6 +133,12 @@ export default function PersonalAssistantOrb() {
         <button onClick={() => { recognitionRef.current?.stop(); setListening(false); setOpen(false); }} aria-label="Close assistant"><X size={18}/></button>
       </header>
       <p className="mt-3 text-xs leading-5 text-slate-300">{status}</p>
+      {token() && <label className="mt-3 flex items-center gap-2 text-xs text-slate-300"><Smartphone size={14}/> Execute on
+        <select value={deviceId} onChange={event => { setDeviceId(event.target.value); sessionRef.current = null; }} className="min-w-0 flex-1 rounded-lg border border-white/15 bg-slate-900 px-2 py-2 text-xs text-white">
+          <option value="">No paired device (chat only)</option>
+          {devices.map(device => <option key={device.device_id} value={device.device_id}>{device.name}</option>)}
+        </select>
+      </label>}
       {reply && <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-5 whitespace-pre-wrap">{reply}</div>}
       {proposal && <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 p-3">
         <p className="flex items-center gap-2 text-xs font-semibold"><ShieldCheck size={14}/> Approval required</p>
@@ -128,7 +159,7 @@ export default function PersonalAssistantOrb() {
         </button>
         {!token() && <a href="/admin/login" className="flex items-center gap-1 rounded-xl border border-white/15 px-3 py-2 text-xs"><LogIn size={14}/> Owner sign in</a>}
       </div>
-      <p className="mt-2 text-[10px] text-slate-400">The portfolio can plan tasks and request approval. Device actions require a paired, online companion.</p>
+      <p className="mt-2 text-[10px] text-slate-400">The portfolio can plan tasks and request approval. Device actions require a paired, online companion. Wake-word activation is not enabled in this browser.</p>
     </section>}
     <button onClick={activate} aria-label="Activate Hey Suji" title="Activate Hey Suji" className="flex h-14 w-14 items-center justify-center rounded-full border border-violet-200/50 bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 text-white shadow-xl transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-violet-300">
       {open ? <X size={22}/> : <Sparkles size={24}/>}
