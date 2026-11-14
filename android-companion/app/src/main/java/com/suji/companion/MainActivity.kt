@@ -104,29 +104,25 @@ class MainActivity : Activity() {
     }
 
     private fun executeLocalCommand(raw: String) {
-        val text = raw.lowercase(Locale.ROOT).trim()
-            .replace(Regex("[.!?।]+$"), "")
-        val normalized = when {
-            text.contains("whatsapp") || text.contains("व्हाट्सएप") || text.contains("वाट्सएप") -> "whatsapp"
-            text.contains("instagram") || text.contains("इंस्टाग्राम") -> "instagram"
-            text.contains("chrome") || text.contains("क्रोम") -> "chrome"
-            text.contains("youtube") || text.contains("यूट्यूब") -> "youtube"
-            else -> null
+        when (val parsed = VoiceCommandParser.parse(raw)) {
+            is VoiceCommandParser.Result.Launch -> {
+                val app = parsed.app
+                val launch = packageManager.getLaunchIntentForPackage(app.packageName)
+                if (launch == null) {
+                    status.text = "${app.name.lowercase()} is not installed on this phone."
+                    return
+                }
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(launch)
+                status.text = "Opened ${app.name.lowercase()} on this phone."
+            }
+            VoiceCommandParser.Result.Unsupported -> {
+                status.text = "I heard: $raw. Try: Open WhatsApp, Instagram, Chrome or YouTube."
+            }
+            is VoiceCommandParser.Result.NeedsLaunchIntent -> {
+                status.text = "Could not open ${parsed.app.name.lowercase()}."
+            }
         }
-        if (normalized == null || !(text.startsWith("open") || text.startsWith("ओपन") ||
-                    text.startsWith("खोल") || text.startsWith("start") || text.startsWith("चालू"))) {
-            status.text = "Heard: $raw. Supported: open WhatsApp, Instagram, Chrome or YouTube."
-            return
-        }
-        val packageName = appPackages[normalized] ?: return
-        val launch = packageManager.getLaunchIntentForPackage(packageName)
-        if (launch == null) {
-            status.text = "$normalized is not installed on this phone."
-            return
-        }
-        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(launch)
-        status.text = "Opened $normalized on this phone."
     }
 
     override fun onDestroy() {
