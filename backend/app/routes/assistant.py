@@ -48,6 +48,21 @@ class DecisionRequest(BaseModel):
     reason: str | None = Field(default=None, max_length=500)
 
 
+class DeviceRegister(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=120)
+
+
+class DeviceResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    command_id: str
+    payload_sha256: str = Field(pattern="^[a-f0-9]{64}$")
+    nonce: str = Field(min_length=32, max_length=64)
+    outcome: str = Field(pattern="^(completed|failed)$")
+    result_code: str = Field(min_length=1, max_length=80)
+    message: str = Field(min_length=1, max_length=300)
+
+
 def _owned_session(db: Session, session_id: str, username: str) -> AssistantSession:
     item = db.query(AssistantSession).filter(
         AssistantSession.id == session_id,
@@ -388,7 +403,6 @@ def revoke_device(
         raise HTTPException(status_code=404, detail="Device not found")
     device.is_active = False
     device.revoked_at = datetime.now(timezone.utc)
-    _audit(db, None, None, current_admin["username"], "device.revoked", {"device_id": device.id})
     db.commit()
     return {"device_id": device.id, "status": "revoked"}
 
@@ -441,21 +455,6 @@ def claim_next_command(
         "nonce": action.execution_nonce,
         "expires_at": action.expires_at,
     }}
-
-
-class DeviceRegister(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    name: str = Field(min_length=1, max_length=120)
-
-
-class DeviceResult(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    command_id: str
-    payload_sha256: str = Field(pattern="^[a-f0-9]{64}$")
-    nonce: str = Field(min_length=32, max_length=64)
-    outcome: str = Field(pattern="^(completed|failed)$")
-    result_code: str = Field(min_length=1, max_length=80)
-    message: str = Field(min_length=1, max_length=300)
 
 
 @router.post("/device/commands/{command_id}/result")
