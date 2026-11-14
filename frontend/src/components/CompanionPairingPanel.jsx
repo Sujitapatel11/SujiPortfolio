@@ -52,21 +52,21 @@ export default function CompanionPairingPanel() {
     const value = text.trim();
     if (!value || !tokenRef.current || busy) return;
     let action, target;
-    const linkedin = value.match(/^search\\s+linkedin\\s+for\\s+(.+)$/i)
-      || value.match(/^find\\s+(?:on\\s+)?linkedin\\s+(.+)$/i);
-    const openLinkedInSearch = value.match(/^(?:open|go to|visit)\\s+linkedin\\s+and\\s+search\\s+(.+)$/i);
-    const googleSearch = value.match(/^(?:search|google search)\\s+(?:google\\s+for\\s+)?(.+)$/i);
-    const whatsappDraft = value.match(/^draft\\s+(?:a\\s+)?whatsapp\\s+message(?:\\s+to\\s+([+0-9]{8,15}))?\\s*[:,-]?\\s+(.+)$/i);
-    const open = value.match(/^(?:open|go to|visit)\\s+(.+)$/i);
+    const linkedin = value.match(/^search\s+linkedin\s+for\s+(.+)$/i)
+      || value.match(/^find\s+(?:on\s+)?linkedin\s+(.+)$/i);
+    const openLinkedInSearch = value.match(/^(?:open|go to|visit)\s+linkedin\s+and\s+search\s+(.+)$/i);
+    const googleSearch = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
+    const whatsappDraft = value.match(/^draft\s+(?:a\s+)?whatsapp\s+message(?:\s+to\s+([+0-9]{8,15}))?\s*[:,-]?\s+(.+)$/i);
+    const open = value.match(/^(?:open|go to|visit)\s+(.+)$/i);
     if (whatsappDraft) {
-      const number = whatsappDraft[1] ? whatsappDraft[1].replace(/\\D/g, "") : "";
+      const number = whatsappDraft[1] ? whatsappDraft[1].replace(/\D/g, "") : "";
       const base = number ? `https://wa.me/${number}` : "https://wa.me/";
       action = "open_url"; target = `${base}?text=${encodeURIComponent(whatsappDraft[2])}`;
     } else if (openLinkedInSearch) { action = "linkedin_search"; target = openLinkedInSearch[1]; }
     else if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
     else if (googleSearch) { action = "google_search"; target = googleSearch[1]; }
     else if (open) {
-      const site = open[1].toLowerCase().replace(/^www\\./, "");
+      const site = open[1].toLowerCase().replace(/^www\./, "");
       const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com" };
       action = "open_url"; target = urls[site] || (site.startsWith("http://") || site.startsWith("https://") ? site : "https://" + site);
     } else { setError("Try “search LinkedIn for remote jobs”, “open LinkedIn and search remote jobs”, “open WhatsApp”, or “draft WhatsApp message: Hello”."); return; }
