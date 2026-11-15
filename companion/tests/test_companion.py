@@ -66,3 +66,27 @@ def test_open_url_allowlist(monkeypatch):
     auth = {**HEADERS, "Authorization": f"Bearer {token}"}
     bad = client.post("/v1/action", headers=auth, json={"action": "open_url", "value": "https://evil.example"})
     assert bad.status_code == 400
+
+def test_open_allowed_social_sites(monkeypatch):
+    state = reset(monkeypatch)
+    client = TestClient(companion.app)
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    opened = []
+    monkeypatch.setattr(companion.webbrowser, "open", lambda url, **kwargs: opened.append(url) or True)
+    for url in ("https://www.instagram.com", "https://web.whatsapp.com"):
+        response = client.post("/v1/action", headers=auth, json={"action": "open_url", "value": url})
+        assert response.status_code == 200
+    assert opened == ["https://www.instagram.com", "https://web.whatsapp.com"]
+
+
+def test_disconnect_keeps_pairing_when_credential_remains(monkeypatch):
+    state = reset(monkeypatch)
+    client = TestClient(companion.app)
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    monkeypatch.setattr(companion.keyring, "delete_password", lambda *args: (_ for _ in ()).throw(companion.keyring.errors.PasswordDeleteError("not deleted")))
+    monkeypatch.setattr(companion.keyring, "get_password", lambda *args: token)
+    response = client.post("/v1/disconnect", headers=auth, json={})
+    assert response.status_code == 503
+    assert client.get("/v1/status", headers=auth).status_code == 200
