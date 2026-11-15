@@ -128,6 +128,12 @@ export default function CompanionPairingPanel() {
         setProposal(null);
         return;
       }
+      const claimResponse = await fetch(ADMIN_API + "/api/assistant/actions/" + proposal.action_id + "/claim", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + adminToken },
+      });
+      const claimData = await claimResponse.json().catch(() => ({}));
+      if (!claimResponse.ok) throw new Error(claimData.detail || "This action could not be claimed for execution");
       const action = proposal.tool === "browser.open_url"
         ? { action: "open_url", value: proposal.arguments.url }
         : proposal.tool === "browser.inspect_page"
