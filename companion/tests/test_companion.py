@@ -136,3 +136,24 @@ def test_open_known_folder_uses_only_allowlisted_folder_id(monkeypatch):
     assert response.status_code == 200
     assert response.json()["folder_id"] == "downloads"
     assert opened == ["downloads"]
+def test_list_known_folder_returns_only_supported_non_hidden_files(monkeypatch, tmp_path):
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    (folder / "report.pdf").write_text("pdf", encoding="utf-8")
+    (folder / "notes.txt").write_text("notes", encoding="utf-8")
+    (folder / "payload.exe").write_text("no", encoding="utf-8")
+    (folder / ".hidden.pdf").write_text("no", encoding="utf-8")
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
+    monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
+    result = companion.list_known_folder("downloads")
+    assert [item["name"] for item in result["files"]] == ["notes.txt", "report.pdf"]
+
+
+def test_open_known_file_rejects_traversal(monkeypatch, tmp_path):
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    (tmp_path / "secret.pdf").write_text("secret", encoding="utf-8")
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
+    monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
+    response = companion.open_known_file("downloads", "../secret.pdf")
+    assert response is None
