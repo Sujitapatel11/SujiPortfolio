@@ -143,7 +143,22 @@ def get_session(session_id: str, db: Session = Depends(get_db), current_admin: d
 def create_message(session_id: str, payload: MessageCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
     item = _owned_session(db, session_id, current_admin["username"])
     now = datetime.now(timezone.utc)
-    # Include bounded prior turns so follow-up instructions such as "open that"\n    # have context. Never send messages from another session or owner.\n    prior_messages = db.query(AssistantMessage).filter(\n        AssistantMessage.session_id == item.id,\n    ).order_by(AssistantMessage.created_at.desc()).limit(10).all()\n    conversation_history = [\n        {"role": message.role, "content": message.content}\n        for message in reversed(prior_messages)\n        if message.role in {"user", "assistant"}\n    ]\n\n    user_message = AssistantMessage(
+    # Include bounded prior turns so follow-up instructions have context.
+    # History is restricted to this authenticated owner's current session.
+    prior_messages = (
+        db.query(AssistantMessage)
+        .filter(AssistantMessage.session_id == item.id)
+        .order_by(AssistantMessage.created_at.desc())
+        .limit(10)
+        .all()
+    )
+    conversation_history = [
+        {"role": message.role, "content": message.content}
+        for message in reversed(prior_messages)
+        if message.role in {"user", "assistant"}
+    ]
+
+    user_message = AssistantMessage(
         id=str(uuid4()),
         session_id=item.id,
         role="user",
