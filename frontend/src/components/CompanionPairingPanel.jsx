@@ -39,6 +39,7 @@ export default function CompanionPairingPanel() {
   const tokenRef = useRef(token);
   const taskRunRef = useRef(null);
   const [taskProgress, setTaskProgress] = useState(null);
+  const [taskRunning, setTaskRunning] = useState(false);
 
   const speak = (text) => {
     if (!("speechSynthesis" in window) || !text) return;
@@ -160,9 +161,9 @@ export default function CompanionPairingPanel() {
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
-  const execute = async (text = command, inputMode = "text") => {
+  const execute = async (text = command, inputMode = "text", taskStep = false) => {
     const value = text.trim();
-    if (!value || busy) return;
+    if (!value || (busy && !taskStep) || (taskRunning && !taskStep)) return;
     if (!taskRunRef.current && /\s+(?:and then|then)\s+/i.test(value)) {
       const steps = value.split(/\s+(?:and then|then)\s+/i).map(step => step.trim()).filter(Boolean);
       const isSafeStep = step =>
@@ -181,13 +182,14 @@ export default function CompanionPairingPanel() {
       if (!tokenRef.current) { setError("Pair this computer before running local tasks."); return; }
       const run = { cancelled: false };
       taskRunRef.current = run;
+      setTaskRunning(true);
       setTaskProgress({ current: 0, total: steps.length, label: steps[0], status: "running" });
       setError("");
       try {
         for (let index = 0; index < steps.length; index += 1) {
           if (run.cancelled) break;
           setTaskProgress({ current: index + 1, total: steps.length, label: steps[index], status: "running" });
-          const completed = await execute(steps[index], inputMode);
+          const completed = await execute(steps[index], inputMode, true);
           if (!completed) {
             setTaskProgress({ current: index + 1, total: steps.length, label: steps[index], status: "stopped" });
             return;
@@ -202,8 +204,9 @@ export default function CompanionPairingPanel() {
         else speak("All task steps completed.");
       } finally {
         taskRunRef.current = null;
+        setTaskRunning(false);
       }
-      return;
+      return true;
     }
     let action, target;
     const listMatch = value.match(/^(?:list|show)\s+(?:the\s+)?files\s+(?:in|inside|from)\s+(desktop|documents|downloads|pictures)$/i);
@@ -301,7 +304,7 @@ export default function CompanionPairingPanel() {
     </form> : <>
       <form onSubmit={e=>{e.preventDefault();execute();}} className="mt-3 flex gap-2">
         <input value={command} onChange={e=>setCommand(e.target.value)} placeholder="Say or type a command…" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-sm text-white"/>
-        <button disabled={busy || !command.trim()} className="rounded-lg bg-violet-500/30 px-3 text-white"><Search size={16}/></button>
+        <button disabled={busy || taskRunning || !command.trim()} className="rounded-lg bg-violet-500/30 px-3 text-white"><Search size={16}/></button>
       </form>
       {taskProgress && <div className="mt-2 rounded-lg border border-sky-300/20 bg-sky-300/5 p-2">
         <div className="flex items-center justify-between gap-2">
@@ -312,8 +315,8 @@ export default function CompanionPairingPanel() {
         <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-sky-300 transition-all" style={{ width: (taskProgress.current / taskProgress.total * 100) + "%" }}/></div>
       </div>}
       <div className="mt-2 flex gap-2">
-        <button onClick={listen} disabled={busy || listening} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-violet-300/20 px-3 py-2 text-xs text-violet-100"><Mic size={14}/> Voice command</button>
-        <button onClick={disconnect} disabled={busy} className="flex items-center gap-2 rounded-lg border border-rose-300/20 px-3 py-2 text-xs text-rose-100"><Unlink size={14}/> Disconnect</button>
+        <button onClick={listen} disabled={busy || taskRunning || listening} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-violet-300/20 px-3 py-2 text-xs text-violet-100"><Mic size={14}/> Voice command</button>
+        <button onClick={disconnect} disabled={busy || taskRunning} className="flex items-center gap-2 rounded-lg border border-rose-300/20 px-3 py-2 text-xs text-rose-100"><Unlink size={14}/> Disconnect</button>
       </div>
     </>}
     {listedFolder && <div className="mt-3 rounded-xl border border-violet-300/20 bg-black/20 p-3">
