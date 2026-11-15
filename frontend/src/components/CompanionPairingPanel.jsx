@@ -3,7 +3,7 @@ import { Mic, Search, Link2, Unlink, Loader2, AlertTriangle } from "lucide-react
 
 const BASE = "http://127.0.0.1:8765";
 const TOKEN_KEY = "suji.local-companion.token";
-const ADMIN_API = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\\/$/, "");
+const ADMIN_API = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/+$/, "");
 
 async function request(path, { token, method = "GET", body } = {}) {
   let response;
@@ -129,14 +129,17 @@ export default function CompanionPairingPanel() {
     let action, target;
     const search = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
     const linkedin = value.match(/^(?:search|find)\s+(?:on\s+)?linkedin\s+(?:for\s+)?(.+)$/i);
-    const open = value.match(/^(?:open|go to|visit|launch|start)\\s+(.+)$/i);
+    const openPrefix = ["open ", "go to ", "visit ", "launch ", "start "].find(prefix => value.toLowerCase().startsWith(prefix));
+    const open = openPrefix ? value.slice(openPrefix.length).trim() : "";
     if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
     else if (search) { action = "google_search"; target = search[1]; }
-    else if (open) {
-      const site = open[1].toLowerCase().trim().replace(/^www\\./, "");
+    else if (openPrefix && open) {
+      const site = open.toLowerCase().trim().startsWith("www.") ? open.toLowerCase().trim().slice(4) : open.toLowerCase().trim();
       const apps = { calculator: "calculator", calc: "calculator", notepad: "text_editor", "text editor": "text_editor", browser: "browser", chrome: "browser" };
       const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", instagram: "https://www.instagram.com", "instagram.com": "https://www.instagram.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com", github: "https://github.com", "github.com": "https://github.com" };
       if (apps[site]) { action = "open_application"; target = apps[site]; }
+      else if (urls[site]) { action = "open_url"; target = urls[site]; }
+      else { setError("Supported: open Google, LinkedIn, Instagram, WhatsApp, GitHub, Calculator, Notepad or Browser. Arbitrary websites and apps are blocked."); return; }
       else if (urls[site]) { action = "open_url"; target = urls[site]; }
       else { setError("Supported: open Google, LinkedIn, Instagram, WhatsApp, GitHub, Calculator, Notepad or Browser. Arbitrary websites and apps are blocked."); return; }
     } else { await planWithAI(value); return; }
