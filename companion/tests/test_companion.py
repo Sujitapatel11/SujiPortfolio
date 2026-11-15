@@ -232,26 +232,26 @@ def test_preview_rejects_invalid_utf8(monkeypatch, tmp_path):
 
 
 def test_browser_navigation_rejects_unapproved_hosts():
-    import browser_control
+    from companion import browser_control
     with pytest.raises(HTTPException) as error:
         browser_control.validate_url("https://evil.example")
     assert error.value.status_code == 400
 
 
 def test_browser_navigation_rejects_embedded_credentials():
-    import browser_control
+    from companion import browser_control
     with pytest.raises(HTTPException) as error:
         browser_control.validate_url("https://user:pass@github.com")
     assert error.value.status_code == 400
 
 
 def test_browser_navigation_accepts_approved_https_host():
-    import browser_control
+    from companion import browser_control
     assert browser_control.validate_url("https://github.com") == "https://github.com"
 
 
 def test_browser_inspect_returns_bounded_page_text(monkeypatch):
-    import browser_control
+    from companion import browser_control
 
     class Locator:
         def inner_text(self, timeout):
@@ -272,7 +272,7 @@ def test_browser_inspect_returns_bounded_page_text(monkeypatch):
 
 
 def test_browser_click_requires_unique_link(monkeypatch):
-    import browser_control
+    from companion import browser_control
 
     class Links:
         def count(self):
@@ -290,7 +290,7 @@ def test_browser_click_requires_unique_link(monkeypatch):
 
 
 def test_browser_click_link_navigates_to_validated_href_without_click_handler(monkeypatch):
-    import browser_control
+    from companion import browser_control
 
     class Links:
         def count(self):
@@ -320,7 +320,7 @@ def test_browser_click_link_navigates_to_validated_href_without_click_handler(mo
 
 
 def test_browser_click_link_rejects_external_destination(monkeypatch):
-    import browser_control
+    from companion import browser_control
 
     class Links:
         def count(self):
