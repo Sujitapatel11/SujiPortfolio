@@ -90,3 +90,37 @@ def test_disconnect_keeps_pairing_when_credential_remains(monkeypatch):
     response = client.post("/v1/disconnect", headers=auth, json={})
     assert response.status_code == 503
     assert client.get("/v1/status", headers=auth).status_code == 200
+
+
+def test_open_allowlisted_windows_application(monkeypatch):
+    state = reset(monkeypatch)
+    client = TestClient(companion.app)
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    calls = []
+    monkeypatch.setattr(companion.os, "name", "nt")
+    monkeypatch.setattr(companion.shutil, "which", lambda name: "C:/Windows/System32/notepad.exe")
+    monkeypatch.setattr(companion.subprocess, "Popen", lambda args, **kwargs: calls.append((args, kwargs)))
+    response = client.post("/v1/action", headers=auth, json={"action": "open_application", "value": "text_editor"})
+    assert response.status_code == 200
+    assert response.json()["app_id"] == "text_editor"
+    assert calls[0][0] == ["C:/Windows/System32/notepad.exe"]
+    assert calls[0][1]["shell"] is False
+
+
+def test_open_application_rejects_unlisted_app(monkeypatch):
+    state = reset(monkeypatch)
+    client = TestClient(companion.app)
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    response = client.post("/v1/action", headers=auth, json={"action": "open_application", "value": "powershell"})
+    assert response.status_code == 400
+
+
+def test_open_url_rejects_nonstandard_port(monkeypatch):
+    state = reset(monkeypatch)
+    client = TestClient(companion.app)
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    response = client.post("/v1/action", headers=auth, json={"action": "open_url", "value": "https://github.com:444"})
+    assert response.status_code == 400
