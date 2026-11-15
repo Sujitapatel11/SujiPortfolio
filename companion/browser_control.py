@@ -116,7 +116,7 @@ def click_link(label: str) -> dict:
             href = links.get_attribute("href")
             if not href:
                 raise HTTPException(400, "Link has no destination")
-            validate_url(urljoin(page.url, href))
+            destination = validate_url(urljoin(page.url, href))
             page.goto(destination, wait_until="domcontentloaded", timeout=20000)
             validate_url(page.url)
             return {"status": "navigated", "label": label, "url": page.url, "title": page.title()}
