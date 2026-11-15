@@ -18,7 +18,7 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://suji_user:suji_password@localhost:5432/sujis_world_db"
 )
-IS_PRODUCTION = os.getenv("ENVIRONMENT", "development").lower() == "production"
+IS_DEPLOYED = os.getenv("ENVIRONMENT", "development").lower() in {"production", "staging"}
 
 
 def _make_engine(url: str):
@@ -31,10 +31,10 @@ try:
     with engine.connect():
         logger.info("Successfully connected to configured database.")
 except Exception as exc:
-    if IS_PRODUCTION:
+    if IS_DEPLOYED:
         # Do not log DATABASE_URL: it may contain credentials.
-        logger.critical("Production database connection failed; refusing SQLite fallback.")
-        raise RuntimeError("Production database is unavailable; startup aborted.") from exc
+        logger.critical("Deployed database connection failed; refusing SQLite fallback.")
+        raise RuntimeError("Configured deployment database is unavailable; startup aborted.") from exc
 
     logger.warning("Configured development database unavailable; using local SQLite fallback.")
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
