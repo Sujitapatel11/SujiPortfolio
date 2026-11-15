@@ -160,11 +160,13 @@ export default function CompanionPairingPanel() {
     const value = text.trim();
     if (!value || busy) return;
     let action, target;
+    const listMatch = value.match(/^(?:list|show)\s+(?:the\s+)?files\s+(?:in|inside|from)\s+(desktop|documents|downloads|pictures)$/i);
     const search = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
     const linkedin = value.match(/^(?:search|find)\s+(?:on\s+)?linkedin\s+(?:for\s+)?(.+)$/i);
     const openPrefix = ["open ", "go to ", "visit ", "launch ", "start "].find(prefix => value.toLowerCase().startsWith(prefix));
     const open = openPrefix ? value.slice(openPrefix.length).trim() : "";
-    if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
+    if (listMatch) { action = "list_folder"; target = listMatch[1].toLowerCase(); }
+    else if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
     else if (search) { action = "google_search"; target = search[1]; }
     else if (openPrefix && open) {
       const site = open.toLowerCase().trim().startsWith("www.") ? open.toLowerCase().trim().slice(4) : open.toLowerCase().trim();
@@ -180,7 +182,13 @@ export default function CompanionPairingPanel() {
     setBusy(true); setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
-      if (result.app_id) { setMessage("Opened the " + result.app_id.replace("_", " ") + " application on this computer."); speak("Opening " + result.app_id.replace("_", " ")); }
+      if (action === "list_folder") {
+        setListedFolder(result.folder_id);
+        setListedFiles(result.files || []);
+        setMessage("Found " + (result.files || []).length + " supported files in " + result.folder_id + ".");
+        speak("Found " + (result.files || []).length + " files in " + result.folder_id);
+      }
+      else if (result.app_id) { setMessage("Opened the " + result.app_id.replace("_", " ") + " application on this computer."); speak("Opening " + result.app_id.replace("_", " ")); }
       else if (result.folder_id) { setMessage("Opened the " + result.folder_id + " folder."); speak("Opening " + result.folder_id + " folder"); }
       else { setMessage("Opened in your default browser: " + result.url); speak("Opening website"); }
       setCommand("");
