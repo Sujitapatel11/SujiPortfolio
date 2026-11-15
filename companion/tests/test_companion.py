@@ -183,3 +183,49 @@ def test_open_known_file_rejects_unsupported_extension(monkeypatch, tmp_path):
     with pytest.raises(HTTPException) as error:
         companion.open_known_file("downloads", "malware.exe")
     assert error.value.status_code == 400
+
+def test_preview_known_text_file_is_read_only_and_bounded(monkeypatch, tmp_path):
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    (folder / "notes.txt").write_text("Hello Suji\nLine two", encoding="utf-8")
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
+    monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
+    result = companion.preview_known_file("downloads", "notes.txt")
+    assert result["status"] == "previewed"
+    assert result["content"] == "Hello Suji\nLine two"
+    assert result["truncated"] is False
+
+
+def test_preview_rejects_office_and_executable_files(monkeypatch, tmp_path):
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    (folder / "private.docx").write_bytes(b"not previewable")
+    (folder / "run.exe").write_bytes(b"not previewable")
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
+    monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
+    for name in ("private.docx", "run.exe"):
+        with pytest.raises(HTTPException) as error:
+            companion.preview_known_file("downloads", name)
+        assert error.value.status_code == 400
+
+
+def test_preview_rejects_oversized_file(monkeypatch, tmp_path):
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    (folder / "large.txt").write_bytes(b"x" * (companion.MAX_PREVIEW_BYTES + 1))
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
+    monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
+    with pytest.raises(HTTPException) as error:
+        companion.preview_known_file("downloads", "large.txt")
+    assert error.value.status_code == 413
+
+
+def test_preview_rejects_invalid_utf8(monkeypatch, tmp_path):
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    (folder / "bad.txt").write_bytes(b"\xff\xfe\xff")
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
+    monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
+    with pytest.raises(HTTPException) as error:
+        companion.preview_known_file("downloads", "bad.txt")
+    assert error.value.status_code == 415
