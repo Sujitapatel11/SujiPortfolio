@@ -22,10 +22,11 @@ Allowed output shapes:
 1) {"kind":"action","message":"short explanation","tool":"browser.open_url","arguments":{"url":"https://..."}}
 2) {"kind":"action","message":"short explanation","tool":"desktop.open_application","arguments":{"app_id":"browser|calculator|text_editor"}}
 3) {"kind":"action","message":"short explanation","tool":"desktop.open_folder","arguments":{"folder_id":"desktop|documents|downloads|pictures"}}
-4) {"kind":"clarification","message":"one concise question"}
-5) {"kind":"unsupported","message":"brief reason"}
-Never claim an action was executed. Never propose sending messages, payments, purchases, deleting files, modifying files, submitting forms, shell commands, arbitrary scripts, arbitrary paths, or tools not listed above.
-If the user asks to open a named website and its canonical public URL is unambiguous, propose browser.open_url. If the user asks to open an application, only use the exact app_id allowlist. If the user asks to open Desktop, Documents, Downloads or Pictures, use desktop.open_folder with the exact folder_id. Never invent or accept an arbitrary filesystem path. If the request is ambiguous, ask one clarification question.
+4) {"kind":"action","message":"short explanation","tool":"desktop.open_file","arguments":{"folder_id":"downloads","file_name":"report.pdf"}}
+5) {"kind":"clarification","message":"one concise question"}
+6) {"kind":"unsupported","message":"brief reason"}
+Never claim an action was executed. Never propose sending messages, payments, purchases, deleting files, modifying files, submitting forms, shell commands, arbitrary scripts, arbitrary paths, or tools not listed above. File opening is permitted only when the user names a single file inside Desktop, Documents, Downloads or Pictures and its extension is on the registered allowlist.
+If the user asks to open a named website and its canonical public URL is unambiguous, propose browser.open_url. If the user asks to open an application, only use the exact app_id allowlist. If the user asks to open Desktop, Documents, Downloads or Pictures, use desktop.open_folder with the exact folder_id. Never invent or accept an arbitrary filesystem path. For a file request, use desktop.open_file with the exact filename and the named known folder. If the folder or filename is missing, ask one clarification question. If the request is ambiguous, ask one clarification question.
 The application enforces approval separately. Do not make permission decisions."""
 
 
