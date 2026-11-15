@@ -51,3 +51,17 @@ def test_planner_accepts_named_file_open_action():
     )
     assert result["request"].tool == "desktop.open_file"
     assert result["request"].arguments["file_name"] == "report.pdf"
+def test_planner_accepts_browser_inspection_tool():
+    result = _parse_planner_content(
+        '{"kind":"action","message":"Inspect current page","tool":"browser.inspect_page","arguments":{}}'
+    )
+    assert result["request"].tool == "browser.inspect_page"
+
+
+def test_planner_accepts_browser_search_fill_tool():
+    result = _parse_planner_content(
+        '{"kind":"action","message":"Fill search","tool":"browser.fill_search",'
+        '"arguments":{"query":"Python internships"}}'
+    )
+    assert result["request"].tool == "browser.fill_search"
+    assert result["request"].arguments["query"] == "Python internships"
