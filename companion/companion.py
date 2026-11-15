@@ -28,7 +28,7 @@ ORIGINS = sorted({
     ).split(",")
     if value.strip() and value.strip() != "*"
 })
-ALLOWED_HOSTS = {"google.com", "www.google.com", "linkedin.com", "www.linkedin.com"}
+ALLOWED_HOSTS = {\n    "google.com", "www.google.com",\n    "linkedin.com", "www.linkedin.com",\n    "instagram.com", "www.instagram.com",\n    "web.whatsapp.com",\n}
 
 
 def load_saved_token() -> str:
@@ -146,7 +146,7 @@ def run_action(payload: ActionRequest, request: Request):
             or parsed.username
             or parsed.password
         ):
-            raise HTTPException(400, "Only Google and LinkedIn URLs are allowed")
+            raise HTTPException(400, "This website is not in the companion allowlist")
         target = value
 
     if not webbrowser.open(target, new=2):
