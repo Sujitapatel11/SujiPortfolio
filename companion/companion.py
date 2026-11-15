@@ -10,6 +10,7 @@ import threading
 import time
 import webbrowser
 import keyring
+import browser_control
 from dataclasses import dataclass, field
 from typing import Annotated
 from urllib.parse import quote_plus, urlsplit
@@ -197,7 +198,7 @@ class PairRequest(BaseModel):
 
 class ActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder|list_folder|open_file|preview_file)$")
+    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder|list_folder|open_file|preview_file|browser_navigate|browser_inspect|browser_click_link)$")
     value: str = Field(default="", max_length=500)
     folder_id: str | None = Field(default=None, max_length=32)
     file_name: str | None = Field(default=None, max_length=255)
@@ -266,6 +267,13 @@ def pair(payload: PairRequest, request: Request):
 def run_action(payload: ActionRequest, request: Request):
     check_origin(request)
     value = payload.value.strip()
+
+    if payload.action == "browser_navigate":
+        return browser_control.navigate(value)
+    if payload.action == "browser_inspect":
+        return browser_control.inspect()
+    if payload.action == "browser_click_link":
+        return browser_control.click_link(value)
 
     if payload.action == "open_folder":
         return open_windows_folder(value.lower())
