@@ -96,6 +96,7 @@ export default function CompanionPairingPanel() {
     if (!proposal || !assistantSession) return;
     const adminToken = localStorage.getItem("admin_token");
     if (!adminToken) { setError("Admin session expired. Sign in again."); return; }
+    if (decision === "approve" && !tokenRef.current) { setError("Pair this computer before approving a local action."); return; }
     setBusy(true); setError("");
     try {
       const response = await fetch(ADMIN_API + "/api/assistant/actions/" + proposal.action_id + "/decision", {
@@ -110,19 +111,33 @@ export default function CompanionPairingPanel() {
         setProposal(null);
         return;
       }
-      if (!tokenRef.current) throw new Error("Action approved, but this computer is not paired to the local executor.");
       const action = proposal.tool === "browser.open_url"
         ? { action: "open_url", value: proposal.arguments.url }
         : { action: "open_application", value: proposal.arguments.app_id };
-      const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: action });
-      setPlannerReply(result.app_id
-        ? "Approved and opened the " + result.app_id.replace("_", " ") + " application."
-        : "Approved and opened " + result.url);
-      setProposal(null);
+      try {
+        const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: action });
+        const outcome = result.app_id ? { app_id: result.app_id } : { url: result.url };
+        const saved = await fetch(ADMIN_API + "/api/assistant/actions/" + proposal.action_id + "/result", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + adminToken },
+          body: JSON.stringify({ status: "completed", result: outcome }),
+        });
+        const savedData = await saved.json().catch(() => ({}));
+        const label = result.app_id ? "Opened the " + result.app_id.replace("_", " ") + " application." : "Opened " + result.url;
+        setPlannerReply(saved.ok ? label + " Execution recorded." : label + " Completion record could not be synced.");
+        setProposal(null);
+      } catch (executionError) {
+        await fetch(ADMIN_API + "/api/assistant/actions/" + proposal.action_id + "/result", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + adminToken },
+          body: JSON.stringify({ status: "failed", error_code: "LOCAL_EXECUTOR_FAILED", result: {} }),
+        }).catch(() => null);
+        setPlannerReply("Approval was recorded, but local execution failed: " + executionError.message);
+        setProposal(null);
+      }
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
-
   const execute = async (text = command) => {
     const value = text.trim();
     if (!value || busy) return;
