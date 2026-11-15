@@ -50,6 +50,7 @@ function PublicPortfolio() {
       </main>
       <Footer />
       <ChatDrawer isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      <PersonalAssistantOrb />
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
