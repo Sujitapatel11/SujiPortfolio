@@ -32,6 +32,8 @@ export default function CompanionPairingPanel() {
   const [assistantSession, setAssistantSession] = useState("");
   const [proposal, setProposal] = useState(null);
   const [plannerReply, setPlannerReply] = useState("");
+  const [listedFiles, setListedFiles] = useState([]);
+  const [listedFolder, setListedFolder] = useState("");
   const tokenRef = useRef(token);
 
   const speak = (text) => {
@@ -125,17 +127,19 @@ export default function CompanionPairingPanel() {
         ? { action: "open_url", value: proposal.arguments.url }
         : proposal.tool === "desktop.open_application"
           ? { action: "open_application", value: proposal.arguments.app_id }
-          : { action: "open_folder", value: proposal.arguments.folder_id };
+          : proposal.tool === "desktop.open_folder"
+          ? { action: "open_folder", value: proposal.arguments.folder_id }
+          : { action: "open_file", folder_id: proposal.arguments.folder_id, file_name: proposal.arguments.file_name };
       try {
         const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: action });
-        const outcome = result.app_id ? { app_id: result.app_id } : result.folder_id ? { folder_id: result.folder_id } : { url: result.url };
+        const outcome = result.app_id ? { app_id: result.app_id } : result.file_name ? { folder_id: result.folder_id, file_name: result.file_name } : result.folder_id ? { folder_id: result.folder_id } : { url: result.url };
         const saved = await fetch(ADMIN_API + "/api/assistant/actions/" + proposal.action_id + "/result", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: "Bearer " + adminToken },
           body: JSON.stringify({ status: "completed", result: outcome }),
         });
         const savedData = await saved.json().catch(() => ({}));
-        const label = result.app_id ? "Opened the " + result.app_id.replace("_", " ") + " application." : result.folder_id ? "Opened the " + result.folder_id + " folder." : "Opened " + result.url;
+        const label = result.app_id ? "Opened the " + result.app_id.replace("_", " ") + " application." : result.file_name ? "Opened " + result.file_name : result.folder_id ? "Opened the " + result.folder_id + " folder." : "Opened " + result.url;
         setPlannerReply(saved.ok ? label + " Execution recorded." : label + " Completion record could not be synced.");
         speak(label);
         setProposal(null);
