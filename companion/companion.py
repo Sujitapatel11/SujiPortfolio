@@ -1,8 +1,10 @@
-"""Small, paired Windows companion for safe browser navigation."""
+"""Paired Windows companion with a deliberately small action allowlist."""
 from __future__ import annotations
 
 import os
 import secrets
+import shutil
+import subprocess
 import threading
 import time
 import webbrowser
@@ -28,15 +30,25 @@ ORIGINS = sorted({
     ).split(",")
     if value.strip() and value.strip() != "*"
 })
-ALLOWED_HOSTS = {\n    "google.com", "www.google.com",\n    "linkedin.com", "www.linkedin.com",\n    "instagram.com", "www.instagram.com",\n    "web.whatsapp.com",\n}
+ALLOWED_HOSTS = {
+    "google.com", "www.google.com",
+    "linkedin.com", "www.linkedin.com",
+    "instagram.com", "www.instagram.com",
+    "web.whatsapp.com",
+    "github.com", "www.github.com",
+}
+# Only fixed executable names are permitted. No user-supplied command or arguments.
+WINDOWS_APPS = {
+    "calculator": "calc.exe",
+    "text_editor": "notepad.exe",
+}
 
 
 def load_saved_token() -> str:
     """Read the token from the OS credential store when a backend is available."""
     try:
         return keyring.get_password(SERVICE_NAME, TOKEN_ACCOUNT) or ""
-    except keyring.errors.NoKeyringError:
-        # Headless Linux CI has no OS keyring; Windows users get Credential Manager.
+    except (keyring.errors.NoKeyringError, keyring.errors.InitError):
         return ""
 
 
@@ -67,7 +79,7 @@ class PairRequest(BaseModel):
 
 class ActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    action: str = Field(pattern="^(open_url|google_search|linkedin_search)$")
+    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application)$")
     value: str = Field(min_length=1, max_length=500)
 
 
@@ -120,12 +132,12 @@ def pair(payload: PairRequest, request: Request):
         STATE.attempts += 1
         if not secrets.compare_digest(payload.challenge, STATE.challenge):
             raise HTTPException(401, "Incorrect pairing challenge")
-        STATE.token = secrets.token_urlsafe(32)
+        new_token = secrets.token_urlsafe(32)
         try:
-            keyring.set_password(SERVICE_NAME, TOKEN_ACCOUNT, STATE.token)
+            keyring.set_password(SERVICE_NAME, TOKEN_ACCOUNT, new_token)
         except Exception as exc:
-            STATE.token = ""
             raise HTTPException(503, "Windows Credential Manager could not save the pairing. Check the companion installation.") from exc
+        STATE.token = new_token
         STATE.challenge = ""
         return {"token": STATE.token, "status": "paired"}
 
@@ -134,6 +146,27 @@ def pair(payload: PairRequest, request: Request):
 def run_action(payload: ActionRequest, request: Request):
     check_origin(request)
     value = payload.value.strip()
+
+    if payload.action == "open_application":
+        app_id = value.lower()
+        if app_id == "browser":
+            if not webbrowser.open("https://www.google.com", new=2):
+                raise HTTPException(502, "Windows could not open the default browser")
+            return {"status": "opened", "app_id": app_id}
+        executable = WINDOWS_APPS.get(app_id)
+        if not executable:
+            raise HTTPException(400, "Application is not in the desktop allowlist")
+        if os.name != "nt":
+            raise HTTPException(501, "Desktop application launching is supported only on Windows")
+        resolved = shutil.which(executable)
+        if not resolved:
+            raise HTTPException(502, f"{executable} was not found on this Windows installation")
+        try:
+            subprocess.Popen([resolved], shell=False, close_fds=True)
+        except OSError as exc:
+            raise HTTPException(502, "Windows could not start the allowlisted application") from exc
+        return {"status": "opened", "app_id": app_id}
+
     if payload.action == "google_search":
         target = "https://www.google.com/search?q=" + quote_plus(value)
     elif payload.action == "linkedin_search":
@@ -145,6 +178,7 @@ def run_action(payload: ActionRequest, request: Request):
             or (parsed.hostname or "").lower() not in ALLOWED_HOSTS
             or parsed.username
             or parsed.password
+            or parsed.port not in (None, 80, 443)
         ):
             raise HTTPException(400, "This website is not in the companion allowlist")
         target = value
@@ -158,9 +192,7 @@ def run_action(payload: ActionRequest, request: Request):
 def disconnect(request: Request):
     check_origin(request)
     with STATE.lock:
-        # Revoke durably before clearing the in-memory token. If the OS
-        # credential store cannot confirm deletion, keep the current token
-        # so the user can retry instead of silently losing recovery access.
+        # Revoke durably before clearing the in-memory token.
         try:
             keyring.delete_password(SERVICE_NAME, TOKEN_ACCOUNT)
         except keyring.errors.PasswordDeleteError:
