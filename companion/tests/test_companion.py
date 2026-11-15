@@ -98,7 +98,7 @@ def test_open_allowlisted_windows_application(monkeypatch):
     token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
     auth = {**HEADERS, "Authorization": f"Bearer {token}"}
     calls = []
-    monkeypatch.setattr(companion.os, "name", "nt")
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
     monkeypatch.setattr(companion.shutil, "which", lambda name: "C:/Windows/System32/notepad.exe")
     monkeypatch.setattr(companion.subprocess, "Popen", lambda args, **kwargs: calls.append((args, kwargs)))
     response = client.post("/v1/action", headers=auth, json={"action": "open_application", "value": "text_editor"})
