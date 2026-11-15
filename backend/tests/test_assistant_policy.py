@@ -44,3 +44,18 @@ def test_allowlisted_desktop_app_is_proposed_not_executed():
     ))
     assert proposal.approval_required is True
     assert proposal.arguments == {"app_id": "calculator"}
+
+def test_public_but_unlisted_website_is_rejected():
+    with pytest.raises(PolicyViolation, match="allowlist"):
+        build_action_proposal(ActionProposalRequest(
+            tool="browser.open_url",
+            arguments={"url": "https://example.com"},
+        ))
+
+
+def test_allowed_website_with_nonstandard_port_is_rejected():
+    with pytest.raises(PolicyViolation, match="ports"):
+        build_action_proposal(ActionProposalRequest(
+            tool="browser.open_url",
+            arguments={"url": "https://github.com:444"},
+        ))
