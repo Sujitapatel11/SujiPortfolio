@@ -45,6 +45,11 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
       - name: Run backend test suite
-        run: pytest -q
+        run: >-
+          pytest -q
+          test_assistant_policy.py
+          test_assistant_routes.py
+          test_assistant_api_security.py
+          test_assistant_execution_queue.py
       - name: Validate Alembic migration graph
         run: alembic heads
