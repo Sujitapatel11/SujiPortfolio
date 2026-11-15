@@ -229,3 +229,61 @@ def test_preview_rejects_invalid_utf8(monkeypatch, tmp_path):
     with pytest.raises(HTTPException) as error:
         companion.preview_known_file("downloads", "bad.txt")
     assert error.value.status_code == 415
+
+
+def test_browser_navigation_rejects_unapproved_hosts():
+    import browser_control
+    with pytest.raises(HTTPException) as error:
+        browser_control.validate_url("https://evil.example")
+    assert error.value.status_code == 400
+
+
+def test_browser_navigation_rejects_embedded_credentials():
+    import browser_control
+    with pytest.raises(HTTPException) as error:
+        browser_control.validate_url("https://user:pass@github.com")
+    assert error.value.status_code == 400
+
+
+def test_browser_navigation_accepts_approved_https_host():
+    import browser_control
+    assert browser_control.validate_url("https://github.com") == "https://github.com"
+
+
+def test_browser_inspect_returns_bounded_page_text(monkeypatch):
+    import browser_control
+
+    class Locator:
+        def inner_text(self, timeout):
+            return "A" * 6000
+
+    class Page:
+        url = "https://github.com"
+        def locator(self, selector):
+            assert selector == "body"
+            return Locator()
+        def title(self):
+            return "GitHub"
+
+    monkeypatch.setattr(browser_control, "_page", lambda: Page())
+    result = browser_control.inspect()
+    assert len(result["text"]) == 5000
+    assert result["truncated"] is True
+
+
+def test_browser_click_requires_unique_link(monkeypatch):
+    import browser_control
+
+    class Links:
+        def count(self):
+            return 2
+
+    class Page:
+        url = "https://github.com"
+        def get_by_role(self, role, name, exact):
+            return Links()
+
+    monkeypatch.setattr(browser_control, "_page", lambda: Page())
+    with pytest.raises(HTTPException) as error:
+        browser_control.click_link("Issues")
+    assert error.value.status_code == 409
