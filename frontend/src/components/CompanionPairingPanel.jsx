@@ -35,6 +35,7 @@ export default function CompanionPairingPanel() {
   const [listedFiles, setListedFiles] = useState([]);
   const [listedFolder, setListedFolder] = useState("");
   const [preview, setPreview] = useState(null);
+  const [browserPage, setBrowserPage] = useState(null);
   const tokenRef = useRef(token);
 
   const speak = (text) => {
@@ -162,11 +163,22 @@ export default function CompanionPairingPanel() {
     if (!value || busy) return;
     let action, target;
     const listMatch = value.match(/^(?:list|show)\s+(?:the\s+)?files\s+(?:in|inside|from)\s+(desktop|documents|downloads|pictures)$/i);
+    const inspectMatch = value.match(/^(?:inspect|read)\s+(?:the\s+)?page$/i);
+    const clickMatch = value.match(/^click\s+(?:the\s+)?link\s+(.+)$/i);
+    const browseMatch = value.match(/^browse\s+(.+)$/i);
     const search = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
     const linkedin = value.match(/^(?:search|find)\s+(?:on\s+)?linkedin\s+(?:for\s+)?(.+)$/i);
     const openPrefix = ["open ", "go to ", "visit ", "launch ", "start "].find(prefix => value.toLowerCase().startsWith(prefix));
     const open = openPrefix ? value.slice(openPrefix.length).trim() : "";
-    if (listMatch) { action = "list_folder"; target = listMatch[1].toLowerCase(); }
+    if (inspectMatch) { action = "browser_inspect"; target = ""; }
+    else if (clickMatch) { action = "browser_click_link"; target = clickMatch[1].trim(); }
+    else if (browseMatch) {
+      const name = browseMatch[1].toLowerCase().trim();
+      const browseUrls = { google: "https://www.google.com", linkedin: "https://www.linkedin.com", instagram: "https://www.instagram.com", whatsapp: "https://web.whatsapp.com", github: "https://github.com" };
+      if (!browseUrls[name]) { setError("Managed browser supports Google, LinkedIn, Instagram, WhatsApp Web and GitHub only."); return; }
+      action = "browser_navigate"; target = browseUrls[name];
+    }
+    else if (listMatch) { action = "list_folder"; target = listMatch[1].toLowerCase(); }
     else if (linkedin) { action = "linkedin_search"; target = linkedin[1]; }
     else if (search) { action = "google_search"; target = search[1]; }
     else if (openPrefix && open) {
@@ -183,7 +195,17 @@ export default function CompanionPairingPanel() {
     setBusy(true); setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
-      if (action === "list_folder") {
+      if (action === "browser_inspect") {
+        setBrowserPage(result);
+        setMessage("Inspected " + result.title);
+        speak("Page title: " + result.title);
+      }
+      else if (action === "browser_navigate" || action === "browser_click_link") {
+        setBrowserPage(null);
+        setMessage("Managed browser: " + result.title);
+        speak("Opened " + result.title);
+      }
+      else if (action === "list_folder") {
         setListedFolder(result.folder_id);
         setListedFiles(result.files || []);
         setMessage("Found " + (result.files || []).length + " supported files in " + result.folder_id + ".");
@@ -259,6 +281,15 @@ export default function CompanionPairingPanel() {
         </div>)}
       </div> : <p className="mt-2 text-xs text-slate-400">No supported files found.</p>}
     </div>}
+    {browserPage && <div className="mt-3 rounded-xl border border-sky-300/20 bg-black/20 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-sky-100">{browserPage.title || "Current page"}</p>
+        <button onClick={() => setBrowserPage(null)} className="text-xs text-slate-400">Close</button>
+      </div>
+      <p className="mt-1 break-all text-[10px] text-slate-500">{browserPage.url}</p>
+      <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-black/30 p-3 text-[11px] leading-relaxed text-slate-200">{browserPage.text}</pre>
+      <p className="mt-2 text-[10px] text-slate-500">Read-only page text. Up to 5,000 characters.</p>
+    </div>}
     {preview && <div className="mt-3 rounded-xl border border-violet-300/20 bg-black/30 p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-violet-100">{preview.file_name} · Read-only preview</p>
@@ -281,6 +312,6 @@ export default function CompanionPairingPanel() {
     {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
     <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
     {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-slate-500">Allowlisted: Google/LinkedIn search; Google, LinkedIn, Instagram, WhatsApp Web and GitHub navigation; Calculator, Notepad, default browser and known Windows folders (Desktop/Documents/Downloads/Pictures) and read-only supported-file listing. AI planning needs admin sign-in and backend OPENAI_API_KEY. No shell, messages, forms or payments.</p>
+    <p className="mt-2 text-[10px] text-slate-500">Allowlisted: Google/LinkedIn search; Google, LinkedIn, Instagram, WhatsApp Web and GitHub navigation; Calculator, Notepad, default browser and known Windows folders (Desktop/Documents/Downloads/Pictures) and read-only supported-file listing; managed browser with allowlisted navigation, page text inspection and unique link clicks only. AI planning needs admin sign-in and backend OPENAI_API_KEY. No shell, messages, forms or payments.</p>
   </section>;
 }
