@@ -163,17 +163,17 @@ export default function CompanionPairingPanel() {
   const execute = async (text = command, inputMode = "text") => {
     const value = text.trim();
     if (!value || busy) return;
-    if (!taskRunRef.current && /\\s+(?:and then|then)\\s+/i.test(value)) {
-      const steps = value.split(/\\s+(?:and then|then)\\s+/i).map(step => step.trim()).filter(Boolean);
+    if (!taskRunRef.current && /\s+(?:and then|then)\s+/i.test(value)) {
+      const steps = value.split(/\s+(?:and then|then)\s+/i).map(step => step.trim()).filter(Boolean);
       const isSafeStep = step =>
-        /^(?:inspect|read)\\s+(?:the\\s+)?page$/i.test(step) ||
-        /^click\\s+(?:the\\s+)?link\\s+.{1,120}$/i.test(step) ||
-        /^(?:fill|type)\\s+(?:in\\s+)?(?:the\\s+)?search(?:\\s+box)?\\s+(?:with\\s+)?\\S.{0,299}$/i.test(step) ||
-        /^(?:browse)\\s+(?:google|linkedin|instagram|whatsapp|github)$/i.test(step) ||
-        /^(?:list|show)\\s+(?:the\\s+)?files\\s+(?:in|inside|from)\\s+(desktop|documents|downloads|pictures)$/i.test(step) ||
-        /^(?:search|google search)\\s+(?:google\\s+for\\s+)?\\S.{0,299}$/i.test(step) ||
-        /^(?:search|find)\\s+(?:on\\s+)?linkedin\\s+(?:for\\s+)?\\S.{0,299}$/i.test(step) ||
-        /^(?:open|go to|visit|launch|start)\\s+(?:google|google\\.com|linkedin|linkedin\\.com|instagram|instagram\\.com|whatsapp|whatsapp web|github|github\\.com|calculator|calc|notepad|text editor|browser|chrome|desktop|documents|downloads|pictures)$/i.test(step);
+        /^(?:inspect|read)\s+(?:the\s+)?page$/i.test(step) ||
+        /^click\s+(?:the\s+)?link\s+.{1,120}$/i.test(step) ||
+        /^(?:fill|type)\s+(?:in\s+)?(?:the\s+)?search(?:\s+box)?\s+(?:with\s+)?\S.{0,299}$/i.test(step) ||
+        /^(?:browse)\s+(?:google|linkedin|instagram|whatsapp|github)$/i.test(step) ||
+        /^(?:list|show)\s+(?:the\s+)?files\s+(?:in|inside|from)\s+(desktop|documents|downloads|pictures)$/i.test(step) ||
+        /^(?:search|google search)\s+(?:google\s+for\s+)?\S.{0,299}$/i.test(step) ||
+        /^(?:search|find)\s+(?:on\s+)?linkedin\s+(?:for\s+)?\S.{0,299}$/i.test(step) ||
+        /^(?:open|go to|visit|launch|start)\s+(?:google|google\.com|linkedin|linkedin\.com|instagram|instagram\.com|whatsapp|whatsapp web|github|github\.com|calculator|calc|notepad|text editor|browser|chrome|desktop|documents|downloads|pictures)$/i.test(step);
       if (steps.length < 2 || steps.length > 4 || !steps.every(isSafeStep)) {
         setError("Multi-step tasks support 2–4 simple allowlisted commands. Separate each step with ‘then’. No messages, form submissions or payments.");
         return;
