@@ -113,17 +113,19 @@ export default function CompanionPairingPanel() {
       }
       const action = proposal.tool === "browser.open_url"
         ? { action: "open_url", value: proposal.arguments.url }
-        : { action: "open_application", value: proposal.arguments.app_id };
+        : proposal.tool === "desktop.open_application"
+          ? { action: "open_application", value: proposal.arguments.app_id }
+          : { action: "open_folder", value: proposal.arguments.folder_id };
       try {
         const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: action });
-        const outcome = result.app_id ? { app_id: result.app_id } : { url: result.url };
+        const outcome = result.app_id ? { app_id: result.app_id } : result.folder_id ? { folder_id: result.folder_id } : { url: result.url };
         const saved = await fetch(ADMIN_API + "/api/assistant/actions/" + proposal.action_id + "/result", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: "Bearer " + adminToken },
           body: JSON.stringify({ status: "completed", result: outcome }),
         });
         const savedData = await saved.json().catch(() => ({}));
-        const label = result.app_id ? "Opened the " + result.app_id.replace("_", " ") + " application." : "Opened " + result.url;
+        const label = result.app_id ? "Opened the " + result.app_id.replace("_", " ") + " application." : result.folder_id ? "Opened the " + result.folder_id + " folder." : "Opened " + result.url;
         setPlannerReply(saved.ok ? label + " Execution recorded." : label + " Completion record could not be synced.");
         setProposal(null);
       } catch (executionError) {
@@ -151,8 +153,10 @@ export default function CompanionPairingPanel() {
     else if (openPrefix && open) {
       const site = open.toLowerCase().trim().startsWith("www.") ? open.toLowerCase().trim().slice(4) : open.toLowerCase().trim();
       const apps = { calculator: "calculator", calc: "calculator", notepad: "text_editor", "text editor": "text_editor", browser: "browser", chrome: "browser" };
+      const folders = { desktop: "desktop", documents: "documents", downloads: "downloads", pictures: "pictures", "my downloads": "downloads", "my documents": "documents" };
       const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", instagram: "https://www.instagram.com", "instagram.com": "https://www.instagram.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com", github: "https://github.com", "github.com": "https://github.com" };
       if (apps[site]) { action = "open_application"; target = apps[site]; }
+      else if (folders[site]) { action = "open_folder"; target = folders[site]; }
       else if (urls[site]) { action = "open_url"; target = urls[site]; }
       else { setError("Supported: open Google, LinkedIn, Instagram, WhatsApp, GitHub, Calculator, Notepad or Browser. Arbitrary websites and apps are blocked."); return; }
     } else { await planWithAI(value, inputMode); return; }
@@ -219,6 +223,6 @@ export default function CompanionPairingPanel() {
     {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
     <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
     {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-slate-500">Allowlisted: Google/LinkedIn search; Google, LinkedIn, Instagram, WhatsApp Web and GitHub navigation; Calculator, Notepad and default browser launch. AI planning needs admin sign-in and backend OPENAI_API_KEY. No shell, messages, forms or payments.</p>
+    <p className="mt-2 text-[10px] text-slate-500">Allowlisted: Google/LinkedIn search; Google, LinkedIn, Instagram, WhatsApp Web and GitHub navigation; Calculator, Notepad, default browser and known Windows folders (Desktop/Documents/Downloads/Pictures). AI planning needs admin sign-in and backend OPENAI_API_KEY. No shell, messages, forms or payments.</p>
   </section>;
 }
