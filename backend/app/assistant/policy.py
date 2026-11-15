@@ -65,6 +65,13 @@ def validate_tool_arguments(tool: str, arguments: dict) -> dict:
             raise PolicyViolation("Application is not in the initial desktop allowlist")
         return {"app_id": app_id}
 
+    if tool == "desktop.open_folder":
+        if set(arguments) != {"folder_id"} or not isinstance(arguments.get("folder_id"), str):
+            raise PolicyViolation("desktop.open_folder requires exactly one string argument: folder_id")
+        folder_id = arguments["folder_id"].strip().lower()
+        if folder_id not in {"desktop", "documents", "downloads", "pictures"}:
+            raise PolicyViolation("Folder is not in the safe known-folder allowlist")
+        return {"folder_id": folder_id}
     raise PolicyViolation("Tool is not registered")
 
 
@@ -79,8 +86,10 @@ def build_action_proposal(request: ActionProposalRequest) -> ActionProposal:
 
     if request.tool == "browser.open_url":
         summary = f"Open {arguments['url']} in the paired browser"
-    else:
+    elif request.tool == "desktop.open_application":
         summary = f"Open the {arguments['app_id']} application on the paired device"
+    else:
+        summary = f"Open the {arguments['folder_id']} folder on the paired device"
     return ActionProposal(
         action_id=uuid.uuid4().hex,
         tool=request.tool,
