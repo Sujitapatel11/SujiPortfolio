@@ -361,6 +361,25 @@ def claim_action_execution(action_id: str, db: Session = Depends(get_db), curren
     if action.status != "approved":
         raise HTTPException(status_code=409, detail=f"Action cannot be claimed while {action.status}")
     now = datetime.now(timezone.utc)
+    session_expires_at = action.session.expires_at
+    if session_expires_at.tzinfo is None:
+        session_expires_at = session_expires_at.replace(tzinfo=timezone.utc)
+    action_expires_at = action.expires_at
+    if action_expires_at.tzinfo is None:
+        action_expires_at = action_expires_at.replace(tzinfo=timezone.utc)
+    if action.session.status != "active" or session_expires_at <= now:
+        raise HTTPException(status_code=410, detail="Assistant session has expired or is closed")
+    if action_expires_at <= now:
+        changed = db.query(AssistantAction).filter(
+            AssistantAction.id == action.id,
+            AssistantAction.status == "approved",
+        ).update({"status": "expired", "updated_at": now}, synchronize_session=False)
+        if changed == 1:
+            _audit(db, action.session_id, action.id, current_admin["username"], "action.expired")
+            db.commit()
+        else:
+            db.rollback()
+        raise HTTPException(status_code=410, detail="Action proposal has expired")
     changed = db.query(AssistantAction).filter(
         AssistantAction.id == action.id,
         AssistantAction.status == "approved",
