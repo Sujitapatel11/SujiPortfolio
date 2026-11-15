@@ -143,7 +143,7 @@ def get_session(session_id: str, db: Session = Depends(get_db), current_admin: d
 def create_message(session_id: str, payload: MessageCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
     item = _owned_session(db, session_id, current_admin["username"])
     now = datetime.now(timezone.utc)
-    user_message = AssistantMessage(
+    # Include bounded prior turns so follow-up instructions such as "open that"\n    # have context. Never send messages from another session or owner.\n    prior_messages = db.query(AssistantMessage).filter(\n        AssistantMessage.session_id == item.id,\n    ).order_by(AssistantMessage.created_at.desc()).limit(10).all()\n    conversation_history = [\n        {"role": message.role, "content": message.content}\n        for message in reversed(prior_messages)\n        if message.role in {"user", "assistant"}\n    ]\n\n    user_message = AssistantMessage(
         id=str(uuid4()),
         session_id=item.id,
         role="user",
@@ -158,7 +158,7 @@ def create_message(session_id: str, payload: MessageCreate, db: Session = Depend
     })
 
     try:
-        plan = plan_user_message(payload.text)
+        plan = plan_user_message(payload.text, conversation_history)
     except PlannerUnavailable as exc:
         db.commit()
         raise HTTPException(status_code=503, detail=str(exc)) from exc
