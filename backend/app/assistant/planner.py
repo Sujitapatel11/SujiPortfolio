@@ -53,7 +53,7 @@ def _parse_planner_content(content: str) -> dict:
     return {"kind": result["kind"], "message": message[:1000]}
 
 
-def plan_user_message(text: str) -> dict:
+def plan_user_message(text: str, conversation_history: list[dict[str, str]] | None = None) -> dict:
     if not OPENAI_API_KEY:
         raise PlannerUnavailable("AI planning is not configured. Set OPENAI_API_KEY in the backend environment.")
     payload = {
@@ -62,6 +62,11 @@ def plan_user_message(text: str) -> dict:
         "response_format": {"type": "json_object"},
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
+            *[
+                {"role": item["role"], "content": item["content"][:4000]}
+                for item in (conversation_history or [])[-10:]
+                if item.get("role") in {"user", "assistant"} and isinstance(item.get("content"), str)
+            ],
             {"role": "user", "content": text},
         ],
     }
