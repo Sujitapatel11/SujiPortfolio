@@ -72,6 +72,23 @@ def validate_tool_arguments(tool: str, arguments: dict) -> dict:
         if folder_id not in {"desktop", "documents", "downloads", "pictures"}:
             raise PolicyViolation("Folder is not in the safe known-folder allowlist")
         return {"folder_id": folder_id}
+    if tool == "desktop.open_file":
+        if set(arguments) != {"folder_id", "file_name"}:
+            raise PolicyViolation("desktop.open_file requires folder_id and file_name")
+        folder_id = arguments.get("folder_id")
+        file_name = arguments.get("file_name")
+        if not isinstance(folder_id, str) or folder_id.strip().lower() not in {"desktop", "documents", "downloads", "pictures"}:
+            raise PolicyViolation("File must be inside an allowlisted known folder")
+        if not isinstance(file_name, str) or not file_name.strip() or file_name in {".", ".."}:
+            raise PolicyViolation("A single file name is required")
+        if "/" in file_name or "\\" in file_name or ":" in file_name or "\\x00" in file_name:
+            raise PolicyViolation("Paths and alternate streams are not permitted")
+        if file_name.startswith(".") or file_name.endswith("."):
+            raise PolicyViolation("Hidden or ambiguous file names are not permitted")
+        extension = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
+        if extension not in {"pdf", "txt", "md", "csv", "json", "docx", "xlsx", "pptx", "png", "jpg", "jpeg", "gif", "webp", "mp3", "mp4"}:
+            raise PolicyViolation("This file type is not supported for opening")
+        return {"folder_id": folder_id.strip().lower(), "file_name": file_name}
     raise PolicyViolation("Tool is not registered")
 
 
@@ -88,8 +105,10 @@ def build_action_proposal(request: ActionProposalRequest) -> ActionProposal:
         summary = f"Open {arguments['url']} in the paired browser"
     elif request.tool == "desktop.open_application":
         summary = f"Open the {arguments['app_id']} application on the paired device"
-    else:
+    elif request.tool == "desktop.open_folder":
         summary = f"Open the {arguments['folder_id']} folder on the paired device"
+    else:
+        summary = f"Open {arguments['file_name']} from {arguments['folder_id']} on the paired device"
     return ActionProposal(
         action_id=uuid.uuid4().hex,
         tool=request.tool,
