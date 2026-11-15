@@ -364,16 +364,25 @@ def record_execution_result(action_id: str, payload: ExecutionResult, db: Sessio
     if set(payload.result) - {"url", "app_id"}:
         raise HTTPException(status_code=422, detail="Execution result contains unsupported fields")
     now = datetime.now(timezone.utc)
-    action.status = payload.status
-    action.result = payload.result
-    action.error_code = payload.error_code if payload.status == "failed" else None
-    action.updated_at = now
+    error_code = payload.error_code if payload.status == "failed" else None
+    changed = db.query(AssistantAction).filter(
+        AssistantAction.id == action.id,
+        AssistantAction.status == "approved",
+    ).update({
+        "status": payload.status,
+        "result": payload.result,
+        "error_code": error_code,
+        "updated_at": now,
+    }, synchronize_session=False)
+    if changed != 1:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Execution result was already recorded")
     _audit(db, action.session_id, action.id, current_admin["username"], "action." + payload.status, {
-        "error_code": action.error_code,
+        "error_code": error_code,
         "result": payload.result,
     })
     db.commit()
-    return {"action_id": action.id, "status": action.status}
+    return {"action_id": action.id, "status": payload.status}
 
 @router.get("/sessions/{session_id}/audit")
 def list_audit_events(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
