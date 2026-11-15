@@ -43,6 +43,32 @@ WINDOWS_APPS = {
     "calculator": "calc.exe",
     "text_editor": "notepad.exe",
 }
+WINDOWS_FOLDERS = {
+    "desktop": "Desktop",
+    "documents": "Documents",
+    "downloads": "Downloads",
+    "pictures": "Pictures",
+}
+
+
+def open_windows_folder(folder_id: str) -> dict:
+    """Open one fixed known folder under the current Windows user home."""
+    if not IS_WINDOWS:
+        raise HTTPException(501, "Known-folder opening is supported only on Windows")
+    subfolder = WINDOWS_FOLDERS.get(folder_id)
+    if not subfolder:
+        raise HTTPException(400, "Folder is not in the known-folder allowlist")
+    target = os.path.join(os.path.expanduser("~"), subfolder)
+    if not os.path.isdir(target):
+        raise HTTPException(404, f"The {folder_id} folder does not exist")
+    startfile = getattr(os, "startfile", None)
+    if startfile is None:
+        raise HTTPException(501, "Windows folder launcher is unavailable")
+    try:
+        startfile(target)
+    except OSError as exc:
+        raise HTTPException(502, "Windows could not open the selected folder") from exc
+    return {"status": "opened", "folder_id": folder_id}
 
 
 def load_saved_token() -> str:
@@ -80,7 +106,7 @@ class PairRequest(BaseModel):
 
 class ActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application)$")
+    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder)$")
     value: str = Field(min_length=1, max_length=500)
 
 
@@ -147,6 +173,9 @@ def pair(payload: PairRequest, request: Request):
 def run_action(payload: ActionRequest, request: Request):
     check_origin(request)
     value = payload.value.strip()
+
+    if payload.action == "open_folder":
+        return open_windows_folder(value.lower())
 
     if payload.action == "open_application":
         app_id = value.lower()
