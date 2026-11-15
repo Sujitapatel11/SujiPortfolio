@@ -136,3 +136,33 @@ def click_link(label: str) -> dict:
             raise
         except Exception as exc:
             raise HTTPException(502, "Could not safely click that link") from exc
+
+
+def fill_search(query: str) -> dict:
+    """Fill one unique visible search box. Never presses Enter or submits a form."""
+    value = query.strip()
+    if not value or len(value) > 300:
+        raise HTTPException(400, "Search text must contain 1 to 300 characters")
+    with _LOCK:
+        page = _page()
+        validate_url(page.url)
+        try:
+            fields = page.get_by_role("searchbox")
+            if fields.count() != 1:
+                raise HTTPException(409, "A unique search field was not found on this page")
+            field = fields
+            if not field.is_visible() or not field.is_enabled():
+                raise HTTPException(409, "The search field is not currently available")
+            field.fill(value)
+            return {
+                "status": "filled",
+                "url": page.url,
+                "title": page.title(),
+                "field": "search",
+                "character_count": len(value),
+                "submitted": False,
+            }
+        except HTTPException:
+            raise
+        except Exception as exc:
+            raise HTTPException(502, "Could not safely fill the search field") from exc
