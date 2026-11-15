@@ -158,11 +158,21 @@ def run_action(payload: ActionRequest, request: Request):
 def disconnect(request: Request):
     check_origin(request)
     with STATE.lock:
-        STATE.token = ""
+        # Revoke durably before clearing the in-memory token. If the OS
+        # credential store cannot confirm deletion, keep the current token
+        # so the user can retry instead of silently losing recovery access.
         try:
             keyring.delete_password(SERVICE_NAME, TOKEN_ACCOUNT)
         except keyring.errors.PasswordDeleteError:
-            pass
+            try:
+                saved_token = keyring.get_password(SERVICE_NAME, TOKEN_ACCOUNT)
+            except Exception as exc:
+                raise HTTPException(503, "Could not verify credential deletion; retry disconnect") from exc
+            if saved_token:
+                raise HTTPException(503, "Windows Credential Manager did not remove the pairing; retry disconnect")
+        except Exception as exc:
+            raise HTTPException(503, "Windows Credential Manager could not revoke the pairing; retry disconnect") from exc
+        STATE.token = ""
     return {"status": "disconnected"}
 
 
