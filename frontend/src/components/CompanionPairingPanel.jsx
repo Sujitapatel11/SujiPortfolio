@@ -59,7 +59,7 @@ export default function CompanionPairingPanel() {
     finally { setBusy(false); }
   };
 
-  const planWithAI = async (text) => {
+  const planWithAI = async (text, inputMode = "text") => {
     const adminToken = localStorage.getItem("admin_token");
     if (!adminToken) {
       setError("AI planning requires an authenticated admin session. Sign in to the portfolio admin first.");
@@ -72,7 +72,7 @@ export default function CompanionPairingPanel() {
         const created = await fetch(ADMIN_API + "/api/assistant/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: "Bearer " + adminToken },
-          body: JSON.stringify({ input_mode: "voice" }),
+          body: JSON.stringify({ input_mode: inputMode }),
         });
         const sessionData = await created.json().catch(() => ({}));
         if (!created.ok) throw new Error(sessionData.detail || "Could not start an AI assistant session");
@@ -82,7 +82,7 @@ export default function CompanionPairingPanel() {
       const response = await fetch(ADMIN_API + "/api/assistant/sessions/" + sessionId + "/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + adminToken },
-        body: JSON.stringify({ text, input_mode: "voice" }),
+        body: JSON.stringify({ text, input_mode: inputMode }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.detail || "AI planner request failed");
@@ -138,7 +138,7 @@ export default function CompanionPairingPanel() {
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
-  const execute = async (text = command) => {
+  const execute = async (text = command, inputMode = "text") => {
     const value = text.trim();
     if (!value || busy) return;
     let action, target;
@@ -155,7 +155,7 @@ export default function CompanionPairingPanel() {
       if (apps[site]) { action = "open_application"; target = apps[site]; }
       else if (urls[site]) { action = "open_url"; target = urls[site]; }
       else { setError("Supported: open Google, LinkedIn, Instagram, WhatsApp, GitHub, Calculator, Notepad or Browser. Arbitrary websites and apps are blocked."); return; }
-    } else { await planWithAI(value); return; }
+    } else { await planWithAI(value, inputMode); return; }
     if (!tokenRef.current) { setError("Pair this computer before running local browser or desktop commands."); return; }
     setBusy(true); setError("");
     try {
@@ -173,7 +173,7 @@ export default function CompanionPairingPanel() {
     const recognition = new Speech(); recognition.lang = "en-IN"; recognition.interimResults = false;
     recognition.onstart = () => setListening(true); recognition.onend = () => setListening(false);
     recognition.onerror = (event) => setError("Microphone error: " + event.error);
-    recognition.onresult = (event) => { const spoken = event.results[0][0].transcript; setCommand(spoken); execute(spoken); };
+    recognition.onresult = (event) => { const spoken = event.results[0][0].transcript; setCommand(spoken); execute(spoken, "voice"); };
     recognition.start();
   };
 
