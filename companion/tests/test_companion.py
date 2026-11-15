@@ -287,3 +287,53 @@ def test_browser_click_requires_unique_link(monkeypatch):
     with pytest.raises(HTTPException) as error:
         browser_control.click_link("Issues")
     assert error.value.status_code == 409
+
+
+def test_browser_click_link_navigates_to_validated_href_without_click_handler(monkeypatch):
+    import browser_control
+
+    class Links:
+        def count(self):
+            return 1
+        def get_attribute(self, name):
+            return "/issues"
+
+    class Page:
+        url = "https://github.com"
+        navigated = None
+        def get_by_role(self, role, name, exact):
+            assert role == "link"
+            assert name == "Issues"
+            assert exact is True
+            return Links()
+        def goto(self, url, wait_until, timeout):
+            self.navigated = url
+            self.url = url
+        def title(self):
+            return "Issues"
+
+    page = Page()
+    monkeypatch.setattr(browser_control, "_page", lambda: page)
+    result = browser_control.click_link("Issues")
+    assert result["status"] == "navigated"
+    assert page.navigated == "https://github.com/issues"
+
+
+def test_browser_click_link_rejects_external_destination(monkeypatch):
+    import browser_control
+
+    class Links:
+        def count(self):
+            return 1
+        def get_attribute(self, name):
+            return "https://evil.example/"
+
+    class Page:
+        url = "https://github.com"
+        def get_by_role(self, *args, **kwargs):
+            return Links()
+
+    monkeypatch.setattr(browser_control, "_page", lambda: Page())
+    with pytest.raises(HTTPException) as error:
+        browser_control.click_link("External")
+    assert error.value.status_code == 400
