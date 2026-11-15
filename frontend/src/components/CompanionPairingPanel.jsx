@@ -165,6 +165,7 @@ export default function CompanionPairingPanel() {
     const listMatch = value.match(/^(?:list|show)\s+(?:the\s+)?files\s+(?:in|inside|from)\s+(desktop|documents|downloads|pictures)$/i);
     const inspectMatch = value.match(/^(?:inspect|read)\s+(?:the\s+)?page$/i);
     const clickMatch = value.match(/^click\s+(?:the\s+)?link\s+(.+)$/i);
+    const fillSearchMatch = value.match(/^(?:fill|type)\s+(?:in\s+)?(?:the\s+)?search(?:\s+box)?\s+(?:with\s+)?(.+)$/i);
     const browseMatch = value.match(/^browse\s+(.+)$/i);
     const search = value.match(/^(?:search|google search)\s+(?:google\s+for\s+)?(.+)$/i);
     const linkedin = value.match(/^(?:search|find)\s+(?:on\s+)?linkedin\s+(?:for\s+)?(.+)$/i);
@@ -172,6 +173,7 @@ export default function CompanionPairingPanel() {
     const open = openPrefix ? value.slice(openPrefix.length).trim() : "";
     if (inspectMatch) { action = "browser_inspect"; target = ""; }
     else if (clickMatch) { action = "browser_click_link"; target = clickMatch[1].trim(); }
+    else if (fillSearchMatch) { action = "browser_fill_search"; target = fillSearchMatch[1].trim(); }
     else if (browseMatch) {
       const name = browseMatch[1].toLowerCase().trim();
       const browseUrls = { google: "https://www.google.com", linkedin: "https://www.linkedin.com", instagram: "https://www.instagram.com", whatsapp: "https://web.whatsapp.com", github: "https://github.com" };
@@ -204,6 +206,10 @@ export default function CompanionPairingPanel() {
         setBrowserPage(null);
         setMessage("Managed browser: " + result.title);
         speak("Opened " + result.title);
+      }
+      else if (action === "browser_fill_search") {
+        setMessage("Entered search text. It has NOT been submitted.");
+        speak("Search text entered. Not submitted.");
       }
       else if (action === "list_folder") {
         setListedFolder(result.folder_id);
@@ -312,6 +318,6 @@ export default function CompanionPairingPanel() {
     {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
     <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
     {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-slate-500">Allowlisted: Google/LinkedIn search; Google, LinkedIn, Instagram, WhatsApp Web and GitHub navigation; Calculator, Notepad, default browser and known Windows folders (Desktop/Documents/Downloads/Pictures) and read-only supported-file listing; managed browser with allowlisted navigation, page text inspection and unique link clicks only. AI planning needs admin sign-in and backend OPENAI_API_KEY. No shell, messages, forms or payments.</p>
+    <p className="mt-2 text-[10px] text-slate-500">Allowlisted: Google/LinkedIn search; Google, LinkedIn, Instagram, WhatsApp Web and GitHub navigation; Calculator, Notepad, default browser and known Windows folders (Desktop/Documents/Downloads/Pictures) and read-only supported-file listing; managed browser with allowlisted navigation, page text inspection, unique link navigation and search-field filling without submission. AI planning needs admin sign-in and backend OPENAI_API_KEY. No shell, messages, forms or payments.</p>
   </section>;
 }
