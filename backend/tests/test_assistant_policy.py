@@ -75,3 +75,20 @@ def test_arbitrary_filesystem_path_is_rejected():
             tool="desktop.open_folder",
             arguments={"folder_id": "../../Windows/System32"},
         ))
+def test_open_file_proposal_is_medium_risk_and_confined_to_known_folder():
+    proposal = build_action_proposal(ActionProposalRequest(
+        tool="desktop.open_file",
+        arguments={"folder_id": "downloads", "file_name": "report.pdf"},
+    ))
+    assert proposal.approval_required is True
+    assert proposal.risk == "medium"
+    assert proposal.arguments == {"folder_id": "downloads", "file_name": "report.pdf"}
+
+
+@pytest.mark.parametrize("file_name", ["../secret.pdf", "sub\\\\secret.pdf", "notes.txt:secret", ".hidden.pdf", "script.exe", "bad\\\\x00name.pdf"])
+def test_open_file_rejects_paths_hidden_files_and_unsupported_extensions(file_name):
+    with pytest.raises(PolicyViolation):
+        build_action_proposal(ActionProposalRequest(
+            tool="desktop.open_file",
+            arguments={"folder_id": "downloads", "file_name": file_name},
+        ))
