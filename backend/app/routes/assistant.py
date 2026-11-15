@@ -349,6 +349,32 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
     return {"action_id": action.id, "status": new_status}
 
 
+@router.post("/actions/{action_id}/claim")
+def claim_action_execution(action_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+    """Atomically claim an approved action so only one executor can run it."""
+    action = db.query(AssistantAction).join(AssistantSession).filter(
+        AssistantAction.id == action_id,
+        AssistantSession.owner_username == current_admin["username"],
+    ).first()
+    if not action:
+        raise HTTPException(status_code=404, detail="Assistant action not found")
+    if action.status != "approved":
+        raise HTTPException(status_code=409, detail=f"Action cannot be claimed while {action.status}")
+    now = datetime.now(timezone.utc)
+    changed = db.query(AssistantAction).filter(
+        AssistantAction.id == action.id,
+        AssistantAction.status == "approved",
+    ).update({"status": "executing", "updated_at": now}, synchronize_session=False)
+    if changed != 1:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Action was already claimed by another executor")
+    _audit(db, action.session_id, action.id, current_admin["username"], "action.execution_claimed", {
+        "tool": action.tool,
+        "payload_sha256": action.payload_sha256,
+    })
+    db.commit()
+    return {"action_id": action.id, "status": "executing"}
+
 @router.post("/actions/{action_id}/result")
 def record_execution_result(action_id: str, payload: ExecutionResult, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
     action = db.query(AssistantAction).join(AssistantSession).filter(
@@ -357,8 +383,8 @@ def record_execution_result(action_id: str, payload: ExecutionResult, db: Sessio
     ).first()
     if not action:
         raise HTTPException(status_code=404, detail="Assistant action not found")
-    if action.status != "approved":
-        raise HTTPException(status_code=409, detail="Only approved actions can receive an execution result")
+    if action.status != "executing":
+        raise HTTPException(status_code=409, detail="Only claimed executing actions can receive an execution result")
     if len(str(payload.result)) > 2000:
         raise HTTPException(status_code=422, detail="Execution result is too large")
     if set(payload.result) - {"url", "app_id", "folder_id", "file_name"}:
@@ -367,7 +393,7 @@ def record_execution_result(action_id: str, payload: ExecutionResult, db: Sessio
     error_code = payload.error_code if payload.status == "failed" else None
     changed = db.query(AssistantAction).filter(
         AssistantAction.id == action.id,
-        AssistantAction.status == "approved",
+        AssistantAction.status == "executing",
     ).update({
         "status": payload.status,
         "result": payload.result,
