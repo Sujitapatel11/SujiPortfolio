@@ -1,3 +1,5 @@
+import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from companion import companion
 
@@ -155,5 +157,29 @@ def test_open_known_file_rejects_traversal(monkeypatch, tmp_path):
     (tmp_path / "secret.pdf").write_text("secret", encoding="utf-8")
     monkeypatch.setattr(companion, "IS_WINDOWS", True)
     monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
-    response = companion.open_known_file("downloads", "../secret.pdf")
-    assert response is None
+    with pytest.raises(HTTPException) as error:
+        companion.open_known_file("downloads", "../secret.pdf")
+    assert error.value.status_code == 400
+def test_open_known_file_launches_only_file_inside_known_folder(monkeypatch, tmp_path):
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    target = folder / "report.pdf"
+    target.write_text("pdf", encoding="utf-8")
+    opened = []
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
+    monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(companion.os, "startfile", lambda path: opened.append(path), raising=False)
+    result = companion.open_known_file("downloads", "report.pdf")
+    assert result["status"] == "opened"
+    assert opened == [str(target.resolve())]
+
+
+def test_open_known_file_rejects_unsupported_extension(monkeypatch, tmp_path):
+    folder = tmp_path / "Downloads"
+    folder.mkdir()
+    (folder / "malware.exe").write_text("no", encoding="utf-8")
+    monkeypatch.setattr(companion, "IS_WINDOWS", True)
+    monkeypatch.setattr(companion.pathlib.Path, "home", lambda: tmp_path)
+    with pytest.raises(HTTPException) as error:
+        companion.open_known_file("downloads", "malware.exe")
+    assert error.value.status_code == 400
