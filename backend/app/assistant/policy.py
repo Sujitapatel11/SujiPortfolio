@@ -81,7 +81,7 @@ def validate_tool_arguments(tool: str, arguments: dict) -> dict:
             raise PolicyViolation("File must be inside an allowlisted known folder")
         if not isinstance(file_name, str) or not file_name.strip() or file_name in {".", ".."}:
             raise PolicyViolation("A single file name is required")
-        if "/" in file_name or "\\" in file_name or ":" in file_name or "\\x00" in file_name:
+        if "/" in file_name or "\\" in file_name or ":" in file_name or "\x00" in file_name:
             raise PolicyViolation("Paths and alternate streams are not permitted")
         if file_name.startswith(".") or file_name.endswith("."):
             raise PolicyViolation("Hidden or ambiguous file names are not permitted")
