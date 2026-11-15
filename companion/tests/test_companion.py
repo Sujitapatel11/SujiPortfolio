@@ -382,3 +382,59 @@ def test_browser_guard_allows_approved_navigation():
     browser_control._guard_navigation(route, Request())
     assert route.aborted is False
     assert route.continued is True
+
+
+def test_browser_fill_search_fills_unique_searchbox_without_submitting(monkeypatch):
+    from companion import browser_control
+
+    class Field:
+        filled = None
+        def count(self):
+            return 1
+        def is_visible(self):
+            return True
+        def is_enabled(self):
+            return True
+        def fill(self, value):
+            self.filled = value
+
+    class Page:
+        url = "https://github.com"
+        field = Field()
+        def get_by_role(self, role):
+            assert role == "searchbox"
+            return self.field
+        def title(self):
+            return "GitHub"
+
+    page = Page()
+    monkeypatch.setattr(browser_control, "_page", lambda: page)
+    result = browser_control.fill_search("python jobs")
+    assert result["status"] == "filled"
+    assert result["submitted"] is False
+    assert page.field.filled == "python jobs"
+
+
+def test_browser_fill_search_rejects_ambiguous_searchboxes(monkeypatch):
+    from companion import browser_control
+
+    class Fields:
+        def count(self):
+            return 2
+
+    class Page:
+        url = "https://github.com"
+        def get_by_role(self, role):
+            return Fields()
+
+    monkeypatch.setattr(browser_control, "_page", lambda: Page())
+    with pytest.raises(HTTPException) as error:
+        browser_control.fill_search("python jobs")
+    assert error.value.status_code == 409
+
+
+def test_browser_fill_search_rejects_empty_query():
+    from companion import browser_control
+    with pytest.raises(HTTPException) as error:
+        browser_control.fill_search("   ")
+    assert error.value.status_code == 400
