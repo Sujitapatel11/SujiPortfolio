@@ -153,7 +153,7 @@ export default function CompanionPairingPanel() {
     else if (openPrefix && open) {
       const site = open.toLowerCase().trim().startsWith("www.") ? open.toLowerCase().trim().slice(4) : open.toLowerCase().trim();
       const apps = { calculator: "calculator", calc: "calculator", notepad: "text_editor", "text editor": "text_editor", browser: "browser", chrome: "browser" };
-      const folders = { desktop: "desktop", documents: "documents", downloads: "downloads", pictures: "pictures", "my downloads": "downloads", "my documents": "documents" };
+      const folders = { desktop: "desktop", documents: "documents", downloads: "downloads", pictures: "pictures", "my downloads": "downloads", "my documents": "documents", "my desktop": "desktop", "my pictures": "pictures" };
       const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", instagram: "https://www.instagram.com", "instagram.com": "https://www.instagram.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com", github: "https://github.com", "github.com": "https://github.com" };
       if (apps[site]) { action = "open_application"; target = apps[site]; }
       else if (folders[site]) { action = "open_folder"; target = folders[site]; }
