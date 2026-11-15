@@ -16,7 +16,7 @@ async function request(path, { token, method = "GET", body } = {}) {
     throw new Error("Local companion is not reachable. Start companion.py on this computer.");
   }
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.detail || `Request failed (${response.status})`);
+  if (!response.ok) { const error = new Error(data.detail || `Request failed (${response.status})`); error.status = response.status; throw error; }
   return data;
 }
 
@@ -34,7 +34,14 @@ export default function CompanionPairingPanel() {
     tokenRef.current = token;
     if (!token) { setMessage("Connect this computer once to enable the Personal Operator."); return; }
     request("/v1/status", { token }).then(() => setMessage("Connected. Your pairing is saved on this browser and Windows computer."))
-      .catch(() => { localStorage.removeItem(TOKEN_KEY); tokenRef.current = ""; setToken(""); setMessage("Pairing needs setup again."); });
+      .catch((error) => {
+        if (error.status === 401) {
+          localStorage.removeItem(TOKEN_KEY); tokenRef.current = ""; setToken("");
+          setMessage("Pairing is no longer valid. Connect this computer again.");
+        } else {
+          setMessage("Companion is temporarily unavailable. Your saved pairing was kept; start the companion and retry.");
+        }
+      });
   }, []);
 
   const pair = async (event) => {
@@ -86,7 +93,7 @@ export default function CompanionPairingPanel() {
       await request("/v1/disconnect", { token: tokenRef.current, method: "POST", body: {} });
       setMessage("Device disconnected. Pair again only if you want to reconnect.");
     } catch (e) { setError(e.message); }
-    finally { localStorage.removeItem(TOKEN_KEY); tokenRef.current = ""; setToken(""); setBusy(false); }
+    finally { setBusy(false); }
   };
 
   return <section className="mt-3 rounded-2xl border border-violet-300/20 bg-violet-400/5 p-3">
