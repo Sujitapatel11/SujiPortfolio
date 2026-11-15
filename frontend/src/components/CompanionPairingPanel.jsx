@@ -37,6 +37,8 @@ export default function CompanionPairingPanel() {
   const [preview, setPreview] = useState(null);
   const [browserPage, setBrowserPage] = useState(null);
   const tokenRef = useRef(token);
+  const taskRunRef = useRef(null);
+  const [taskProgress, setTaskProgress] = useState(null);
 
   const speak = (text) => {
     if (!("speechSynthesis" in window) || !text) return;
@@ -161,6 +163,48 @@ export default function CompanionPairingPanel() {
   const execute = async (text = command, inputMode = "text") => {
     const value = text.trim();
     if (!value || busy) return;
+    if (!taskRunRef.current && /\\s+(?:and then|then)\\s+/i.test(value)) {
+      const steps = value.split(/\\s+(?:and then|then)\\s+/i).map(step => step.trim()).filter(Boolean);
+      const isSafeStep = step =>
+        /^(?:inspect|read)\\s+(?:the\\s+)?page$/i.test(step) ||
+        /^click\\s+(?:the\\s+)?link\\s+.{1,120}$/i.test(step) ||
+        /^(?:fill|type)\\s+(?:in\\s+)?(?:the\\s+)?search(?:\\s+box)?\\s+(?:with\\s+)?\\S.{0,299}$/i.test(step) ||
+        /^(?:browse)\\s+(?:google|linkedin|instagram|whatsapp|github)$/i.test(step) ||
+        /^(?:list|show)\\s+(?:the\\s+)?files\\s+(?:in|inside|from)\\s+(desktop|documents|downloads|pictures)$/i.test(step) ||
+        /^(?:search|google search)\\s+(?:google\\s+for\\s+)?\\S.{0,299}$/i.test(step) ||
+        /^(?:search|find)\\s+(?:on\\s+)?linkedin\\s+(?:for\\s+)?\\S.{0,299}$/i.test(step) ||
+        /^(?:open|go to|visit|launch|start)\\s+(?:google|google\\.com|linkedin|linkedin\\.com|instagram|instagram\\.com|whatsapp|whatsapp web|github|github\\.com|calculator|calc|notepad|text editor|browser|chrome|desktop|documents|downloads|pictures)$/i.test(step);
+      if (steps.length < 2 || steps.length > 4 || !steps.every(isSafeStep)) {
+        setError("Multi-step tasks support 2–4 simple allowlisted commands. Separate each step with ‘then’. No messages, form submissions or payments.");
+        return;
+      }
+      if (!tokenRef.current) { setError("Pair this computer before running local tasks."); return; }
+      const run = { cancelled: false };
+      taskRunRef.current = run;
+      setTaskProgress({ current: 0, total: steps.length, label: steps[0], status: "running" });
+      setError("");
+      try {
+        for (let index = 0; index < steps.length; index += 1) {
+          if (run.cancelled) break;
+          setTaskProgress({ current: index + 1, total: steps.length, label: steps[index], status: "running" });
+          const completed = await execute(steps[index], inputMode);
+          if (!completed) {
+            setTaskProgress({ current: index + 1, total: steps.length, label: steps[index], status: "stopped" });
+            return;
+          }
+        }
+        setTaskProgress(current => current ? {
+          ...current,
+          status: run.cancelled ? "cancelled" : "completed",
+          label: run.cancelled ? "Cancelled after current step" : "All steps completed",
+        } : current);
+        if (run.cancelled) speak("Task cancelled after the current step.");
+        else speak("All task steps completed.");
+      } finally {
+        taskRunRef.current = null;
+      }
+      return;
+    }
     let action, target;
     const listMatch = value.match(/^(?:list|show)\s+(?:the\s+)?files\s+(?:in|inside|from)\s+(desktop|documents|downloads|pictures)$/i);
     const inspectMatch = value.match(/^(?:inspect|read)\s+(?:the\s+)?page$/i);
@@ -221,7 +265,8 @@ export default function CompanionPairingPanel() {
       else if (result.folder_id) { setMessage("Opened the " + result.folder_id + " folder."); speak("Opening " + result.folder_id + " folder"); }
       else { setMessage("Opened in your default browser: " + result.url); speak("Opening website"); }
       setCommand("");
-    } catch (e) { setError(e.message); }
+      return true;
+    } catch (e) { setError(e.message); return false; }
     finally { setBusy(false); }
   };
 
@@ -258,6 +303,14 @@ export default function CompanionPairingPanel() {
         <input value={command} onChange={e=>setCommand(e.target.value)} placeholder="Say or type a command…" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/30 px-3 py-3 text-sm text-white"/>
         <button disabled={busy || !command.trim()} className="rounded-lg bg-violet-500/30 px-3 text-white"><Search size={16}/></button>
       </form>
+      {taskProgress && <div className="mt-2 rounded-lg border border-sky-300/20 bg-sky-300/5 p-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[11px] text-sky-100">Task · {taskProgress.current}/{taskProgress.total} · {taskProgress.status}</p>
+          {taskRunRef.current && <button onClick={() => { taskRunRef.current.cancelled = true; setTaskProgress(current => current ? { ...current, label: "Cancellation requested…" } : current); }} className="rounded-md border border-rose-300/20 px-2 py-1 text-[10px] text-rose-100">Cancel</button>}
+        </div>
+        <p className="mt-1 truncate text-[10px] text-slate-300">{taskProgress.label}</p>
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-sky-300 transition-all" style={{ width: (taskProgress.current / taskProgress.total * 100) + "%" }}/></div>
+      </div>}
       <div className="mt-2 flex gap-2">
         <button onClick={listen} disabled={busy || listening} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-violet-300/20 px-3 py-2 text-xs text-violet-100"><Mic size={14}/> Voice command</button>
         <button onClick={disconnect} disabled={busy} className="flex items-center gap-2 rounded-lg border border-rose-300/20 px-3 py-2 text-xs text-rose-100"><Unlink size={14}/> Disconnect</button>
