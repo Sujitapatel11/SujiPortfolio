@@ -202,7 +202,7 @@ class PairRequest(BaseModel):
 
 class ActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder|list_folder|open_file|preview_file|browser_navigate|browser_inspect|browser_click_link)$")
+    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder|list_folder|open_file|preview_file|browser_navigate|browser_inspect|browser_click_link|browser_fill_search)$")
     value: str = Field(default="", max_length=500)
     folder_id: str | None = Field(default=None, max_length=32)
     file_name: str | None = Field(default=None, max_length=255)
@@ -278,6 +278,9 @@ def run_action(payload: ActionRequest, request: Request):
         return browser_control.inspect()
     if payload.action == "browser_click_link":
         return browser_control.click_link(value)
+
+    if payload.action == "browser_fill_search":
+        return browser_control.fill_search(value)
 
     if payload.action == "open_folder":
         return open_windows_folder(value.lower())
