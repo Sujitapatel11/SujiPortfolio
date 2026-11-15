@@ -8,6 +8,7 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/hey-suji-backend-ci.yml"
+      - "render.yaml"
   pull_request:
     paths:
       - "backend/**"
