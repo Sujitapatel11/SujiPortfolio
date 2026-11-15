@@ -54,7 +54,7 @@ export default function PersonalAssistantOrb() {
       setProposal(result.proposal || null);
       setStatus(result.status === "awaiting_approval" ? "Review required before execution." :
         result.status === "unsupported" ? "This task is not currently supported." :
-        result.status === "needs_clarification" ? "I need one clarification." : "Response received.");
+        result.status === "clarification" || result.status === "needs_clarification" ? "I need one clarification." : "Response received.");
       setInput("");
     } catch (error) {
       sessionRef.current = null;
