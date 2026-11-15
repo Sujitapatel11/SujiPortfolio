@@ -35,6 +35,17 @@ def validate_url(value: str) -> str:
     return value
 
 
+def _guard_navigation(route, request):
+    """Block frame and top-level navigations outside the allowlist, including redirects."""
+    if request.is_navigation_request():
+        try:
+            validate_url(request.url)
+        except HTTPException:
+            route.abort()
+            return
+    route.continue_()
+
+
 def _page():
     global _RUNTIME, _CONTEXT, _PAGE
     if os.name != "nt":
@@ -54,6 +65,7 @@ def _page():
                 headless=False,
                 args=["--disable-background-networking", "--no-first-run"],
             )
+            _CONTEXT.route("**/*", _guard_navigation)
             pages = _CONTEXT.pages
             _PAGE = pages[0] if pages else _CONTEXT.new_page()
             _PAGE.set_default_timeout(5000)
