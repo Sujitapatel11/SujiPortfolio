@@ -66,9 +66,9 @@ export default function CompanionPairingPanel() {
     else if (search) { action = "google_search"; target = search[1]; }
     else if (open) {
       const site = open[1].toLowerCase().replace(/^www\./, "");
-      const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com" };
+      const urls = { google: "https://www.google.com", "google.com": "https://www.google.com", linkedin: "https://www.linkedin.com", "linkedin.com": "https://www.linkedin.com", instagram: "https://www.instagram.com", "instagram.com": "https://www.instagram.com", whatsapp: "https://web.whatsapp.com", "whatsapp web": "https://web.whatsapp.com", "web.whatsapp.com": "https://web.whatsapp.com" };
       action = "open_url"; target = urls[site] || (site.startsWith("http://") || site.startsWith("https://") ? site : "https://" + site);
-    } else { setError("Try “search Google for …”, “search LinkedIn for …”, or “open Google/LinkedIn”."); return; }
+    } else { setError("Try “search Google for …”, “search LinkedIn for …”, or “open Google, LinkedIn, Instagram or WhatsApp”."); return; }
     setBusy(true); setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
@@ -115,6 +115,6 @@ export default function CompanionPairingPanel() {
     {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
     <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
     {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-slate-500">Allowed: Google and LinkedIn navigation/search only. No shell, messages, forms or payments.</p>
+    <p className="mt-2 text-[10px] text-slate-500">Allowed: Google and LinkedIn search; Google, LinkedIn, Instagram and WhatsApp Web navigation only. No shell, messages, forms or payments.</p>
   </section>;
 }
