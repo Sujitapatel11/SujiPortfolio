@@ -44,3 +44,10 @@ def test_planner_accepts_known_folder_action():
     assert result["kind"] == "action"
     assert result["request"].tool == "desktop.open_folder"
     assert result["request"].arguments == {"folder_id": "downloads"}
+def test_planner_accepts_named_file_open_action():
+    result = _parse_planner_content(
+        '{"kind":"action","message":"Open report","tool":"desktop.open_file",'
+        '"arguments":{"folder_id":"downloads","file_name":"report.pdf"}}'
+    )
+    assert result["request"].tool == "desktop.open_file"
+    assert result["request"].arguments["file_name"] == "report.pdf"
