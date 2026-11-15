@@ -7,55 +7,51 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# Add backend root directory to sys.path so app module can be imported
+# Add backend root directory to sys.path so app module can be imported.
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from app.database import Base, DATABASE_URL
-from app.models import Inquiry, Job, Proposal, KnowledgeChunk  # ensure all models are registered
-from app.assistant.models import AssistantSession, AssistantMessage, AssistantAction, AssistantAuditEvent
+from app.database import Base, engine
+# Import every model that still exists so its table is registered in metadata.
+# Job and Proposal were retired from the runtime application; their historical
+# migrations remain in the revision chain and must not be imported as models.
+from app.models import Appointment, Inquiry, KnowledgeChunk  # noqa: F401
+from app.assistant.models import (  # noqa: F401
+    AssistantAction,
+    AssistantAuditEvent,
+    AssistantMessage,
+    AssistantSession,
+)
 
-# this is the Alembic Config object
 config = context.config
 
-# Interpret the config file for Python logging.
 if config.config_file_name:
     fileConfig(config.config_file_name)
 
-# Set database URL dynamically from app database settings / environment
-from app.database import engine
-target_url = str(engine.url)
-config.set_main_option("sqlalchemy.url", target_url)
-
+config.set_main_option("sqlalchemy.url", str(engine.url))
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode."""
-    url = config.get_main_option("sqlalchemy.url")
+    """Run migrations in offline mode."""
     context.configure(
-        url=url,
+        url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+    """Run migrations in online mode."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
-
+        context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
 
