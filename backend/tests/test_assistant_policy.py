@@ -92,3 +92,28 @@ def test_open_file_rejects_paths_hidden_files_and_unsupported_extensions(file_na
             tool="desktop.open_file",
             arguments={"folder_id": "downloads", "file_name": file_name},
         ))
+def test_browser_inspection_proposal_is_read_only_and_requires_approval():
+    proposal = build_action_proposal(ActionProposalRequest(tool="browser.inspect_page", arguments={}))
+    assert proposal.approval_required is True
+    assert proposal.risk == "low"
+    assert proposal.arguments == {}
+
+
+def test_browser_search_fill_requires_approval_and_is_medium_risk():
+    proposal = build_action_proposal(ActionProposalRequest(
+        tool="browser.fill_search", arguments={"query": "Python internships"}
+    ))
+    assert proposal.approval_required is True
+    assert proposal.risk == "medium"
+    assert proposal.arguments == {"query": "Python internships"}
+
+
+@pytest.mark.parametrize("query", ["", "   ", "x" * 301])
+def test_browser_search_fill_rejects_empty_or_oversized_query(query):
+    with pytest.raises(PolicyViolation):
+        build_action_proposal(ActionProposalRequest(tool="browser.fill_search", arguments={"query": query}))
+
+
+def test_browser_inspection_rejects_unexpected_arguments():
+    with pytest.raises(PolicyViolation):
+        build_action_proposal(ActionProposalRequest(tool="browser.inspect_page", arguments={"url": "https://github.com"}))
