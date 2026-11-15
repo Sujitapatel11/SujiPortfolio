@@ -234,6 +234,21 @@ export default function CompanionPairingPanel() {
         <button onClick={disconnect} disabled={busy} className="flex items-center gap-2 rounded-lg border border-rose-300/20 px-3 py-2 text-xs text-rose-100"><Unlink size={14}/> Disconnect</button>
       </div>
     </>}
+    {listedFolder && <div className="mt-3 rounded-xl border border-violet-300/20 bg-black/20 p-3">
+      <p className="text-xs font-semibold text-violet-100">Supported files in {listedFolder}</p>
+      {listedFiles.length ? <div className="mt-2 max-h-48 space-y-1 overflow-y-auto">
+        {listedFiles.map(file => <button key={file.name} onClick={async () => {
+          setBusy(true); setError("");
+          try {
+            const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action: "open_file", folder_id: listedFolder, file_name: file.name } });
+            setMessage("Opened " + result.file_name); speak("Opening " + result.file_name);
+          } catch (e) { setError(e.message); }
+          finally { setBusy(false); }
+        }} disabled={busy} className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-left text-xs text-slate-200 hover:bg-white/5">
+          <span className="min-w-0 truncate">{file.name}</span><span className="ml-2 text-[10px] text-slate-500">{file.type}</span>
+        </button>)}
+      </div> : <p className="mt-2 text-xs text-slate-400">No supported files found.</p>}
+    </div>}
     {plannerReply && <div className="mt-3 rounded-lg border border-violet-300/20 bg-black/20 p-3 text-xs text-violet-100">{plannerReply}</div>}
     {proposal && <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/5 p-3">
       <p className="text-xs font-semibold text-amber-100">Review proposed action</p>
@@ -248,6 +263,6 @@ export default function CompanionPairingPanel() {
     {busy && <p className="mt-2 flex items-center gap-2 text-xs text-violet-200"><Loader2 size={13} className="animate-spin"/> Working…</p>}
     <p role="status" className="mt-2 text-[11px] text-emerald-200">{message}</p>
     {error && <p role="alert" className="mt-2 flex gap-1.5 text-[11px] text-rose-200"><AlertTriangle size={13}/>{error}</p>}
-    <p className="mt-2 text-[10px] text-slate-500">Allowlisted: Google/LinkedIn search; Google, LinkedIn, Instagram, WhatsApp Web and GitHub navigation; Calculator, Notepad, default browser and known Windows folders (Desktop/Documents/Downloads/Pictures). AI planning needs admin sign-in and backend OPENAI_API_KEY. No shell, messages, forms or payments.</p>
+    <p className="mt-2 text-[10px] text-slate-500">Allowlisted: Google/LinkedIn search; Google, LinkedIn, Instagram, WhatsApp Web and GitHub navigation; Calculator, Notepad, default browser and known Windows folders (Desktop/Documents/Downloads/Pictures) and read-only supported-file listing. AI planning needs admin sign-in and backend OPENAI_API_KEY. No shell, messages, forms or payments.</p>
   </section>;
 }
