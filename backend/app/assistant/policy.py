@@ -114,7 +114,7 @@ def build_action_proposal(request: ActionProposalRequest) -> ActionProposal:
         tool=request.tool,
         arguments=arguments,
         summary=summary,
-        risk="low",
+        risk="medium" if request.tool == "desktop.open_file" else "low",
         approval_required=True,
         payload_sha256=digest,
     )
