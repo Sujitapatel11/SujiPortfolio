@@ -337,3 +337,48 @@ def test_browser_click_link_rejects_external_destination(monkeypatch):
     with pytest.raises(HTTPException) as error:
         browser_control.click_link("External")
     assert error.value.status_code == 400
+
+
+def test_browser_guard_aborts_unapproved_navigation():
+    from companion import browser_control
+
+    class Request:
+        def __init__(self, url):
+            self.url = url
+        def is_navigation_request(self):
+            return True
+
+    class Route:
+        aborted = False
+        continued = False
+        def abort(self):
+            self.aborted = True
+        def continue_(self):
+            self.continued = True
+
+    route = Route()
+    browser_control._guard_navigation(route, Request("https://evil.example"))
+    assert route.aborted is True
+    assert route.continued is False
+
+
+def test_browser_guard_allows_approved_navigation():
+    from companion import browser_control
+
+    class Request:
+        url = "https://github.com/issues"
+        def is_navigation_request(self):
+            return True
+
+    class Route:
+        aborted = False
+        continued = False
+        def abort(self):
+            self.aborted = True
+        def continue_(self):
+            self.continued = True
+
+    route = Route()
+    browser_control._guard_navigation(route, Request())
+    assert route.aborted is False
+    assert route.continued is True
