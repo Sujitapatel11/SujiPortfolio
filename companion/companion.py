@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import secrets
+import pathlib
 import shutil
 import subprocess
 import threading
@@ -49,6 +50,63 @@ WINDOWS_FOLDERS = {
     "downloads": "Downloads",
     "pictures": "Pictures",
 }
+SAFE_FILE_EXTENSIONS = {"pdf", "txt", "md", "csv", "json", "docx", "xlsx", "pptx", "png", "jpg", "jpeg", "gif", "webp", "mp3", "mp4"}
+
+
+def known_folder_path(folder_id: str) -> pathlib.Path:
+    if not IS_WINDOWS:
+        raise HTTPException(501, "File access is supported only on Windows")
+    subfolder = WINDOWS_FOLDERS.get(folder_id)
+    if not subfolder:
+        raise HTTPException(400, "Folder is not in the known-folder allowlist")
+    home = pathlib.Path.home().resolve()
+    target = (home / subfolder).resolve()
+    if target.parent != home or not target.is_dir():
+        raise HTTPException(404, "The selected known folder does not exist")
+    return target
+
+
+def list_known_folder(folder_id: str) -> dict:
+    folder = known_folder_path(folder_id)
+    entries = []
+    try:
+        for item in sorted(folder.iterdir(), key=lambda p: p.name.casefold()):
+            if item.name.startswith(".") or item.is_symlink():
+                continue
+            try:
+                if item.is_file():
+                    ext = item.suffix.lower().lstrip(".")
+                    if ext in SAFE_FILE_EXTENSIONS:
+                        entries.append({"name": item.name, "type": ext, "size": item.stat().st_size})
+            except OSError:
+                continue
+            if len(entries) >= 100:
+                break
+    except OSError as exc:
+        raise HTTPException(403, "Could not list this folder") from exc
+    return {"status": "listed", "folder_id": folder_id, "files": entries, "truncated": len(entries) >= 100}
+
+
+def open_known_file(folder_id: str, file_name: str) -> dict:
+    if not file_name or file_name in {".", ".."} or "/" in file_name or "\\" in file_name or ":" in file_name or "\x00" in file_name:
+        raise HTTPException(400, "Only a single file name is accepted; paths are blocked")
+    if file_name.startswith(".") or file_name.endswith("."):
+        raise HTTPException(400, "Hidden or ambiguous file names are blocked")
+    ext = pathlib.Path(file_name).suffix.lower().lstrip(".")
+    if ext not in SAFE_FILE_EXTENSIONS:
+        raise HTTPException(400, "This file type is not supported")
+    folder = known_folder_path(folder_id)
+    target = (folder / file_name).resolve()
+    if target.parent != folder or target.is_symlink() or not target.is_file():
+        raise HTTPException(404, "The selected file does not exist in that folder")
+    startfile = getattr(os, "startfile", None)
+    if startfile is None:
+        raise HTTPException(501, "Windows file launcher is unavailable")
+    try:
+        startfile(str(target))
+    except OSError as exc:
+        raise HTTPException(502, "Windows could not open the selected file") from exc
+    return {"status": "opened", "folder_id": folder_id, "file_name": file_name, "file_type": ext}
 
 
 def open_windows_folder(folder_id: str) -> dict:
@@ -106,8 +164,10 @@ class PairRequest(BaseModel):
 
 class ActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder)$")
-    value: str = Field(min_length=1, max_length=500)
+    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder|list_folder|open_file)$")
+    value: str = Field(default="", max_length=500)
+    folder_id: str | None = Field(default=None, max_length=32)
+    file_name: str | None = Field(default=None, max_length=255)
 
 
 def check_origin(request: Request) -> None:
@@ -176,6 +236,12 @@ def run_action(payload: ActionRequest, request: Request):
 
     if payload.action == "open_folder":
         return open_windows_folder(value.lower())
+    if payload.action == "list_folder":
+        return list_known_folder(value.lower())
+    if payload.action == "open_file":
+        if not payload.folder_id or not payload.file_name:
+            raise HTTPException(422, "folder_id and file_name are required")
+        return open_known_file(payload.folder_id.lower(), payload.file_name)
 
     if payload.action == "open_application":
         app_id = value.lower()
