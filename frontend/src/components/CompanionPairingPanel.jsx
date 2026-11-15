@@ -34,6 +34,14 @@ export default function CompanionPairingPanel() {
   const [plannerReply, setPlannerReply] = useState("");
   const tokenRef = useRef(token);
 
+  const speak = (text) => {
+    if (!("speechSynthesis" in window) || !text) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-IN";
+    window.speechSynthesis.speak(utterance);
+  };
+
   useEffect(() => {
     tokenRef.current = token;
     if (!token) { setMessage("Connect this computer once to enable the Personal Operator."); return; }
@@ -87,6 +95,7 @@ export default function CompanionPairingPanel() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.detail || "AI planner request failed");
       setPlannerReply(data.message || "No response from planner.");
+      speak(data.message || "No response from planner.");
       setProposal(data.proposal || null);
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
@@ -108,6 +117,7 @@ export default function CompanionPairingPanel() {
       if (!response.ok) throw new Error(data.detail || "Could not record your decision");
       if (decision === "reject") {
         setPlannerReply("Action rejected. Nothing was executed.");
+        speak("Action rejected. Nothing was executed.");
         setProposal(null);
         return;
       }
@@ -127,6 +137,7 @@ export default function CompanionPairingPanel() {
         const savedData = await saved.json().catch(() => ({}));
         const label = result.app_id ? "Opened the " + result.app_id.replace("_", " ") + " application." : result.folder_id ? "Opened the " + result.folder_id + " folder." : "Opened " + result.url;
         setPlannerReply(saved.ok ? label + " Execution recorded." : label + " Completion record could not be synced.");
+        speak(label);
         setProposal(null);
       } catch (executionError) {
         await fetch(ADMIN_API + "/api/assistant/actions/" + proposal.action_id + "/result", {
@@ -135,6 +146,7 @@ export default function CompanionPairingPanel() {
           body: JSON.stringify({ status: "failed", error_code: "LOCAL_EXECUTOR_FAILED", result: {} }),
         }).catch(() => null);
         setPlannerReply("Approval was recorded, but local execution failed: " + executionError.message);
+        speak("The action was approved, but I could not complete it.");
         setProposal(null);
       }
     } catch (e) { setError(e.message); }
@@ -164,8 +176,8 @@ export default function CompanionPairingPanel() {
     setBusy(true); setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
-      if (result.app_id) setMessage("Opened the " + result.app_id.replace("_", " ") + " application on this computer.");
-      else setMessage("Opened in your default browser: " + result.url);
+      if (result.app_id) { setMessage("Opened the " + result.app_id.replace("_", " ") + " application on this computer."); speak("Opening " + result.app_id.replace("_", " ")); }
+      else { setMessage("Opened in your default browser: " + result.url); speak("Opening website"); }
       setCommand("");
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
