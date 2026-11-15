@@ -26,7 +26,11 @@ def validate_url(value: str) -> str:
     host = (parsed.hostname or "").lower().rstrip(".")
     if parsed.scheme not in {"http", "https"} or host not in ALLOWED_HOSTS:
         raise HTTPException(400, "Browser automation is restricted to approved websites")
-    if parsed.username or parsed.password or parsed.port not in (None, 80, 443):
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise HTTPException(400, "Invalid destination port") from exc
+    if parsed.username or parsed.password or port not in (None, 80, 443):
         raise HTTPException(400, "Embedded credentials and non-standard ports are blocked")
     return value
 
@@ -113,10 +117,9 @@ def click_link(label: str) -> dict:
             if not href:
                 raise HTTPException(400, "Link has no destination")
             validate_url(urljoin(page.url, href))
-            links.click()
-            page.wait_for_load_state("domcontentloaded", timeout=10000)
+            page.goto(destination, wait_until="domcontentloaded", timeout=20000)
             validate_url(page.url)
-            return {"status": "clicked", "label": label, "url": page.url, "title": page.title()}
+            return {"status": "navigated", "label": label, "url": page.url, "title": page.title()}
         except HTTPException:
             raise
         except Exception as exc:
