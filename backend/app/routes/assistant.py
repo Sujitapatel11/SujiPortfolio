@@ -283,7 +283,7 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
     action = db.query(AssistantAction).join(AssistantSession).filter(
         AssistantAction.id == action_id,
         AssistantSession.owner_username == current_admin["username"],
-    ).first()
+    ).with_for_update().first()
     if not action:
         raise HTTPException(status_code=404, detail="Assistant action not found")
     if action.status != "awaiting_approval":
@@ -306,23 +306,40 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
         db.commit()
         raise HTTPException(status_code=410, detail="Action proposal has expired")
 
+    # Conditional UPDATE is the final concurrency guard (also works on SQLite,
+    # where SELECT ... FOR UPDATE is ignored).
     if payload.decision == "approve":
-        action.status = "approved"
-        action.approved_by = current_admin["username"]
-        action.approved_at = now
+        new_status = "approved"
+        changes = {
+            "status": new_status,
+            "approved_by": current_admin["username"],
+            "approved_at": now,
+            "updated_at": now,
+        }
         event = "action.approved"
     else:
-        action.status = "rejected"
-        action.rejected_reason = payload.reason
+        new_status = "rejected"
+        changes = {
+            "status": new_status,
+            "rejected_reason": payload.reason,
+            "updated_at": now,
+        }
         event = "action.rejected"
 
-    action.updated_at = now
+    changed = db.query(AssistantAction).filter(
+        AssistantAction.id == action.id,
+        AssistantAction.status == "awaiting_approval",
+    ).update(changes, synchronize_session=False)
+    if changed != 1:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Action was already decided by another request")
+
     _audit(db, action.session_id, action.id, current_admin["username"], event, {
         "reason": payload.reason if payload.decision == "reject" else None,
         "payload_sha256": action.payload_sha256,
     })
     db.commit()
-    return {"action_id": action.id, "status": action.status}
+    return {"action_id": action.id, "status": new_status}
 
 
 @router.get("/sessions/{session_id}/audit")
