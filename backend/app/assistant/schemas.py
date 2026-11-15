@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 class ActionProposalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    tool: Literal["browser.open_url", "desktop.open_application"]
+    tool: Literal["browser.open_url", "desktop.open_application", "desktop.open_folder"]
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
