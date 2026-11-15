@@ -124,3 +124,15 @@ def test_open_url_rejects_nonstandard_port(monkeypatch):
     auth = {**HEADERS, "Authorization": f"Bearer {token}"}
     response = client.post("/v1/action", headers=auth, json={"action": "open_url", "value": "https://github.com:444"})
     assert response.status_code == 400
+
+def test_open_known_folder_uses_only_allowlisted_folder_id(monkeypatch):
+    state = reset(monkeypatch)
+    client = TestClient(companion.app)
+    token = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).json()["token"]
+    auth = {**HEADERS, "Authorization": f"Bearer {token}"}
+    opened = []
+    monkeypatch.setattr(companion, "open_windows_folder", lambda folder_id: opened.append(folder_id) or {"status": "opened", "folder_id": folder_id})
+    response = client.post("/v1/action", headers=auth, json={"action": "open_folder", "value": "downloads"})
+    assert response.status_code == 200
+    assert response.json()["folder_id"] == "downloads"
+    assert opened == ["downloads"]
