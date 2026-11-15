@@ -27,10 +27,12 @@ Pairing is revoked only when you choose Disconnect. If you clear browser storage
 - `Open Google`, `Open LinkedIn`, `Open Instagram`, `Open WhatsApp`, `Open GitHub`
 - `Open Calculator`, `Open Notepad`, `Open Browser`
 - `Open Desktop`, `Open Documents`, `Open Downloads`, `Open Pictures`
+- `List files in Downloads` (also Desktop/Documents/Pictures)
+- `Open report.pdf from Downloads` (AI proposal + explicit approval)
 - `Search Google for Python internships`
 - `Search LinkedIn for AI internships`
 
-The service binds only to `127.0.0.1:8765`, checks the exact configured Origin and Host, and stores the pairing secret in Windows Credential Manager through Python keyring. Windows application launching uses fixed executable names with `shell=False`; no user-provided command line is accepted. It can open only the fixed Desktop, Documents, Downloads and Pictures folders; it cannot browse arbitrary paths, read or modify files, run shell commands, send messages, submit forms, make payments, or control arbitrary applications. Website navigation is restricted to an explicit host allowlist.
+The service binds only to `127.0.0.1:8765`, checks the exact configured Origin and Host, and stores the pairing secret in Windows Credential Manager through Python keyring. Windows application launching uses fixed executable names with `shell=False`; no user-provided command line is accepted. It can open only the fixed Desktop, Documents, Downloads and Pictures folders. Read-only listings show up to 100 supported non-hidden files (PDF, text, office documents, images and media); selecting a listed file opens it with its Windows default application. AI-proposed file opening requires explicit approval. Arbitrary paths, file contents, file modification, shell commands, messaging, form submission, payments and arbitrary application control remain blocked. Website navigation is restricted to an explicit host allowlist.
 
 AI planning is available only after signing into the portfolio admin and configuring `OPENAI_API_KEY` on the backend. Planner-created actions are validated against the same allowlist, shown for review, and require explicit approval before the local companion runs them. The backend records approval and execution outcome. Direct, simple allowlisted open/search commands are handled locally by the companion.
 
