@@ -59,3 +59,19 @@ def test_allowed_website_with_nonstandard_port_is_rejected():
             tool="browser.open_url",
             arguments={"url": "https://github.com:444"},
         ))
+
+def test_known_folder_is_allowlisted_and_requires_approval():
+    proposal = build_action_proposal(ActionProposalRequest(
+        tool="desktop.open_folder",
+        arguments={"folder_id": "downloads"},
+    ))
+    assert proposal.approval_required is True
+    assert proposal.arguments == {"folder_id": "downloads"}
+
+
+def test_arbitrary_filesystem_path_is_rejected():
+    with pytest.raises(PolicyViolation):
+        build_action_proposal(ActionProposalRequest(
+            tool="desktop.open_folder",
+            arguments={"folder_id": "../../Windows/System32"},
+        ))
