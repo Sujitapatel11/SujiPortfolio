@@ -90,7 +90,14 @@ def test_different_owner_cannot_approve_action(client):
 
 
 def test_owner_can_approve_but_approval_does_not_execute(client):
-    created = client.post("/api/assistant/sessions", json={"input_mode": "text"})
+    registered = client.post("/api/assistant/devices", json={"name": "Approval test device"})
+    assert registered.status_code == 201, registered.text
+    device_id = registered.json()["device_id"]
+    created = client.post(
+        "/api/assistant/sessions",
+        json={"input_mode": "text", "device_id": device_id},
+    )
+    assert created.status_code == 201, created.text
     session_id = created.json()["session_id"]
     proposal = client.post(
         f"/api/assistant/sessions/{session_id}/actions",
