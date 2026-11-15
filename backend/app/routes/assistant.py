@@ -361,7 +361,7 @@ def record_execution_result(action_id: str, payload: ExecutionResult, db: Sessio
         raise HTTPException(status_code=409, detail="Only approved actions can receive an execution result")
     if len(str(payload.result)) > 2000:
         raise HTTPException(status_code=422, detail="Execution result is too large")
-    if set(payload.result) - {"url", "app_id"}:
+    if set(payload.result) - {"url", "app_id", "folder_id"}:
         raise HTTPException(status_code=422, detail="Execution result contains unsupported fields")
     now = datetime.now(timezone.utc)
     error_code = payload.error_code if payload.status == "failed" else None
