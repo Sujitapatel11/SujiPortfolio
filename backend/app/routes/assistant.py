@@ -39,6 +39,13 @@ class ActionCreate(BaseModel):
     arguments: dict = Field(default_factory=dict)
 
 
+
+class ExecutionResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: str = Field(pattern="^(completed|failed)$")
+    result: dict = Field(default_factory=dict)
+    error_code: str | None = Field(default=None, max_length=100)
+
 class DecisionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     decision: str = Field(pattern="^(approve|reject)$")
@@ -341,6 +348,32 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
     db.commit()
     return {"action_id": action.id, "status": new_status}
 
+
+@router.post("/actions/{action_id}/result")
+def record_execution_result(action_id: str, payload: ExecutionResult, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+    action = db.query(AssistantAction).join(AssistantSession).filter(
+        AssistantAction.id == action_id,
+        AssistantSession.owner_username == current_admin["username"],
+    ).first()
+    if not action:
+        raise HTTPException(status_code=404, detail="Assistant action not found")
+    if action.status != "approved":
+        raise HTTPException(status_code=409, detail="Only approved actions can receive an execution result")
+    if len(str(payload.result)) > 2000:
+        raise HTTPException(status_code=422, detail="Execution result is too large")
+    if set(payload.result) - {"url", "app_id"}:
+        raise HTTPException(status_code=422, detail="Execution result contains unsupported fields")
+    now = datetime.now(timezone.utc)
+    action.status = payload.status
+    action.result = payload.result
+    action.error_code = payload.error_code if payload.status == "failed" else None
+    action.updated_at = now
+    _audit(db, action.session_id, action.id, current_admin["username"], "action." + payload.status, {
+        "error_code": action.error_code,
+        "result": payload.result,
+    })
+    db.commit()
+    return {"action_id": action.id, "status": action.status}
 
 @router.get("/sessions/{session_id}/audit")
 def list_audit_events(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
