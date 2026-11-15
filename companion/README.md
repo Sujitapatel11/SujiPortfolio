@@ -1,6 +1,6 @@
 # Suji Local Companion
 
-A Windows-only local companion for the Personal Operator. It opens approved Google and LinkedIn pages in the computer's default browser.
+A Windows-only local companion for the Personal Operator. It opens a strict allowlist of websites and Windows applications in the local desktop.
 
 ## One-time setup
 
@@ -29,6 +29,6 @@ Pairing is revoked only when you choose Disconnect. If you clear browser storage
 - `Search Google for Python internships`
 - `Search LinkedIn for AI internships`
 
-The service binds only to `127.0.0.1:8765`, checks the exact configured Origin and Host, and stores the pairing secret in Windows Credential Manager through Python keyring. It cannot run shell commands, read files, send messages, submit forms, make payments, or control arbitrary applications.
+The service binds only to `127.0.0.1:8765`, checks the exact configured Origin and Host, and stores the pairing secret in Windows Credential Manager through Python keyring. Windows application launching uses fixed executable names with `shell=False`; no user-provided command line is accepted. It cannot run arbitrary shell commands, read files, send messages, submit forms, make payments, or control arbitrary applications. Website navigation is restricted to an explicit host allowlist.
 
 For production hosting, set `ASSISTANT_ALLOWED_ORIGINS` to the exact HTTPS portfolio origin. Never use `*`.
