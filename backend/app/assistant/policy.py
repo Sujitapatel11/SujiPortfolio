@@ -11,6 +11,14 @@ from urllib.parse import urlparse
 from app.assistant.schemas import ActionProposal, ActionProposalRequest
 
 
+ALLOWED_BROWSER_HOSTS = {
+    "google.com", "www.google.com",
+    "linkedin.com", "www.linkedin.com",
+    "instagram.com", "www.instagram.com",
+    "web.whatsapp.com",
+    "github.com", "www.github.com",
+}
+
 class PolicyViolation(ValueError):
     """Raised when a proposed action is not permitted by policy."""
 
@@ -40,8 +48,13 @@ def validate_tool_arguments(tool: str, arguments: dict) -> dict:
             raise PolicyViolation("Only absolute HTTP(S) URLs are permitted")
         if parsed.username or parsed.password:
             raise PolicyViolation("URLs containing embedded credentials are not permitted")
-        if not _is_public_host(parsed.hostname):
+        hostname = parsed.hostname.rstrip(".").lower()
+        if hostname not in ALLOWED_BROWSER_HOSTS:
+            raise PolicyViolation("Website is not in the paired companion allowlist")
+        if not _is_public_host(hostname):
             raise PolicyViolation("Local, private and non-public network destinations are blocked")
+        if parsed.port not in (None, 80, 443):
+            raise PolicyViolation("Non-standard destination ports are blocked")
         return {"url": arguments["url"]}
 
     if tool == "desktop.open_application":
