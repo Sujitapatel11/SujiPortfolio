@@ -87,6 +87,39 @@ def list_known_folder(folder_id: str) -> dict:
     return {"status": "listed", "folder_id": folder_id, "files": entries, "truncated": len(entries) >= 100}
 
 
+
+
+PREVIEW_FILE_EXTENSIONS = {"txt", "md", "csv", "json"}
+MAX_PREVIEW_BYTES = 128 * 1024
+
+
+def preview_known_file(folder_id: str, file_name: str) -> dict:
+    if not file_name or file_name in {".", ".."} or "/" in file_name or "\\" in file_name or ":" in file_name or "\x00" in file_name:
+        raise HTTPException(400, "Only a single file name is accepted; paths are blocked")
+    if file_name.startswith(".") or file_name.endswith("."):
+        raise HTTPException(400, "Hidden or ambiguous file names are blocked")
+    ext = pathlib.Path(file_name).suffix.lower().lstrip(".")
+    if ext not in PREVIEW_FILE_EXTENSIONS:
+        raise HTTPException(400, "Preview supports only TXT, Markdown, CSV and JSON files")
+    folder = known_folder_path(folder_id)
+    target = folder / file_name
+    if target.is_symlink() or not target.is_file() or target.resolve().parent != folder:
+        raise HTTPException(404, "The selected file does not exist in that folder")
+    try:
+        if target.stat().st_size > MAX_PREVIEW_BYTES:
+            raise HTTPException(413, "Preview is limited to files up to 128 KB")
+        content = target.read_bytes()
+    except OSError as exc:
+        raise HTTPException(403, "Could not read the selected file") from exc
+    if len(content) > MAX_PREVIEW_BYTES:
+        raise HTTPException(413, "Preview is limited to files up to 128 KB")
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(415, "This file is not valid UTF-8 text") from exc
+    return {"status": "previewed", "folder_id": folder_id, "file_name": file_name, "file_type": ext, "content": text, "truncated": False}
+
+
 def open_known_file(folder_id: str, file_name: str) -> dict:
     if not file_name or file_name in {".", ".."} or "/" in file_name or "\\" in file_name or ":" in file_name or "\x00" in file_name:
         raise HTTPException(400, "Only a single file name is accepted; paths are blocked")
@@ -164,7 +197,7 @@ class PairRequest(BaseModel):
 
 class ActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder|list_folder|open_file)$")
+    action: str = Field(pattern="^(open_url|google_search|linkedin_search|open_application|open_folder|list_folder|open_file|preview_file)$")
     value: str = Field(default="", max_length=500)
     folder_id: str | None = Field(default=None, max_length=32)
     file_name: str | None = Field(default=None, max_length=255)
@@ -242,6 +275,10 @@ def run_action(payload: ActionRequest, request: Request):
         if not payload.folder_id or not payload.file_name:
             raise HTTPException(422, "folder_id and file_name are required")
         return open_known_file(payload.folder_id.lower(), payload.file_name)
+    if payload.action == "preview_file":
+        if not payload.folder_id or not payload.file_name:
+            raise HTTPException(422, "folder_id and file_name are required")
+        return preview_known_file(payload.folder_id.lower(), payload.file_name)
 
     if payload.action == "open_application":
         app_id = value.lower()
