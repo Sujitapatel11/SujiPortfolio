@@ -57,6 +57,18 @@ def validate_tool_arguments(tool: str, arguments: dict) -> dict:
             raise PolicyViolation("Non-standard destination ports are blocked")
         return {"url": arguments["url"]}
 
+    if tool == "browser.inspect_page":
+        if arguments:
+            raise PolicyViolation("browser.inspect_page takes no arguments")
+        return {}
+
+    if tool == "browser.fill_search":
+        if set(arguments) != {"query"} or not isinstance(arguments.get("query"), str):
+            raise PolicyViolation("browser.fill_search requires exactly one string argument: query")
+        query = arguments["query"].strip()
+        if not query or len(query) > 300:
+            raise PolicyViolation("Search text must contain 1 to 300 characters")
+        return {"query": query}
     if tool == "desktop.open_application":
         if set(arguments) != {"app_id"} or not isinstance(arguments.get("app_id"), str):
             raise PolicyViolation("desktop.open_application requires exactly one string argument: app_id")
@@ -103,6 +115,10 @@ def build_action_proposal(request: ActionProposalRequest) -> ActionProposal:
 
     if request.tool == "browser.open_url":
         summary = f"Open {arguments['url']} in the paired browser"
+    elif request.tool == "browser.inspect_page":
+        summary = "Inspect the current page in the paired browser (read-only)"
+    elif request.tool == "browser.fill_search":
+        summary = "Fill the current page search box without submitting"
     elif request.tool == "desktop.open_application":
         summary = f"Open the {arguments['app_id']} application on the paired device"
     elif request.tool == "desktop.open_folder":
@@ -114,7 +130,7 @@ def build_action_proposal(request: ActionProposalRequest) -> ActionProposal:
         tool=request.tool,
         arguments=arguments,
         summary=summary,
-        risk="medium" if request.tool == "desktop.open_file" else "low",
+        risk="medium" if request.tool in {"desktop.open_file", "browser.fill_search"} else "low",
         approval_required=True,
         payload_sha256=digest,
     )
