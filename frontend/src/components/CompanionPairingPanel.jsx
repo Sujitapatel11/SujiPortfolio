@@ -140,8 +140,6 @@ export default function CompanionPairingPanel() {
       if (apps[site]) { action = "open_application"; target = apps[site]; }
       else if (urls[site]) { action = "open_url"; target = urls[site]; }
       else { setError("Supported: open Google, LinkedIn, Instagram, WhatsApp, GitHub, Calculator, Notepad or Browser. Arbitrary websites and apps are blocked."); return; }
-      else if (urls[site]) { action = "open_url"; target = urls[site]; }
-      else { setError("Supported: open Google, LinkedIn, Instagram, WhatsApp, GitHub, Calculator, Notepad or Browser. Arbitrary websites and apps are blocked."); return; }
     } else { await planWithAI(value); return; }
     if (!tokenRef.current) { setError("Pair this computer before running local browser or desktop commands."); return; }
     setBusy(true); setError("");
