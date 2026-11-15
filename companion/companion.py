@@ -10,7 +10,11 @@ import threading
 import time
 import webbrowser
 import keyring
-import browser_control
+
+try:
+    from . import browser_control
+except ImportError:  # Support launching this file directly on Windows.
+    import browser_control
 from dataclasses import dataclass, field
 from typing import Annotated
 from urllib.parse import quote_plus, urlsplit
