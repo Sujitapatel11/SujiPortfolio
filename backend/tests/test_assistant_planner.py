@@ -35,3 +35,12 @@ def test_planner_rejects_unregistered_tool_shape():
 def test_planner_rejects_malformed_or_incomplete_output(raw):
     with pytest.raises(PlannerUnavailable):
         _parse_planner_content(raw)
+
+def test_planner_accepts_known_folder_action():
+    result = _parse_planner_content(
+        '{"kind":"action","message":"Open Downloads","tool":"desktop.open_folder",'
+        '"arguments":{"folder_id":"downloads"}}'
+    )
+    assert result["kind"] == "action"
+    assert result["request"].tool == "desktop.open_folder"
+    assert result["request"].arguments == {"folder_id": "downloads"}
