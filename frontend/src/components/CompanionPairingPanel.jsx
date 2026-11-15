@@ -75,7 +75,9 @@ export default function CompanionPairingPanel() {
     setBusy(true); setError("");
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
-      setMessage("Opened in your default browser: " + result.url); setCommand("");
+      if (result.app_id) setMessage("Opened the " + result.app_id.replace("_", " ") + " application on this computer.");
+      else setMessage("Opened in your default browser: " + result.url);
+      setCommand("");
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
   };
@@ -94,6 +96,9 @@ export default function CompanionPairingPanel() {
     setBusy(true);
     try {
       await request("/v1/disconnect", { token: tokenRef.current, method: "POST", body: {} });
+      localStorage.removeItem(TOKEN_KEY);
+      tokenRef.current = "";
+      setToken("");
       setMessage("Device disconnected. Pair again only if you want to reconnect.");
     } catch (e) { setError(e.message); }
     finally { setBusy(false); }
