@@ -177,6 +177,7 @@ export default function CompanionPairingPanel() {
     try {
       const result = await request("/v1/action", { token: tokenRef.current, method: "POST", body: { action, value: target } });
       if (result.app_id) { setMessage("Opened the " + result.app_id.replace("_", " ") + " application on this computer."); speak("Opening " + result.app_id.replace("_", " ")); }
+      else if (result.folder_id) { setMessage("Opened the " + result.folder_id + " folder."); speak("Opening " + result.folder_id + " folder"); }
       else { setMessage("Opened in your default browser: " + result.url); speak("Opening website"); }
       setCommand("");
     } catch (e) { setError(e.message); }
