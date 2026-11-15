@@ -21,6 +21,7 @@ HOST = "127.0.0.1:8765"
 PAIR_TTL = 120
 SERVICE_NAME = "SujiLocalCompanion"
 TOKEN_ACCOUNT = "paired-device-token"
+IS_WINDOWS = os.name == "nt"
 ALLOWED_SITES = {"same-origin", "same-site", "cross-site"}
 ORIGINS = sorted({
     value.strip().rstrip("/")
@@ -156,7 +157,7 @@ def run_action(payload: ActionRequest, request: Request):
         executable = WINDOWS_APPS.get(app_id)
         if not executable:
             raise HTTPException(400, "Application is not in the desktop allowlist")
-        if os.name != "nt":
+        if not IS_WINDOWS:
             raise HTTPException(501, "Desktop application launching is supported only on Windows")
         resolved = shutil.which(executable)
         if not resolved:
