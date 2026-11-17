@@ -83,14 +83,16 @@ def build_action_proposal(request: ActionProposalRequest) -> ActionProposal:
     args=validate_tool_arguments(request.tool,request.arguments)
     canonical=json.dumps({"tool":request.tool,"arguments":args},sort_keys=True,separators=(",",":"))
     digest=hashlib.sha256(canonical.encode()).hexdigest()
+    # Keep summaries lazy: eagerly evaluating every f-string indexes arguments
+    # belonging to unrelated tools and raises KeyError for valid requests.
     summaries={
-        "browser.open_url":f"Open {args['url']} in default browser",
-        "browser.navigate":f"Navigate controlled browser to {args['url']} within approved scope",
-        "browser.inspect":"Read visible page text in controlled browser",
-        "browser.click_text":f"Click exact visible text: {args['text'][:100]}",
-        "browser.fill_label":f"Fill labelled field: {args['label'][:100]}",
-        "browser.scroll":f"Scroll controlled browser {args['direction']}",
-        "browser.wait":f"Wait {args['milliseconds']} ms in controlled browser",
-        "desktop.open_application":f"Open {args['app_id']} application",
+        "browser.open_url":lambda a: f"Open {a['url']} in default browser",
+        "browser.navigate":lambda a: f"Navigate controlled browser to {a['url']} within approved scope",
+        "browser.inspect":lambda a: "Read visible page text in controlled browser",
+        "browser.click_text":lambda a: f"Click exact visible text: {a['text'][:100]}",
+        "browser.fill_label":lambda a: f"Fill labelled field: {a['label'][:100]}",
+        "browser.scroll":lambda a: f"Scroll controlled browser {a['direction']}",
+        "browser.wait":lambda a: f"Wait {a['milliseconds']} ms in controlled browser",
+        "desktop.open_application":lambda a: f"Open {a['app_id']} application",
     }
-    return ActionProposal(action_id=uuid.uuid4().hex,tool=request.tool,arguments=args,summary=summaries[request.tool],risk="medium" if request.tool.startswith("browser.") and request.tool!="browser.inspect" else "low",approval_required=True,payload_sha256=digest)
+    return ActionProposal(action_id=uuid.uuid4().hex,tool=request.tool,arguments=args,summary=summaries[request.tool](args),risk="medium" if request.tool.startswith("browser.") and request.tool!="browser.inspect" else "low",approval_required=True,payload_sha256=digest)
