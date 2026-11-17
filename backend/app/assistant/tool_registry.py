@@ -1,9 +1,5 @@
-"""Explicit registry of tools available to the personal assistant.
-
-This registry describes capabilities only. It does not execute them.
-"""
+"""Explicit registry of tools available to the personal assistant."""
 from dataclasses import dataclass
-
 
 @dataclass(frozen=True)
 class ToolDefinition:
@@ -12,20 +8,16 @@ class ToolDefinition:
     required_arguments: tuple[str, ...]
     approval_required: bool = True
 
-
 TOOLS = {
-    "browser.open_url": ToolDefinition(
-        name="browser.open_url",
-        description="Open a public HTTP(S) URL in the paired browser.",
-        required_arguments=("url",),
-    ),
-    "desktop.open_application": ToolDefinition(
-        name="desktop.open_application",
-        description="Open one application from the paired desktop allowlist.",
-        required_arguments=("app_id",),
-    ),
+    "browser.open_url": ToolDefinition("browser.open_url", "Open a public URL in the default browser.", ("url",)),
+    "browser.navigate": ToolDefinition("browser.navigate", "Navigate controlled browser within explicit domain scope.", ("url", "allowed_domains")),
+    "browser.inspect": ToolDefinition("browser.inspect", "Read visible page text.", ("allowed_domains",)),
+    "browser.click_text": ToolDefinition("browser.click_text", "Click one unique exact visible text.", ("text", "allowed_domains")),
+    "browser.fill_label": ToolDefinition("browser.fill_label", "Fill one uniquely labelled field.", ("label", "value", "allowed_domains")),
+    "browser.scroll": ToolDefinition("browser.scroll", "Scroll page up or down.", ("direction", "allowed_domains")),
+    "browser.wait": ToolDefinition("browser.wait", "Wait a bounded time for page changes.", ("milliseconds", "allowed_domains")),
+    "desktop.open_application": ToolDefinition("desktop.open_application", "Open one allowlisted desktop application.", ("app_id",)),
 }
-
 
 def get_tool(name: str) -> ToolDefinition:
     try:
