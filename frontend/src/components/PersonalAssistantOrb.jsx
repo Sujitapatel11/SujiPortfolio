@@ -1,227 +1,168 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Bot, X, Sparkles, Mic, Send, ShieldCheck, Check, XCircle, Monitor, Loader2 } from "lucide-react";
-
-const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
-const SpeechRecognition = typeof window !== "undefined"
-  ? (window.SpeechRecognition || window.webkitSpeechRecognition)
-  : null;
+import React, { useCallback, useRef, useState } from "react";
+import { Bot, X, Sparkles, Mic, MicOff, Send, ShieldCheck, Loader2, LogIn, Smartphone } from "lucide-react";
+import { createAssistantSession, sendAssistantMessage, decideAssistantAction, listAssistantDevices } from "../api/personalAssistant";
 
 export default function PersonalAssistantOrb() {
   const [open, setOpen] = useState(false);
-  const [token, setToken] = useState(() => localStorage.getItem("admin_token") || "");
+  const [listening, setListening] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [input, setInput] = useState("");
+  const [status, setStatus] = useState("Ready. Click the orb and speak or type a task.");
+  const [proposal, setProposal] = useState(null);
+  const [reply, setReply] = useState("");
   const [devices, setDevices] = useState([]);
   const [deviceId, setDeviceId] = useState("");
-  const [sessionId, setSessionId] = useState("");
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "Hi Suji. I'm ready. Tell me what you'd like me to do." },
-  ]);
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [listening, setListening] = useState(false);
-  const [error, setError] = useState("");
-  const [pending, setPending] = useState(null);
-  const [execution, setExecution] = useState("");
   const recognitionRef = useRef(null);
-  const bottomRef = useRef(null);
+  const sessionRef = useRef(null);
+  const sessionDeviceRef = useRef("");
 
-  const request = useCallback(async (path, options = {}) => {
-    const response = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...(options.headers || {}),
-      },
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.detail || `Request failed (${response.status})`);
-    return data;
-  }, [token]);
+  const token = () => localStorage.getItem("admin_token") || "";
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, pending, execution]);
-
-  useEffect(() => () => recognitionRef.current?.stop(), []);
-
-  const loadDevices = useCallback(async () => {
-    if (!token) return;
+  const loadDevices = async () => {
+    const auth = token();
+    if (!auth) return;
     try {
-      const rows = await request("/api/assistant/devices");
-      setDevices(rows.filter((item) => item.is_active));
-      setDeviceId((current) => current || rows.find((item) => item.is_active)?.device_id || "");
-    } catch (err) {
-      setError(err.message);
+      const items = await listAssistantDevices(auth);
+      const active = items.filter(item => item.is_active);
+      setDevices(active);
+      if (!deviceId && active.length) setDeviceId(active[0].device_id);
+    } catch (error) {
+      setStatus(error.message || "Could not load paired devices.");
     }
-  }, [request, token]);
-
-  useEffect(() => {
-    if (open && token) loadDevices();
-  }, [open, token, loadDevices]);
-
-  const ensureSession = async () => {
-    if (sessionId) return sessionId;
-    const created = await request("/api/assistant/sessions", {
-      method: "POST",
-      body: JSON.stringify({ input_mode: "text", device_id: deviceId || null }),
-    });
-    setSessionId(created.session_id);
-    return created.session_id;
   };
 
-  const sendMessage = async (event) => {
-    event?.preventDefault();
-    const text = input.trim();
+  const submitTask = useCallback(async (raw) => {
+    const text = raw.trim();
     if (!text || busy) return;
-    if (!token) {
-      setError("This browser isn't connected to your owner account yet. Sign in once to the private operator on this browser; your saved session will then be reused.");
+    const auth = token();
+    if (!auth) {
+      setStatus("Owner sign-in is required before private assistant commands can be sent.");
       return;
     }
-    setInput("");
-    setError("");
-    setMessages((current) => [...current, { role: "user", content: text }]);
     setBusy(true);
+    setProposal(null);
+    setReply("");
+    setStatus("Planning your task…");
     try {
-      const id = await ensureSession();
-      const result = await request(`/api/assistant/sessions/${id}/messages`, {
-        method: "POST",
-        body: JSON.stringify({ text, input_mode: SpeechRecognition ? "voice" : "text" }),
-      });
-      setMessages((current) => [...current, { role: "assistant", content: result.message }]);
-      setPending(result.proposal || null);
-      setExecution("");
-    } catch (err) {
-      setError(err.message);
+      if (!sessionRef.current || sessionDeviceRef.current !== deviceId) {
+        const session = await createAssistantSession(auth, "voice", deviceId || null);
+        sessionRef.current = session.session_id;
+        sessionDeviceRef.current = deviceId;
+      }
+      const result = await sendAssistantMessage(auth, sessionRef.current, text, "voice");
+      setReply(result.message || "Task request received.");
+      setProposal(result.proposal || null);
+      setStatus(result.status === "awaiting_approval" ? "Review required before execution." :
+        result.status === "unsupported" ? "This task is not currently supported." :
+        result.status === "needs_clarification" ? "I need one clarification." : "Response received.");
+      setInput("");
+    } catch (error) {
+      sessionRef.current = null;
+      sessionDeviceRef.current = "";
+      setStatus(error.message || "Assistant request failed.");
     } finally {
       setBusy(false);
+    }
+  }, [busy, deviceId]);
+
+  const startListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setStatus("Voice recognition is unavailable in this browser. You can type your request instead.");
+      return;
+    }
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "hi-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => { setListening(true); setStatus("Listening… बोलिए"); };
+    recognition.onend = () => setListening(false);
+    recognition.onerror = (event) => {
+      setListening(false);
+      setStatus(event.error === "not-allowed" ? "Microphone permission denied. Allow microphone access and try again." : `Voice input failed: ${event.error}`);
+    };
+    recognition.onresult = (event) => {
+      const spoken = event.results?.[0]?.[0]?.transcript || "";
+      setInput(spoken);
+      void submitTask(spoken);
+    };
+    recognitionRef.current = recognition;
+    try { recognition.start(); } catch { setStatus("Could not start voice recognition. Try again."); }
+  };
+
+  const activate = () => {
+    const next = !open;
+    setOpen(next);
+    if (next) {
+      const auth = token();
+      setStatus(auth ? "Loading your paired devices…" : "Owner sign-in required to use private assistant controls.");
+      if (auth) void loadDevices();
+    } else {
+      recognitionRef.current?.stop();
+      setListening(false);
     }
   };
 
   const decide = async (decision) => {
-    if (!pending?.action_id || !sessionId) return;
+    if (!proposal || busy) return;
+    const auth = token();
     setBusy(true);
-    setError("");
     try {
-      const result = await request(`/api/assistant/actions/${pending.action_id}/decision`, {
-        method: "POST",
-        body: JSON.stringify({ decision }),
-      });
-      setPending(null);
-      if (decision === "approve") {
-        setExecution("Approved and queued. Waiting for your paired Windows companion to execute and report the result…");
-        const started = Date.now();
-        const poll = async () => {
-          try {
-            const actions = await request(`/api/assistant/sessions/${sessionId}/actions`);
-            const action = actions.find((item) => item.action_id === pending.action_id);
-            if (action && ["completed", "failed", "expired"].includes(action.status)) {
-              setExecution(action.result?.message || `Action ${action.status}.`);
-              return;
-            }
-            if (Date.now() - started < 30000) window.setTimeout(poll, 2000);
-            else setExecution("Still queued. Check that your paired Windows companion is running.");
-          } catch (err) {
-            setExecution(err.message);
-          }
-        };
-        window.setTimeout(poll, 1500);
-      } else {
-        setExecution("Action rejected. Nothing was executed.");
-      }
-    } catch (err) {
-      setError(err.message);
+      const result = await decideAssistantAction(auth, proposal.action_id, decision);
+      setProposal(null);
+      setReply(decision === "approve"
+        ? "Approval recorded and command queued. The paired device must be online and report its execution result."
+        : "Action rejected.");
+      setStatus(result.status || "Decision recorded.");
+    } catch (error) {
+      setStatus(error.message || "Could not record your decision.");
     } finally {
       setBusy(false);
     }
   };
 
-  const startVoice = () => {
-    if (!SpeechRecognition) {
-      setError("Voice input isn't supported in this browser. You can type your command instead.");
-      return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-IN";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.onresult = (event) => setInput((current) => `${current}${current ? " " : ""}${event.results[0][0].transcript}`);
-    recognition.onerror = (event) => setError(`Microphone: ${event.error}`);
-    recognition.onend = () => setListening(false);
-    recognitionRef.current = recognition;
-    setError("");
-    setListening(true);
-    recognition.start();
-  };
-
-  const openPanel = () => {
-    setOpen((value) => !value);
-    setToken(localStorage.getItem("admin_token") || "");
-  };
-
-  return (
-    <div className="fixed bottom-6 left-6 z-[71]">
-      {open && (
-        <section className="mb-4 flex h-[min(70vh,560px)] w-[min(94vw,390px)] flex-col overflow-hidden rounded-3xl border border-violet-400/30 bg-slate-950 text-white shadow-2xl">
-          <header className="flex items-center justify-between border-b border-white/10 bg-slate-900 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <Bot size={21} className="text-violet-300" />
-              <div><p className="text-sm font-semibold">Hey Suji</p><p className="text-[10px] text-violet-200">PERSONAL AI OPERATOR · DEVICE-BOUND</p></div>
-            </div>
-            <button onClick={() => setOpen(false)} aria-label="Close Hey Suji" className="rounded-lg p-1 hover:bg-white/10"><X size={19}/></button>
-          </header>
-
-          <div className="flex-1 space-y-3 overflow-y-auto p-3">
-            {!token ? (
-              <div className="rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs leading-5 text-amber-100">
-                This browser isn't connected to your owner account yet. Sign in once to the private operator on this browser; Hey Suji will reuse the saved session. Computer actions remain restricted to your paired device and require approval.
-                <button onClick={() => window.location.assign("/admin/login")} className="mt-3 block rounded-lg bg-violet-600 px-3 py-2 font-semibold text-white">Connect owner account</button>
-              </div>
-            ) : (
-              <>
-                <div className="rounded-xl bg-white/5 p-3 text-xs text-slate-200">Hi Suji. You can type or use the microphone. I'll show you the exact action before it runs.</div>
-                {devices.length > 0 && (
-                  <label className="flex items-center gap-2 rounded-lg border border-white/10 px-2 py-2 text-[11px] text-slate-300">
-                    <Monitor size={14}/>
-                    <select value={deviceId} onChange={(event) => { setDeviceId(event.target.value); setSessionId(""); }} className="min-w-0 flex-1 bg-transparent text-white outline-none">
-                      {devices.map((device) => <option key={device.device_id} value={device.device_id} className="bg-slate-900">{device.name}</option>)}
-                    </select>
-                  </label>
-                )}
-                {devices.length === 0 && <p className="rounded-lg bg-amber-300/10 p-2 text-xs text-amber-100">No paired Windows device found. Pair this computer in Personal Operator setup before requesting desktop actions.</p>}
-                {messages.map((message, index) => (
-                  <div key={index} className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${message.role === "user" ? "ml-auto bg-violet-600 text-white" : "mr-auto bg-white/10 text-slate-100"}`}>{message.content}</div>
-                ))}
-                {pending && (
-                  <div className="rounded-xl border border-violet-300/30 bg-violet-400/10 p-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-200">Action needs your approval</p>
-                    <p className="mt-1 text-sm">{pending.summary}</p>
-                    <p className="mt-1 break-all text-[10px] text-slate-400">{pending.tool}</p>
-                    <div className="mt-3 flex gap-2">
-                      <button disabled={busy} onClick={() => decide("approve")} className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold disabled:opacity-50"><Check size={14}/> Approve</button>
-                      <button disabled={busy} onClick={() => decide("reject")} className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-white/20 px-3 py-2 text-xs disabled:opacity-50"><XCircle size={14}/> Reject</button>
-                    </div>
-                  </div>
-                )}
-                {execution && <p className="rounded-lg bg-white/5 p-2 text-xs text-violet-100">{execution}</p>}
-                {busy && <p className="flex items-center gap-2 text-xs text-slate-400"><Loader2 size={13} className="animate-spin"/> Working…</p>}
-                <div ref={bottomRef}/>
-              </>
-            )}
-            {error && <p role="alert" className="rounded-lg bg-rose-500/10 p-2 text-xs text-rose-200">{error}</p>}
-          </div>
-
-          {token && (
-            <form onSubmit={sendMessage} className="flex items-center gap-2 border-t border-white/10 p-3">
-              <button type="button" onClick={startVoice} disabled={listening || busy} aria-label="Use microphone" className={`rounded-full p-3 ${listening ? "bg-rose-600" : "bg-white/10"} disabled:opacity-50`}><Mic size={17}/></button>
-              <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Tell Hey Suji what to do…" maxLength={4000} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-violet-400"/>
-              <button type="submit" disabled={busy || !input.trim()} aria-label="Send command" className="rounded-full bg-violet-600 p-3 disabled:opacity-40"><Send size={17}/></button>
-            </form>
-          )}
-        </section>
-      )}
-      <button onClick={openPanel} aria-label="Open Hey Suji personal AI assistant" title="Hey Suji" className="flex h-14 w-14 items-center justify-center rounded-full border border-violet-200/50 bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 text-white shadow-xl transition-transform hover:scale-105">
-        {open ? <X size={22}/> : <Sparkles size={24}/>}
-      </button>
-    </div>
-  );
+  return <div className="fixed bottom-6 left-6 z-[71]">
+    {open && <section className="mb-4 w-[min(94vw,380px)] rounded-3xl border border-violet-400/30 bg-slate-950/95 p-4 text-white shadow-2xl backdrop-blur-xl" aria-label="Hey Suji assistant">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-2"><Bot size={20}/><div><p className="text-sm font-semibold">HEY SUJI</p><p className="text-[10px] text-violet-200">PERSONAL AI OPERATOR · OWNER ONLY</p></div></div>
+        <button onClick={() => { recognitionRef.current?.stop(); setListening(false); setOpen(false); }} aria-label="Close assistant"><X size={18}/></button>
+      </header>
+      <p className="mt-3 text-xs leading-5 text-slate-300">{status}</p>
+      {token() && <label className="mt-3 flex items-center gap-2 text-xs text-slate-300"><Smartphone size={14}/> Execute on
+        <select value={deviceId} onChange={event => { setDeviceId(event.target.value); sessionRef.current = null; }} className="min-w-0 flex-1 rounded-lg border border-white/15 bg-slate-900 px-2 py-2 text-xs text-white">
+          <option value="">No paired device (chat only)</option>
+          {devices.map(device => <option key={device.device_id} value={device.device_id}>{device.name}</option>)}
+        </select>
+      </label>}
+      {reply && <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-5 whitespace-pre-wrap">{reply}</div>}
+      {proposal && <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 p-3">
+        <p className="flex items-center gap-2 text-xs font-semibold"><ShieldCheck size={14}/> Approval required</p>
+        <p className="mt-2 text-xs">{proposal.summary}</p>
+        <div className="mt-3 flex gap-2">
+          <button disabled={busy} onClick={() => decide("approve")} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold disabled:opacity-50">Approve</button>
+          <button disabled={busy} onClick={() => decide("reject")} className="rounded-lg border border-white/20 px-3 py-2 text-xs disabled:opacity-50">Reject</button>
+        </div>
+      </div>}
+      <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); void submitTask(input); }}>
+        <input value={input} onChange={event => setInput(event.target.value)} placeholder="Tell me what to do…" className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs outline-none focus:border-violet-400" />
+        <button type="submit" disabled={busy || !input.trim()} aria-label="Send task" className="rounded-xl bg-violet-600 p-2 disabled:opacity-50"><Send size={16}/></button>
+      </form>
+      <div className="mt-2 flex gap-2">
+        <button onClick={startListening} disabled={busy} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-violet-300/30 px-3 py-2 text-xs disabled:opacity-50">
+          {busy ? <Loader2 size={14} className="animate-spin"/> : listening ? <MicOff size={14}/> : <Mic size={14}/>}
+          {listening ? "Stop listening" : "Speak"}
+        </button>
+        {!token() && <a href="/admin/login" className="flex items-center gap-1 rounded-xl border border-white/15 px-3 py-2 text-xs"><LogIn size={14}/> Owner sign in</a>}
+      </div>
+      <p className="mt-2 text-[10px] text-slate-400">The assistant can plan tasks and request approval. Device actions require a paired, online companion. Wake-word activation is not enabled in this browser.</p>
+    </section>}
+    <button onClick={activate} aria-label="Activate Hey Suji" title="Activate Hey Suji" className="flex h-14 w-14 items-center justify-center rounded-full border border-violet-200/50 bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 text-white shadow-xl transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-violet-300">
+      {open ? <X size={22}/> : <Sparkles size={24}/>}
+    </button>
+  </div>;
 }
