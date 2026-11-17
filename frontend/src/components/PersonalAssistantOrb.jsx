@@ -1,8 +1,10 @@
 import React, { useCallback, useRef, useState } from "react";
 import { Bot, X, Sparkles, Mic, MicOff, Send, ShieldCheck, Loader2, LogIn, Smartphone } from "lucide-react";
 import { createAssistantSession, sendAssistantMessage, decideAssistantAction, listAssistantDevices } from "../api/personalAssistant";
+import { useAdminAuth } from "../admin/AdminAuthContext";
 
 export default function PersonalAssistantOrb() {
+  const { adminToken } = useAdminAuth();
   const [open, setOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -16,7 +18,7 @@ export default function PersonalAssistantOrb() {
   const sessionRef = useRef(null);
   const sessionDeviceRef = useRef("");
 
-  const token = () => localStorage.getItem("admin_token") || "";
+  const token = () => adminToken || "";
 
   const loadDevices = async () => {
     const auth = token();
