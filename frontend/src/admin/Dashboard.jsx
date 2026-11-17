@@ -4,8 +4,7 @@ import { useAdminAuth } from "./AdminAuthContext";
 import "./admin.css";
 import PersonalAssistantOrb from "../components/PersonalAssistantOrb";
 import PersonalOperatorDevices from "./PersonalOperatorDevices";
-
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+import { API_ORIGIN as API_BASE } from "../api/config";
 
 export const Dashboard = () => {
   const { adminUser, adminToken, isAuthenticated, loading, logout } = useAdminAuth();
