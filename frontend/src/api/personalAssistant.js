@@ -16,10 +16,14 @@ async function request(path, token, options = {}) {
   return payload;
 }
 
-export function createAssistantSession(token, inputMode = "voice") {
+export function listAssistantDevices(token) {
+  return request("/api/assistant/devices", token);
+}
+
+export function createAssistantSession(token, inputMode = "voice", deviceId = null) {
   return request("/api/assistant/sessions", token, {
     method: "POST",
-    body: JSON.stringify({ input_mode: inputMode }),
+    body: JSON.stringify({ input_mode: inputMode, ...(deviceId ? { device_id: deviceId } : {}) }),
   });
 }
 
