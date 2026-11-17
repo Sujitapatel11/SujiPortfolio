@@ -1,7 +1,7 @@
-import { apiUrl } from "./config";
+const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
 
 async function request(path, token, options = {}) {
-  const response = await fetch(apiUrl(path), {
+  const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
