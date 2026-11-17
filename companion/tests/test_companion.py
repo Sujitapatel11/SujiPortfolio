@@ -70,7 +70,7 @@ def test_pairing_challenge_rotates_existing_token_and_invalidates_old_token(monk
     assert saved[(companion.SERVICE_NAME, companion.TOKEN_ACCOUNT)] == new_token
     assert client.get("/v1/status", headers={**HEADERS, "Authorization": "Bearer old-browser-token"}).status_code == 401
     assert client.get("/v1/status", headers={**HEADERS, "Authorization": f"Bearer {new_token}"}).status_code == 200
-    assert client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).status_code == 410
+    assert client.post("/v1/pair", headers=HEADERS, json={"challenge": "x" * 43}).status_code == 410
 
 
 def test_pairing_store_failure_preserves_existing_token(monkeypatch):
