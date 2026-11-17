@@ -90,7 +90,16 @@ def test_different_owner_cannot_approve_action(client):
 
 
 def test_owner_can_approve_but_approval_does_not_execute(client):
-    created = client.post("/api/assistant/sessions", json={"input_mode": "text"})
+    # Approval is permitted only for a session bound to an active paired device.
+    registered = client.post("/api/assistant/devices", json={"name": "Test laptop"})
+    assert registered.status_code == 201, registered.text
+    device_id = registered.json()["device_id"]
+
+    created = client.post(
+        "/api/assistant/sessions",
+        json={"input_mode": "text", "device_id": device_id},
+    )
+    assert created.status_code == 201, created.text
     session_id = created.json()["session_id"]
     proposal = client.post(
         f"/api/assistant/sessions/{session_id}/actions",
@@ -99,14 +108,16 @@ def test_owner_can_approve_but_approval_does_not_execute(client):
             "arguments": {"app_id": "calculator"},
         },
     )
+    assert proposal.status_code == 201, proposal.text
     action_id = proposal.json()["action_id"]
 
     approved = client.post(
         f"/api/assistant/actions/{action_id}/decision",
         json={"decision": "approve"},
     )
-    assert approved.status_code == 200
+    assert approved.status_code == 200, approved.text
     assert approved.json()["status"] == "approved"
+    assert approved.json()["command_id"]
 
     actions = client.get(f"/api/assistant/sessions/{session_id}/actions")
     assert actions.status_code == 200
