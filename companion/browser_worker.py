@@ -114,7 +114,7 @@ class BrowserWorker:
             except BrowserWorkerError:
                 return route.abort("blockedbyclient")
             return route.continue_()
-        page.route("**/*", guard)
+        self._context.route("**/*", guard)
         page.goto(validate_url(url, allowed_domains), wait_until="domcontentloaded", timeout=self.timeout_ms)
         validate_url(page.url, allowed_domains)
 
@@ -138,6 +138,12 @@ class BrowserWorker:
         page = self._require_page(allowed_domains)
         if not text.strip() or len(text) > 200:
             raise BrowserWorkerError("Click text must contain 1–200 characters.")
+        if text.strip().casefold() in {
+            "apply", "apply now", "submit", "submit application", "send",
+            "send message", "purchase", "buy now", "pay", "checkout",
+            "delete", "remove account", "confirm deletion",
+        }:
+            raise BrowserWorkerError("Final submissions, payments, messages, and destructive actions require a separate explicit confirmation flow.")
         matches = page.get_by_text(text.strip(), exact=True)
         count = matches.count()
         if count != 1:
