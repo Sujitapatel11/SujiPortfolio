@@ -323,21 +323,23 @@ def pairing_status(request: Request):
 def pair(payload: PairRequest, request: Request):
     check_origin(request)
     with STATE.lock:
-        if STATE.token:
-            raise HTTPException(409, "This companion is already paired. Disconnect it before pairing again.")
-        if time.monotonic() >= STATE.challenge_expires or STATE.attempts >= 5:
-            raise HTTPException(410, "Pairing challenge expired; restart the companion")
+        # A fresh challenge is proof of local control. Allow it to rotate an
+        # existing token so a lost browser-local token cannot permanently lock
+        # the owner out of pairing. The previous token is invalidated only
+        # after the replacement has been persisted successfully.
+        if not STATE.challenge or time.monotonic() >= STATE.challenge_expires or STATE.attempts >= 5:
+            raise HTTPException(410, "Pairing challenge expired or attempts exhausted; restart the companion")
         STATE.attempts += 1
         if not secrets.compare_digest(payload.challenge, STATE.challenge):
             raise HTTPException(401, "Incorrect pairing challenge")
-        STATE.token = secrets.token_urlsafe(32)
+        replacement_token = secrets.token_urlsafe(32)
         try:
-            keyring.set_password(SERVICE_NAME, TOKEN_ACCOUNT, STATE.token)
+            keyring.set_password(SERVICE_NAME, TOKEN_ACCOUNT, replacement_token)
         except Exception as exc:
-            STATE.token = ""
-            raise HTTPException(503, "Windows Credential Manager could not save the pairing. Check the companion installation.") from exc
+            raise HTTPException(503, "Windows Credential Manager could not save the pairing. Existing pairing remains active.") from exc
+        STATE.token = replacement_token
         STATE.challenge = ""
-        return {"token": STATE.token, "status": "paired"}
+        return {"token": replacement_token, "status": "paired", "rotated": True}
 
 
 
