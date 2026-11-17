@@ -5,7 +5,8 @@ const AdminAuthContext = createContext(null);
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export const AdminAuthProvider = ({ children }) => {
-  const [adminToken, setAdminToken] = useState(() => localStorage.getItem("admin_token"));
+  // Keep the short-lived bearer token in memory only; a page reload requires sign-in again.
+  const [adminToken, setAdminToken] = useState(null);
   const [adminUser, setAdminUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,14 +59,12 @@ export const AdminAuthProvider = ({ children }) => {
     }
 
     const data = await res.json();
-    localStorage.setItem("admin_token", data.access_token);
     setAdminToken(data.access_token);
     setAdminUser({ username: data.username, role: data.role });
     return true;
   };
 
   const logout = () => {
-    localStorage.removeItem("admin_token");
     setAdminToken(null);
     setAdminUser(null);
   };
