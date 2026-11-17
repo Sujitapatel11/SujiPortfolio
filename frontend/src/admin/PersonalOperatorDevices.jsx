@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { API_ORIGIN, apiUrl } from "../api/config";
 
-const API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
 const COMPANION = "http://127.0.0.1:8765";
 
 async function api(path, token, options = {}) {
-  const response = await fetch(`${API_BASE}/api/assistant${path}`, {
+  const response = await fetch(apiUrl(`/api/assistant${path}`), {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
@@ -28,7 +28,7 @@ async function localConnect(deviceId, deviceToken) {
       redirect: "error",
       referrerPolicy: "strict-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ api_base_url: API_BASE, device_id: deviceId, device_token: deviceToken }),
+      body: JSON.stringify({ api_base_url: API_ORIGIN, device_id: deviceId, device_token: deviceToken }),
     });
   } catch {
     throw new Error("Local companion is unreachable. Start companion/companion.py on this Windows computer and allow the browser's local-network permission.");
@@ -222,7 +222,8 @@ export default function PersonalOperatorDevices({ adminToken }) {
                 <div key={action.action_id} style={{ border: "1px solid var(--bp-grid-line)", borderRadius: "10px", padding: "0.8rem", display: "grid", gap: "0.45rem" }}>
                   <strong style={{ fontSize: "0.82rem" }}>{action.summary || action.tool}</strong>
                   <code style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", fontSize: "0.68rem", color: "var(--bp-grey)" }}>{JSON.stringify(action.arguments, null, 2)}</code>
-                  <span style={{ fontSize: "0.68rem", color: "var(--bp-grey)" }}>Tool: {action.tool} · Risk: {action.risk} · Status: {action.status}</span>\n                  {action.result && <p style={{ fontSize: "0.72rem", color: "var(--bp-grey)" }}>Result: {action.result.message || action.result.code}</p>}
+                  <span style={{ fontSize: "0.68rem", color: "var(--bp-grey)" }}>Tool: {action.tool} · Risk: {action.risk} · Status: {action.status}</span>
+                  {action.result && <p style={{ fontSize: "0.72rem", color: "var(--bp-grey)" }}>Result: {action.result.message || action.result.code}</p>}
                   {action.status === "awaiting_approval" && <div style={{ display: "flex", gap: "0.5rem" }}>
                     <button className="admin-btn-success" type="button" disabled={busy} onClick={() => decideAction(action.action_id, "approve")}>Approve exact action</button>
                     <button className="admin-btn-danger" type="button" disabled={busy} onClick={() => decideAction(action.action_id, "reject")}>Reject</button>
