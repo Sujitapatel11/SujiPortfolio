@@ -114,6 +114,7 @@ class BrowserWorker:
             except BrowserWorkerError:
                 return route.abort("blockedbyclient")
             return route.continue_()
+        self._context.unroute("**/*")
         self._context.route("**/*", guard)
         page.goto(validate_url(url, allowed_domains), wait_until="domcontentloaded", timeout=self.timeout_ms)
         validate_url(page.url, allowed_domains)
