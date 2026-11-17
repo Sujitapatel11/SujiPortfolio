@@ -6,12 +6,25 @@
  */
 const configuredOrigin = (import.meta.env.VITE_API_URL || "").trim().replace(/\/$/, "");
 
-export const API_ORIGIN = configuredOrigin || (import.meta.env.DEV ? "http://localhost:8000" : "");
+if (import.meta.env.PROD && !configuredOrigin) {
+  throw new Error("VITE_API_URL is required in production and must point to the deployed FastAPI origin.");
+}
+
+if (configuredOrigin) {
+  let parsedOrigin;
+  try {
+    parsedOrigin = new URL(configuredOrigin);
+  } catch {
+    throw new Error("VITE_API_URL must be a valid absolute URL.");
+  }
+  if (parsedOrigin.origin !== configuredOrigin || (import.meta.env.PROD && parsedOrigin.protocol !== "https:")) {
+    throw new Error("VITE_API_URL must be an origin only (no path/query/hash) and use HTTPS in production.");
+  }
+}
+
+export const API_ORIGIN = configuredOrigin || "http://localhost:8000";
 
 export function apiUrl(path) {
-  if (!API_ORIGIN && !import.meta.env.DEV) {
-    throw new Error("VITE_API_URL is not configured. Set it to the deployed FastAPI origin.");
-  }
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${API_ORIGIN}${normalizedPath}`;
 }
