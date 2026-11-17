@@ -54,14 +54,35 @@ def test_linkedin_search_and_disconnect(monkeypatch):
     assert client.post("/v1/disconnect", headers=auth, json={}).status_code == 200
     assert client.post("/v1/action", headers=auth, json={"action": "google_search", "value": "test"}).status_code == 401
 
-def test_repairing_not_required_and_second_pair_rejected(monkeypatch):
+def test_pairing_challenge_rotates_existing_token_and_invalidates_old_token(monkeypatch):
     state = reset(monkeypatch)
+    state.token = "old-browser-token"
+    saved = {}
+    monkeypatch.setattr(companion.keyring, "set_password", lambda service, account, value: saved.update({(service, account): value}))
     client = TestClient(companion.app)
-    challenge = state.challenge
-    first = client.post("/v1/pair", headers=HEADERS, json={"challenge": challenge})
-    second = client.post("/v1/pair", headers=HEADERS, json={"challenge": challenge})
-    assert first.status_code == 200
-    assert second.status_code == 409
+
+    response = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge})
+
+    assert response.status_code == 200
+    assert response.json()["rotated"] is True
+    new_token = response.json()["token"]
+    assert new_token != "old-browser-token"
+    assert saved[(companion.SERVICE_NAME, companion.TOKEN_ACCOUNT)] == new_token
+    assert client.get("/v1/status", headers={**HEADERS, "Authorization": "Bearer old-browser-token"}).status_code == 401
+    assert client.get("/v1/status", headers={**HEADERS, "Authorization": f"Bearer {new_token}"}).status_code == 200
+    assert client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge}).status_code == 410
+
+
+def test_pairing_store_failure_preserves_existing_token(monkeypatch):
+    state = reset(monkeypatch)
+    state.token = "existing-valid-token"
+    monkeypatch.setattr(companion.keyring, "set_password", lambda *args: (_ for _ in ()).throw(RuntimeError("credential store unavailable")))
+    client = TestClient(companion.app)
+
+    response = client.post("/v1/pair", headers=HEADERS, json={"challenge": state.challenge})
+
+    assert response.status_code == 503
+    assert state.token == "existing-valid-token"
 
 def test_open_url_allowlist(monkeypatch):
     state = reset(monkeypatch)
