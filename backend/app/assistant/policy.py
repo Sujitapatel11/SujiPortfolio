@@ -43,8 +43,10 @@ def validate_tool_arguments(tool: str, arguments: dict) -> dict:
         if set(arguments)!={"url"} or not isinstance(arguments.get("url"),str):
             raise PolicyViolation("browser.open_url requires exactly url")
         p=urlparse(arguments["url"])
-        if p.scheme not in {"https","http"} or not p.hostname or p.username or p.password or not _is_public_host(p.hostname):
-            raise PolicyViolation("Only credential-free public HTTP(S) URLs are permitted")
+        if p.scheme not in {"https","http"} or not p.hostname or p.username or p.password:
+            raise PolicyViolation("Only credential-free absolute HTTP(S) URLs are permitted")
+        if not _is_public_host(p.hostname):
+            raise PolicyViolation("Local, private and non-public network destinations are blocked")
         return {"url":arguments["url"]}
     if tool == "browser.navigate":
         if set(arguments)!={"url","allowed_domains"} or not isinstance(arguments.get("url"),str):
