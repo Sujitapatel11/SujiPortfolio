@@ -1,8 +1,10 @@
-"""Generic, local-first Playwright worker for bounded browser tasks.
+"""Playwright worker used by the paired companion execution queue.
 
-This module is deliberately not wired to the remote command queue yet. The next
-integration step must add explicit per-workflow domain scopes and user-visible
-pause/resume controls before exposing these primitives to the planner.
+Navigation is constrained by per-command domain scopes and request routing.
+This is not a complete safety boundary for consequential actions: text-based
+click blocking is only a heuristic, not reliable semantic confirmation. Keep
+payments, submissions, messages, account changes, and destructive actions out
+of automated execution until structured confirmation controls are implemented.
 """
 from __future__ import annotations
 
