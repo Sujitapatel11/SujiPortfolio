@@ -4,9 +4,14 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('portfolio_theme');
-    if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'dark'; // default to dark
+    // Storage can be unavailable in private/restricted browser contexts.
+    try {
+      const saved = window.localStorage?.getItem('portfolio_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch {
+      // Fall back to the default theme when storage is blocked.
+    }
+    return 'dark';
   });
 
   useEffect(() => {
@@ -18,7 +23,11 @@ export function ThemeProvider({ children }) {
       root.classList.remove('dark');
       root.classList.add('light');
     }
-    localStorage.setItem('portfolio_theme', theme);
+    try {
+      window.localStorage?.setItem('portfolio_theme', theme);
+    } catch {
+      // Theme still works for this session when storage is blocked.
+    }
   }, [theme]);
 
   const toggleTheme = () => {
