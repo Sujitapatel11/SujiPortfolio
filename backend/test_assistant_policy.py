@@ -78,3 +78,32 @@ def test_action_payload_hash_is_stable_for_same_exact_payload(monkeypatch):
     second = build_action_proposal(request)
     assert first.payload_sha256 == second.payload_sha256
     assert first.approval_required is True
+
+
+def test_controlled_browser_navigation_requires_approved_https_domain(monkeypatch):
+    monkeypatch.setattr("app.assistant.policy._is_public_host", lambda host: True)
+    assert validate_tool_arguments("browser.navigate", {
+        "url": "https://www.fiverr.com/jobs",
+        "allowed_domains": ["fiverr.com"],
+    })["allowed_domains"] == ["fiverr.com"]
+    with pytest.raises(PolicyViolation):
+        validate_tool_arguments("browser.navigate", {
+            "url": "https://evil.example/jobs",
+            "allowed_domains": ["fiverr.com"],
+        })
+    with pytest.raises(PolicyViolation):
+        validate_tool_arguments("browser.navigate", {
+            "url": "http://fiverr.com",
+            "allowed_domains": ["fiverr.com"],
+        })
+
+
+def test_browser_interaction_tools_require_exact_bounded_arguments(monkeypatch):
+    monkeypatch.setattr("app.assistant.policy._is_public_host", lambda host: True)
+    scope = ["fiverr.com"]
+    assert validate_tool_arguments("browser.inspect", {"allowed_domains": scope}) == {"allowed_domains": scope}
+    assert validate_tool_arguments("browser.scroll", {"direction": "down", "allowed_domains": scope})["direction"] == "down"
+    with pytest.raises(PolicyViolation):
+        validate_tool_arguments("browser.wait", {"milliseconds": 9000, "allowed_domains": scope})
+    with pytest.raises(PolicyViolation):
+        validate_tool_arguments("browser.click_text", {"text": "Apply now", "allowed_domains": scope, "extra": True})
