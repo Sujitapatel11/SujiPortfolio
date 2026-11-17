@@ -16,9 +16,10 @@ pip install -r requirements.txt
 py companion.py
 ```
 
-3. Copy the one-time challenge shown in the terminal into Personal Operator and pair once.
+3. Copy the one-time challenge shown in the terminal into Personal Operator and connect this computer.
 4. The pairing token is stored in Windows Credential Manager. The portfolio stores its copy in this browser's local storage. Restarting the companion or refreshing the portfolio does not require pairing again.
-5. Your Google and LinkedIn login sessions remain in your normal browser profile. Sign in yourself once in that browser; the companion does not read passwords or cookies.
+5. If browser storage is cleared or the browser token is lost, restart the companion and enter its fresh challenge. A successful fresh challenge safely rotates the old token and invalidates the previous browser pairing; no manual Credential Manager deletion is required.
+6. Your Google and LinkedIn login sessions remain in your normal browser profile. Sign in yourself once in that browser; the companion does not read passwords or cookies.
 
 Pairing is revoked only when you choose Disconnect. If you clear browser storage, lose the Windows credential, or explicitly disconnect, pair again. Website sessions can still expire and request their own sign-in or verification.
 
