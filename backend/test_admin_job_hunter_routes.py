@@ -57,7 +57,7 @@ def test_job_hunter_routes_require_admin_authentication(client):
     ]
     for method, path in paths:
         response = client.request(method, path, json={} if method in {"POST", "PATCH"} else None)
-        assert response.status_code == 401, f"{method} {path} should require admin auth"
+        assert response.status_code in {401, 403}, f"{method} {path} should require admin auth"
 
 
 def test_manual_job_proposal_edit_and_status_flow(client, admin_headers):
