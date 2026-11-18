@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS, validate_production_config
-from app.routes import inquiries, chat, admin, assistant
+from app.routes import inquiries, chat, admin, assistant, appointments
 from app.data.profile import PROFILE_DATA
 
 # Fail fast when required production settings are missing or insecure.
@@ -21,13 +21,14 @@ app.add_middleware(
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"],
 )
 
 app.include_router(inquiries.router)
 app.include_router(chat.router)
 app.include_router(admin.router)
 app.include_router(assistant.router)
+app.include_router(appointments.router)
 
 
 @app.get("/api/health")

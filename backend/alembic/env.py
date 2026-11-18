@@ -8,7 +8,7 @@ from alembic import context
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.database import Base, DATABASE_URL, engine
-from app.models import Inquiry, Job, Proposal, KnowledgeChunk  # ensure all models are registered
+from app.models import Inquiry, Job, Proposal, KnowledgeChunk, ChatConversation, ChatMessage  # ensure all models are registered
 from app.assistant.models import AssistantSession, AssistantMessage, AssistantAction, AssistantAuditEvent
 
 config = context.config

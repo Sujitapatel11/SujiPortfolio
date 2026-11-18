@@ -67,7 +67,8 @@ def test_rag_pipeline():
         prompt = build_system_prompt(retrieved_chunks=retrieved)
         print("\n[GENERATED DYNAMIC RAG SYSTEM PROMPT FOR THIS TURN]:")
         print(prompt)
-        reply, cid = run_agent_message(user_message=query, db=db)
+        reply, cid, response_status, sources = run_agent_message(user_message=query, db=db)
+        print(f"Agent status: {response_status} | grounded sources: {len(sources)}")
         print(f"\nASK SUJI RESPONSE (CID: {cid[:8]}...):\n{reply}\n")
 
 
