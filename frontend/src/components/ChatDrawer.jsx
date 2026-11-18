@@ -397,7 +397,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
                   REQUEST SAVED · PENDING
                 </span>
                 <span className="font-mono text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  {apptResult?.owner_notification_sent ? 'OWNER NOTIFIED' : 'NOTIFICATION UNCONFIRMED'}
+                  {apptResult?.owner_notification_sent ? 'NOTIFICATION ACCEPTED' : 'DELIVERY UNVERIFIED'}
                 </span>
               </div>
               <div className="space-y-1 font-mono text-xs text-text-secondary">
