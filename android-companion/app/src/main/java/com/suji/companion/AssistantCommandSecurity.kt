@@ -16,21 +16,50 @@ internal data class VerifiedDeviceCommand(
 internal object AssistantCommandSecurity {
     private val allowedApps = setOf("browser", "whatsapp", "instagram", "youtube", "calculator", "text_editor")
 
+    /** Android JSON adapter. Parsing is kept separate from the pure validation tested on the JVM. */
     fun verify(command: JSONObject, expectedDeviceId: String, now: Instant = Instant.now()): VerifiedDeviceCommand {
-        val commandId = command.getString("command_id")
-        require(command.getString("device_id") == expectedDeviceId) { "command_device_mismatch" }
-        val nonce = command.getString("nonce")
+        val argsJson = command.getJSONObject("arguments")
+        val arguments = linkedMapOf<String, String>()
+        val keys = argsJson.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val value = argsJson.opt(key)
+            require(value is String) { "command_argument_type_invalid" }
+            arguments[key] = value
+        }
+        return verifyFields(
+            commandId = command.getString("command_id"),
+            deviceId = command.getString("device_id"),
+            nonce = command.getString("nonce"),
+            expiresAt = command.getString("expires_at"),
+            tool = command.getString("tool"),
+            arguments = arguments,
+            suppliedHash = command.getString("payload_sha256"),
+            expectedDeviceId = expectedDeviceId,
+            now = now
+        )
+    }
+
+    /** Pure deterministic validation so hash, expiry and device-binding tests run on the JVM. */
+    fun verifyFields(
+        commandId: String,
+        deviceId: String,
+        nonce: String,
+        expiresAt: String,
+        tool: String,
+        arguments: Map<String, String>,
+        suppliedHash: String,
+        expectedDeviceId: String,
+        now: Instant = Instant.now()
+    ): VerifiedDeviceCommand {
+        require(commandId.isNotBlank()) { "command_id_invalid" }
+        require(deviceId == expectedDeviceId) { "command_device_mismatch" }
         require(nonce.length in 32..64) { "command_nonce_invalid" }
-        require(Instant.parse(command.getString("expires_at")).isAfter(now)) { "command_expired" }
+        require(Instant.parse(expiresAt).isAfter(now)) { "command_expired" }
+        require(arguments.size == 1) { "command_arguments_invalid" }
 
-        val tool = command.getString("tool")
-        val args = command.getJSONObject("arguments")
-        val keys = args.keys().asSequence().toList().sorted()
-        require(keys.size == 1) { "command_arguments_invalid" }
-        val key = keys.single()
-        val value = args.opt(key)
-        require(value is String) { "command_argument_type_invalid" }
-
+        val key = arguments.keys.single()
+        val value = arguments.values.single()
         val expectedHash = when (tool) {
             "desktop.open_application" -> {
                 require(key == "app_id" && value in allowedApps) { "command_app_not_allowed" }
@@ -42,7 +71,7 @@ internal object AssistantCommandSecurity {
             }
             else -> throw IllegalArgumentException("command_tool_not_allowed")
         }
-        val suppliedHash = command.getString("payload_sha256")
+        require(suppliedHash.matches(Regex("^[a-f0-9]{64}$"))) { "command_hash_invalid" }
         require(MessageDigest.isEqual(
             expectedHash.toByteArray(Charsets.US_ASCII),
             suppliedHash.toByteArray(Charsets.US_ASCII)

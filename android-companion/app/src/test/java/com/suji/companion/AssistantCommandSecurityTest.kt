@@ -4,10 +4,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.json.JSONObject
 import java.time.Instant
 
 class AssistantCommandSecurityTest {
+    private val now = Instant.parse("2026-11-18T00:00:00Z")
+    private val validUntil = "2099-01-01T00:00:00Z"
+    private val nonce = "n".repeat(64)
+
     @Test fun canonicalHashMatchesBackendPayloadFormat() {
         val appHash = AssistantCommandSecurity.sha256Canonical("desktop.open_application", "app_id", "whatsapp")
         assertEquals("a65cea18bef2c61d036e4720aae7d4d548fae10905469bea46e8d4b8a42bec71", appHash)
@@ -22,47 +25,63 @@ class AssistantCommandSecurityTest {
     }
 
     @Test fun verifiesDeviceBoundApprovedCommand() {
-        val payloadHash = AssistantCommandSecurity.sha256Canonical(
-            "desktop.open_application", "app_id", "whatsapp"
-        )
-        val command = JSONObject()
-            .put("command_id", "command-123")
-            .put("device_id", "device-123")
-            .put("nonce", "n".repeat(64))
-            .put("expires_at", "2099-01-01T00:00:00Z")
-            .put("tool", "desktop.open_application")
-            .put("arguments", JSONObject().put("app_id", "whatsapp"))
-            .put("payload_sha256", payloadHash)
-
-        val verified = AssistantCommandSecurity.verify(
-            command, "device-123", Instant.parse("2026-11-18T00:00:00Z")
+        val hash = AssistantCommandSecurity.sha256Canonical("desktop.open_application", "app_id", "whatsapp")
+        val verified = AssistantCommandSecurity.verifyFields(
+            commandId = "command-123",
+            deviceId = "device-123",
+            nonce = nonce,
+            expiresAt = validUntil,
+            tool = "desktop.open_application",
+            arguments = mapOf("app_id" to "whatsapp"),
+            suppliedHash = hash,
+            expectedDeviceId = "device-123",
+            now = now
         )
         assertEquals("whatsapp", verified.appId)
+        assertEquals("command-123", verified.commandId)
     }
 
     @Test fun rejectsWrongDeviceExpiredAndTamperedCommands() {
-        val hash = AssistantCommandSecurity.sha256Canonical(
-            "desktop.open_application", "app_id", "whatsapp"
+        val hash = AssistantCommandSecurity.sha256Canonical("desktop.open_application", "app_id", "whatsapp")
+        fun verify(
+            deviceId: String = "device-123",
+            expiry: String = validUntil,
+            appId: String = "whatsapp",
+            suppliedHash: String = hash
+        ) = AssistantCommandSecurity.verifyFields(
+            commandId = "command-123",
+            deviceId = deviceId,
+            nonce = nonce,
+            expiresAt = expiry,
+            tool = "desktop.open_application",
+            arguments = mapOf("app_id" to appId),
+            suppliedHash = suppliedHash,
+            expectedDeviceId = "device-123",
+            now = now
         )
-        val base = JSONObject()
-            .put("command_id", "command-123")
-            .put("device_id", "device-123")
-            .put("nonce", "n".repeat(64))
-            .put("expires_at", "2020-01-01T00:00:00Z")
-            .put("tool", "desktop.open_application")
-            .put("arguments", JSONObject().put("app_id", "whatsapp"))
-            .put("payload_sha256", hash)
-        assertTrue(runCatching {
-            AssistantCommandSecurity.verify(base, "other-device", Instant.parse("2026-11-18T00:00:00Z"))
-        }.isFailure)
-        assertTrue(runCatching {
-            AssistantCommandSecurity.verify(base, "device-123", Instant.parse("2026-11-18T00:00:00Z"))
-        }.isFailure)
 
-        base.put("expires_at", "2099-01-01T00:00:00Z")
-        base.put("arguments", JSONObject().put("app_id", "unknown_app"))
+        assertTrue(runCatching { verify(deviceId = "other-device") }.isFailure)
+        assertTrue(runCatching { verify(expiry = "2020-01-01T00:00:00Z") }.isFailure)
+        assertTrue(runCatching { verify(appId = "unknown_app") }.isFailure)
+        assertTrue(runCatching { verify(suppliedHash = "0".repeat(64)) }.isFailure)
+    }
+
+    @Test fun rejectsMultipleArgumentsAndUnknownTools() {
+        val hash = AssistantCommandSecurity.sha256Canonical("desktop.open_application", "app_id", "whatsapp")
         assertTrue(runCatching {
-            AssistantCommandSecurity.verify(base, "device-123", Instant.parse("2026-11-18T00:00:00Z"))
+            AssistantCommandSecurity.verifyFields(
+                "command", "device-123", nonce, validUntil,
+                "desktop.open_application",
+                mapOf("app_id" to "whatsapp", "extra" to "no"),
+                hash, "device-123", now
+            )
+        }.isFailure)
+        assertTrue(runCatching {
+            AssistantCommandSecurity.verifyFields(
+                "command", "device-123", nonce, validUntil,
+                "shell.run", mapOf("command" to "whoami"),
+                hash, "device-123", now
+            )
         }.isFailure)
     }
 
