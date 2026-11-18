@@ -124,7 +124,19 @@ def test_job_status_rejects_unknown_values_and_missing_ids(client, admin_headers
 
 
 def test_proposal_update_rejects_empty_payload_and_missing_id(client, admin_headers):
-    empty = client.patch("/admin/proposals/1", headers=admin_headers, json={})
+    pasted = client.post(
+        "/admin/jobs/paste",
+        headers=admin_headers,
+        json={
+            "platform": "Test",
+            "title": "Backend engineer role",
+            "description": "Build a backend service.",
+        },
+    )
+    assert pasted.status_code == 201, pasted.text
+    proposal_id = pasted.json()["proposal"]["id"]
+
+    empty = client.patch(f"/admin/proposals/{proposal_id}", headers=admin_headers, json={})
     assert empty.status_code == 422
 
     missing = client.patch(
