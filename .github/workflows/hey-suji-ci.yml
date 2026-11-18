@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/unified-device-aware-companion
+      - feat/hey-suji-mobile-execution
       - main
     paths:
       - "frontend/**"

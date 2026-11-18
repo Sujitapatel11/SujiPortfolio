@@ -518,3 +518,22 @@ def test_result_delivery_retries_without_reexecuting_command(monkeypatch):
     assert len(executed) == 1
     assert state.pending_result is None
     assert [item[0] for item in requests] == ["GET", "POST", "POST"]
+
+
+
+@pytest.mark.parametrize("app_id,expected_url", [
+    ("browser", "https://www.google.com/"),
+    ("whatsapp", "https://web.whatsapp.com/"),
+    ("instagram", "https://www.instagram.com/"),
+    ("youtube", "https://www.youtube.com/"),
+])
+def test_approved_application_launches_only_its_fixed_web_destination(app_id, expected_url, monkeypatch):
+    opened = []
+    monkeypatch.setattr(companion.webbrowser, "open", lambda url, **kwargs: opened.append(url) or True)
+    outcome, message = companion.execute_approved_command({
+        "tool": "desktop.open_application",
+        "arguments": {"app_id": app_id},
+    })
+    assert outcome == "opened"
+    assert opened == [expected_url]
+    assert message

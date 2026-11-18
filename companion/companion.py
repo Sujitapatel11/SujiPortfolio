@@ -210,6 +210,19 @@ def execute_approved_command(command: dict) -> tuple[str, str]:
         executable = {"calculator": "calc.exe", "text_editor": "notepad.exe"}[args["app_id"]]
         subprocess.Popen([executable], shell=False)
         return "opened", f"Started {args['app_id']}"
+
+    if tool == "desktop.open_application" and set(args) == {"app_id"} and args["app_id"] in {"browser", "whatsapp", "instagram", "youtube"}:
+        destinations = {
+            "browser": "https://www.google.com/",
+            "whatsapp": "https://web.whatsapp.com/",
+            "instagram": "https://www.instagram.com/",
+            "youtube": "https://www.youtube.com/",
+        }
+        app_id = args["app_id"]
+        if not webbrowser.open(destinations[app_id], new=2):
+            raise RuntimeError("application_open_failed")
+        labels = {"browser": "default browser", "whatsapp": "WhatsApp Web", "instagram": "Instagram", "youtube": "YouTube"}
+        return "opened", "Opened " + labels[app_id] + " in the default browser"
     raise ValueError("tool_or_arguments_not_allowed")
 
 
