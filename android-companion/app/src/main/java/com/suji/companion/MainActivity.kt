@@ -72,17 +72,17 @@ class MainActivity : Activity() {
         apiBaseInput = EditText(this).apply {
             hint = "Backend URL (https://...)"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
-            singleLine = true
+            setSingleLine(true)
         }
         deviceIdInput = EditText(this).apply {
             hint = "Device ID"
             inputType = InputType.TYPE_CLASS_TEXT
-            singleLine = true
+            setSingleLine(true)
         }
         deviceTokenInput = EditText(this).apply {
             hint = "One-time device token"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            singleLine = true
+            setSingleLine(true)
         }
         val pair = Button(this).apply {
             text = "Verify and pair this phone"
