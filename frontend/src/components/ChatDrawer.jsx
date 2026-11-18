@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, MessageSquare, CheckCircle2 } from 'lucide-react';
+import { X, Send, Bot, MessageSquare, CheckCircle2, Mic, Volume2 } from 'lucide-react';
 import { sendChatMessage, getChatStatus, getChatHistory } from '../api/chat';
 import { submitAppointmentRequest } from '../api/appointments';
 import { personalInfo } from '../data/portfolio';
@@ -17,6 +17,10 @@ export default function ChatDrawer({ isOpen, onClose }) {
   const [conversationId, setConversationId] = useState(() => sessionStorage.getItem('ask_suji_conversation_id'));
   const [backendState, setBackendState] = useState('checking');
   const [failedMessage, setFailedMessage] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
+  const recognitionRef = useRef(null);
 
   // Appointment collection state
   const [appointmentMode, setAppointmentMode] = useState(false);
@@ -38,6 +42,59 @@ export default function ChatDrawer({ isOpen, onClose }) {
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
+  const startVoiceInput = () => {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      setVoiceError('Voice input is not supported in this browser. You can still type your message.');
+      return;
+    }
+    try {
+      setVoiceError('');
+      const recognition = new Recognition();
+      recognition.lang = navigator.language || 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = (event) => {
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript) setInputText((previous) => previous ? `${previous} ${transcript}` : transcript);
+      };
+      recognition.onerror = (event) => setVoiceError(`Voice input failed: ${event.error || 'unknown error'}.`);
+      recognition.onend = () => setIsListening(false);
+      recognitionRef.current = recognition;
+      setIsListening(true);
+      recognition.start();
+    } catch (error) {
+      setIsListening(false);
+      setVoiceError(error.message || 'Could not start voice input.');
+    }
+  };
+
+  const speakMessage = (text) => {
+    if (!('speechSynthesis' in window)) {
+      setVoiceError('Voice output is not supported in this browser.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    if (isSpeaking) {
+      setIsSpeaking(false);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = navigator.language || 'en-US';
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setVoiceError('Voice output could not be played.');
+    };
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => () => {
+    recognitionRef.current?.stop?.();
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }, []);
+
   useEffect(() => {
     if (!isOpen) return;
     scrollToBottom();
@@ -45,7 +102,9 @@ export default function ChatDrawer({ isOpen, onClose }) {
     getChatStatus()
       .then((data) => {
         if (!active) return;
-        setBackendState(data.provider_configured ? 'configured' : 'degraded');
+        if (!data.provider_configured) setBackendState('degraded');
+        else if (!data.retrieval_configured) setBackendState('missing_index');
+        else setBackendState('configured');
       })
       .catch(() => {
         if (active) setBackendState('offline');
@@ -196,7 +255,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${backendState === 'configured' ? 'bg-emerald-400' : backendState === 'checking' ? 'bg-amber-400' : 'bg-rose-400'}`} />
                 <span className={`font-mono text-[10px] ${backendState === 'configured' ? 'text-emerald-400' : backendState === 'checking' ? 'text-amber-400' : 'text-rose-400'}`} aria-live="polite">
-                  {backendState === 'configured' ? 'Backend online · provider key set' : backendState === 'checking' ? 'Checking backend…' : backendState === 'degraded' ? 'AI service degraded' : 'Backend offline'}
+                  {backendState === 'configured' ? 'Backend online · provider key set' : backendState === 'checking' ? 'Checking backend…' : backendState === 'degraded' ? 'AI service degraded' : backendState === 'missing_index' ? 'Knowledge index empty' : 'Backend offline'}
                 </span>
               </div>
             </div>
@@ -220,6 +279,14 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 </span>
                 <div className="rounded-2xl rounded-tl-sm px-4 py-2.5 text-xs sm:text-sm text-text-main bg-bg-card/90 border border-border leading-relaxed shadow-sm">
                   {msg.text}
+                  <button
+                    type="button"
+                    onClick={() => speakMessage(msg.text)}
+                    className="mt-2 inline-flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-brand-pink"
+                    aria-label="Read this reply aloud"
+                  >
+                    <Volume2 size={12} /> Read aloud
+                  </button>
                   {msg.sources?.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-border/70 space-y-1">
                       <p className="font-mono text-[9px] text-text-muted">GROUNDED SOURCES</p>
@@ -328,7 +395,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
                   REQUEST SAVED · PENDING
                 </span>
                 <span className="font-mono text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  {apptResult?.owner_notification_sent ? 'OWNER NOTIFIED' : 'NOTIFICATION UNCONFIRMED'}
+                  {apptResult?.owner_notification_sent ? 'NOTIFICATION ACCEPTED' : 'DELIVERY UNVERIFIED'}
                 </span>
               </div>
               <div className="space-y-1 font-mono text-xs text-text-secondary">
@@ -390,6 +457,16 @@ export default function ChatDrawer({ isOpen, onClose }) {
             disabled={isLoading}
           />
           <button
+            type="button"
+            onClick={startVoiceInput}
+            disabled={isListening || isLoading}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center border border-border disabled:opacity-40 flex-shrink-0 ${isListening ? 'text-rose-400 border-rose-400' : 'text-text-secondary hover:text-brand-pink'}`}
+            aria-label="Start voice input"
+            title="Use voice input"
+          >
+            <Mic size={16} />
+          </button>
+          <button
             onClick={() => handleSend()}
             disabled={!inputText.trim() || isLoading}
             className="w-10 h-10 rounded-xl flex items-center justify-center text-white btn-primary p-0 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
@@ -398,6 +475,9 @@ export default function ChatDrawer({ isOpen, onClose }) {
             <Send size={16} />
           </button>
         </div>
+        {voiceError && (
+          <p role="status" className="px-4 pb-2 text-[10px] text-rose-400" aria-live="polite">{voiceError}</p>
+        )}
       </div>
     </>
   );
