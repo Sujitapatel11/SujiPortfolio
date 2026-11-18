@@ -12,22 +12,33 @@ The Android app is a device executor for the existing FastAPI personal operator.
 
 The device token is encrypted at rest using a key held in Android Keystore. It is never stored in browser local storage. Use the dashboard's **Revoke** control to revoke a lost or retired device. Use **Stop receiver** to pause polling locally.
 
-## Supported commands
+## How an approved task runs
+
+1. Ask Hey Suji to prepare an allowlisted app-launch or public-URL action on a session bound to this phone.
+2. Review and approve the exact proposal in the owner dashboard.
+3. The phone receives the approved command and shows a separate notification.
+4. Tap that notification. Android opens the companion activity and dispatches the approved launch while the activity is visible.
+5. The result is encrypted locally, sent back to FastAPI, and recorded in the operator action history.
+
+Android restricts activities started from the background. The notification tap is deliberate: a foreground service must not silently force another app to the front. The foreground receiver only queues the command and surfaces the notification.
+
+The device verifies device identity, command expiry, nonce, tool allowlist and canonical SHA-256 payload before it can be executed. A temporary reporting failure retries the saved result instead of repeating the app launch.
+
+## Supported actions
 
 - Open WhatsApp, Instagram or YouTube if the native Android app is installed.
+- Open Calculator where a supported calculator package is installed.
 - Open a public HTTP(S) URL in the Android default browser.
 - Open the default browser.
-
-Every task is proposed by the hosted assistant and requires explicit owner approval before it is queued. The receiver validates device binding, expiry, nonce, arguments and payload SHA-256 before launching anything. It persists the execution receipt before submitting it, so a temporary network failure does not rerun the app-launch side effect.
 
 ## Boundaries
 
 - No background microphone or wake word. Voice capture remains an explicit user action.
 - No sending messages, submitting applications, purchases, shell commands, arbitrary scripts, OTP or CAPTCHA handling.
 - No unrestricted accessibility control.
-- The receiver runs only while its visible foreground-service notification is active.
+- The receiver runs only while its visible foreground-service notification is active. Android may time-limit data-sync foreground services; start it manually when you need mobile execution.
 - CI build/unit tests do not replace a real-phone pairing and execution test.
 
 ## Build
 
-Open `android-companion` in Android Studio or run `gradle -p android-companion :app:testDebugUnitTest`.
+Open `android-companion` in Android Studio or run `gradle -p android-companion :app:assembleDebug :app:testDebugUnitTest`.

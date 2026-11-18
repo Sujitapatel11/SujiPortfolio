@@ -9,13 +9,18 @@
         <package android:name="com.whatsapp" />
         <package android:name="com.instagram.android" />
         <package android:name="com.google.android.youtube" />
+        <package android:name="com.google.android.calculator" />
+        <package android:name="com.android.calculator2" />
     </queries>
     <application
         android:allowBackup="false"
         android:label="Hey Suji"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false">
-        <activity android:name=".MainActivity" android:exported="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

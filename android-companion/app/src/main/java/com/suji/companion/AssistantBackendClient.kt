@@ -13,14 +13,14 @@ internal object AssistantBackendClient {
         val trimmed = value.trim().trimEnd('/')
         val uri = Uri.parse(trimmed)
         val host = uri.host?.lowercase().orEmpty()
-        val local = host in setOf("localhost", "127.0.0.1", "10.0.2.2")
+
         require(uri.userInfo == null && uri.query == null && uri.fragment == null) {
             "Backend URL must not contain credentials, query parameters or fragments."
         }
         require(uri.path.isNullOrEmpty() || uri.path == "/") {
             "Enter the backend origin only, without an API path."
         }
-        require(uri.scheme == "https" || (uri.scheme == "http" && local)) {
+        require(uri.scheme == "https") {
             "Use the HTTPS backend URL shown in the owner dashboard."
         }
         require(host.isNotBlank()) { "Backend URL is invalid." }
@@ -68,6 +68,7 @@ internal object AssistantBackendClient {
                 OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(body.toString()) }
             }
             val status = connection.responseCode
+            if (status == 401 || status == 403) throw DeviceRevokedException()
             if (status !in 200..299) {
                 throw IllegalStateException("Assistant backend request failed (HTTP $status).")
             }

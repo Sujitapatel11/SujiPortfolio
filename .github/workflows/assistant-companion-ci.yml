@@ -3,6 +3,7 @@ name: Application CI
 on:
   push:
     branches:
+      - feat/hey-suji-mobile-execution
       - main
     paths:
       - "companion/**"

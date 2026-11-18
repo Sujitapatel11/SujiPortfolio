@@ -15,9 +15,11 @@ data class DeviceCredentials(
     val apiBaseUrl: String,
     val deviceId: String,
     val deviceToken: String,
+    val pendingCommand: String? = null,
     val pendingResult: String? = null
 )
 
+/** Stores device credentials and execution receipts encrypted with an Android Keystore key. */
 internal object DeviceCredentialStore {
     private const val KEY_ALIAS = "suji.operator.device.credentials.v1"
     private const val PREFS = "suji_operator_secure_state"
@@ -28,7 +30,8 @@ internal object DeviceCredentialStore {
             .put("api_base_url", credentials.apiBaseUrl)
             .put("device_id", credentials.deviceId)
             .put("device_token", credentials.deviceToken)
-        if (credentials.pendingResult != null) json.put("pending_result", credentials.pendingResult)
+        credentials.pendingCommand?.let { json.put("pending_command", it) }
+        credentials.pendingResult?.let { json.put("pending_result", it) }
         writeEncrypted(context, json)
     }
 
@@ -39,6 +42,7 @@ internal object DeviceCredentialStore {
                 apiBaseUrl = json.getString("api_base_url"),
                 deviceId = json.getString("device_id"),
                 deviceToken = json.getString("device_token"),
+                pendingCommand = json.optString("pending_command").takeIf { it.isNotBlank() && it != "null" },
                 pendingResult = json.optString("pending_result").takeIf { it.isNotBlank() && it != "null" }
             )
         } catch (_: Exception) {
@@ -46,9 +50,19 @@ internal object DeviceCredentialStore {
         }
     }
 
-    fun savePendingResult(context: Context, result: JSONObject) {
+    fun savePendingCommand(context: Context, command: JSONObject) {
         val current = load(context) ?: return
-        save(context, current.copy(pendingResult = result.toString()))
+        save(context, current.copy(pendingCommand = command.toString(), pendingResult = null))
+    }
+
+    fun clearPendingCommand(context: Context) {
+        val current = load(context) ?: return
+        save(context, current.copy(pendingCommand = null))
+    }
+
+    fun completePendingCommand(context: Context, result: JSONObject) {
+        val current = load(context) ?: return
+        save(context, current.copy(pendingCommand = null, pendingResult = result.toString()))
     }
 
     fun clearPendingResult(context: Context) {
@@ -60,8 +74,8 @@ internal object DeviceCredentialStore {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .remove(VALUE_KEY).remove("iv").apply()
         try {
-            val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-            if (store.containsAlias(KEY_ALIAS)) store.deleteEntry(KEY_ALIAS)
+            val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+            if (keyStore.containsAlias(KEY_ALIAS)) keyStore.deleteEntry(KEY_ALIAS)
         } catch (_: Exception) { }
     }
 

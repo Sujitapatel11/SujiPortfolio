@@ -19,9 +19,10 @@ import android.widget.TextView
 import android.text.InputType
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import org.json.JSONObject
 import java.util.concurrent.Executors
 
-/** Owner-paired Android executor. It receives only approved tasks from the shared FastAPI brain. */
+/** Owner-paired Android executor for the existing FastAPI personal operator. */
 class MainActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var apiBaseInput: EditText
@@ -29,6 +30,7 @@ class MainActivity : Activity() {
     private lateinit var deviceTokenInput: EditText
     private var recognizer: SpeechRecognizer? = null
     private val io = Executors.newSingleThreadExecutor()
+    @Volatile private var executingCommandId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,10 +39,17 @@ class MainActivity : Activity() {
         if (saved != null) {
             apiBaseInput.setText(saved.apiBaseUrl)
             deviceIdInput.setText(saved.deviceId)
-            status.text = "This phone is paired securely. Start the visible command receiver when you want it online."
+            status.text = "This phone is paired securely. Start the visible task receiver when you want it online."
         } else if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             status.text = "Pair this phone below. Voice recognition is not available on this device."
         }
+        handleApprovedTaskIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleApprovedTaskIntent(intent)
     }
 
     private fun render() {
@@ -107,7 +116,8 @@ class MainActivity : Activity() {
         listOf(title, status, apiBaseInput, deviceIdInput, deviceTokenInput, pair, start, stop, forget, localVoice)
             .forEach { view ->
                 content.addView(view, LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { bottomMargin = 10 })
             }
         setContentView(ScrollView(this).apply { addView(content) })
@@ -133,7 +143,9 @@ class MainActivity : Activity() {
                     status.text = "Phone paired. Credentials are encrypted with Android Keystore. Start the receiver to accept approved tasks."
                 }
             } catch (exception: Exception) {
-                runOnUiThread { status.text = exception.message ?: "Pairing failed. Check the backend URL and token." }
+                runOnUiThread {
+                    status.text = exception.message ?: "Pairing failed. Check the backend URL and token."
+                }
             }
         }
     }
@@ -149,13 +161,99 @@ class MainActivity : Activity() {
             status.text = "Allow notifications, then tap Start approved-task receiver again."
             return
         }
-        val serviceIntent = Intent(this, AssistantPollingService::class.java)
         try {
+            val serviceIntent = Intent(this, AssistantPollingService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(serviceIntent)
             else startService(serviceIntent)
-            status.text = "Task receiver started. A visible notification will remain while it polls for approved tasks."
+            status.text = "Task receiver started. Keep its notification enabled to receive approved tasks."
         } catch (exception: Exception) {
             status.text = exception.message ?: "Android could not start the task receiver."
+        }
+    }
+
+    private fun handleApprovedTaskIntent(intent: Intent?) {
+        if (intent?.action != ACTION_EXECUTE_APPROVED) return
+        val requestedCommandId = intent.getStringExtra(EXTRA_COMMAND_ID).orEmpty()
+        if (requestedCommandId.isBlank() || executingCommandId == requestedCommandId) return
+        executingCommandId = requestedCommandId
+        status.text = "Verifying the approved task before opening it…"
+
+        io.execute {
+            var verifiedCommand: VerifiedDeviceCommand? = null
+            try {
+                val credentials = DeviceCredentialStore.load(this)
+                    ?: throw IllegalStateException("This phone is no longer paired.")
+                val rawCommand = credentials.pendingCommand
+                    ?: throw IllegalStateException("There is no pending approved task.")
+                val command = JSONObject(rawCommand)
+                if (command.optString("command_id") != requestedCommandId) {
+                    throw IllegalStateException("The pending task does not match this notification.")
+                }
+                val verified = AssistantCommandSecurity.verify(command, credentials.deviceId)
+                verifiedCommand = verified
+                val prepared = AssistantCommandExecutor.prepare(this, verified)
+
+                runOnUiThread {
+                    val result = try {
+                        startActivity(prepared.intent)
+                        AssistantCommandExecutor.result(
+                            verified,
+                            "completed",
+                            "launch_intent_dispatched",
+                            "Android accepted the approved launch request."
+                        )
+                    } catch (_: Exception) {
+                        AssistantCommandExecutor.result(
+                            verified,
+                            "failed",
+                            "launch_failed",
+                            "Android could not open the requested app or URL."
+                        )
+                    }
+                    DeviceCredentialStore.completePendingCommand(this, result)
+                    status.text = if (result.optString("outcome") == "completed") {
+                        "Android accepted the approved launch request. Sending the result to Hey Suji."
+                    } else {
+                        "Task failed: " + result.optString("result_code")
+                    }
+                    startReceiverForResultDelivery()
+                    executingCommandId = null
+                }
+            } catch (exception: Exception) {
+                val verified = verifiedCommand
+                if (verified != null) {
+                    val failure = AssistantCommandExecutor.result(
+                        verified,
+                        "failed",
+                        "preparation_failed",
+                        "The phone could not prepare the approved app or website launch."
+                    )
+                    DeviceCredentialStore.completePendingCommand(this, failure)
+                    runOnUiThread {
+                        status.text = "Task failed safely. Sending the result to Hey Suji."
+                        startReceiverForResultDelivery()
+                        executingCommandId = null
+                    }
+                } else {
+                    executingCommandId = null
+                    runOnUiThread {
+                        status.text = exception.message ?: "The approved task could not be executed."
+                    }
+                }
+            }
+        }
+    }
+
+    private fun startReceiverForResultDelivery() {
+        val credentials = DeviceCredentialStore.load(this) ?: return
+        if (credentials.pendingResult == null) return
+        try {
+            val serviceIntent = Intent(this, AssistantPollingService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(serviceIntent)
+            else startService(serviceIntent)
+        } catch (exception: Exception) {
+            status.text = "Task ran, but result reporting could not restart: " +
+                (exception.message ?: "unknown error")
         }
     }
 
@@ -178,7 +276,8 @@ class MainActivity : Activity() {
                 override fun onEndOfSpeech() { status.text = "Processing…" }
                 override fun onError(error: Int) { status.text = "Voice recognition failed ($error). Try again." }
                 override fun onResults(results: Bundle?) {
-                    val spoken = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+                    val spoken = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull().orEmpty()
                     executeLocalCommand(spoken)
                 }
                 override fun onPartialResults(partialResults: Bundle?) {}
@@ -197,13 +296,12 @@ class MainActivity : Activity() {
     private fun executeLocalCommand(raw: String) {
         when (val parsed = VoiceCommandParser.parse(raw)) {
             is VoiceCommandParser.Result.Launch -> {
-                val intent = packageManager.getLaunchIntentForPackage(parsed.app.packageName)
-                if (intent == null) {
+                val launchIntent = packageManager.getLaunchIntentForPackage(parsed.app.packageName)
+                if (launchIntent == null) {
                     status.text = parsed.app.name.lowercase() + " is not installed on this phone."
                     return
                 }
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(intent)
+                startActivity(launchIntent)
                 status.text = "Opened " + parsed.app.name.lowercase() + " locally."
             }
             VoiceCommandParser.Result.Unsupported -> {
@@ -220,5 +318,10 @@ class MainActivity : Activity() {
         recognizer = null
         io.shutdown()
         super.onDestroy()
+    }
+
+    companion object {
+        const val ACTION_EXECUTE_APPROVED = "com.suji.companion.EXECUTE_APPROVED_TASK"
+        const val EXTRA_COMMAND_ID = "approved_command_id"
     }
 }

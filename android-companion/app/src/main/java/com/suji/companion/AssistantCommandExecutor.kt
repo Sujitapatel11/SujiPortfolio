@@ -6,43 +6,33 @@ import android.net.Uri
 import org.json.JSONObject
 import java.net.InetAddress
 
+internal data class PreparedLaunch(val intent: Intent)
+
 internal object AssistantCommandExecutor {
-    fun execute(context: Context, command: VerifiedDeviceCommand): JSONObject {
-        return try {
-            when (command.tool) {
-                "browser.open_url" -> openUrl(context, command.url ?: error("missing_url"))
-                "desktop.open_application" -> openApplication(context, command.appId ?: error("missing_app_id"))
-                else -> error("tool_not_supported")
-            }
-            result(command, "completed", "launch_intent_dispatched", "The Android launch request was accepted by the operating system.")
-        } catch (exception: Exception) {
-            val code = when (exception.message) {
-                "app_not_installed" -> "app_not_installed"
-                "unsafe_url" -> "unsafe_url"
-                else -> "launch_failed"
-            }
-            result(command, "failed", code, "Android could not open the requested app or URL.")
+    /** Performs slow destination/package validation away from the UI thread. */
+    fun prepare(context: Context, command: VerifiedDeviceCommand): PreparedLaunch {
+        return when (command.tool) {
+            "browser.open_url" -> PreparedLaunch(buildUrlIntent(command.url ?: error("missing_url")))
+            "desktop.open_application" -> PreparedLaunch(buildAppIntent(context, command.appId ?: error("missing_app_id")))
+            else -> throw IllegalArgumentException("tool_not_supported")
         }
     }
 
-    private fun openApplication(context: Context, appId: String) {
-        if (appId == "browser") {
-            openUrl(context, "https://www.google.com/")
-            return
-        }
-        val packageName = when (appId) {
-            "whatsapp" -> "com.whatsapp"
-            "instagram" -> "com.instagram.android"
-            "youtube" -> "com.google.android.youtube"
+    private fun buildAppIntent(context: Context, appId: String): Intent {
+        if (appId == "browser") return buildUrlIntent("https://www.google.com/")
+        val packageNames = when (appId) {
+            "whatsapp" -> listOf("com.whatsapp")
+            "instagram" -> listOf("com.instagram.android")
+            "youtube" -> listOf("com.google.android.youtube")
+            "calculator" -> listOf("com.google.android.calculator", "com.android.calculator2")
             else -> throw IllegalArgumentException("app_not_installed")
         }
-        val intent = context.packageManager.getLaunchIntentForPackage(packageName)
-            ?: throw IllegalStateException("app_not_installed")
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(intent)
+        return packageNames.firstNotNullOfOrNull { packageName ->
+            context.packageManager.getLaunchIntentForPackage(packageName)
+        } ?: throw IllegalStateException("app_not_installed")
     }
 
-    private fun openUrl(context: Context, value: String) {
+    private fun buildUrlIntent(value: String): Intent {
         val uri = Uri.parse(value)
         val scheme = uri.scheme?.lowercase()
         val host = uri.host?.lowercase()
@@ -56,10 +46,10 @@ internal object AssistantCommandExecutor {
             } || host == "localhost" || host.endsWith(".localhost")) {
             throw IllegalArgumentException("unsafe_url")
         }
-        context.startActivity(Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        return Intent(Intent.ACTION_VIEW, uri)
     }
 
-    private fun result(
+    fun result(
         command: VerifiedDeviceCommand, outcome: String, code: String, message: String
     ) = JSONObject()
         .put("command_id", command.commandId)

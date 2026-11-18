@@ -23,3 +23,12 @@ def test_unknown_mobile_app_is_blocked():
         pass
     else:
         raise AssertionError("Unknown applications must not be proposed.")
+
+
+
+def test_mobile_allowlist_is_exposed_by_tool_registry():
+    from app.assistant.tool_registry import get_tool
+
+    definition = get_tool("desktop.open_application")
+    assert definition.required_arguments == ("app_id",)
+    assert definition.approval_required is True

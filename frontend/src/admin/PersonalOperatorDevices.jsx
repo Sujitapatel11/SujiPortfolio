@@ -232,7 +232,7 @@ export default function PersonalOperatorDevices({ adminToken }) {
         <div style={{ border: "1px solid var(--bp-grid-line)", borderRadius: "12px", padding: "1rem", display: "grid", gap: "0.7rem" }}>
           <div className="admin-label">Pair an Android phone</div>
           <p style={{ color: "var(--bp-grey)", fontSize: "0.75rem", lineHeight: 1.6, margin: 0 }}>
-            Generate a device credential here, then enter it once in the Hey Suji Android companion. The phone encrypts it with Android Keystore and polls only for tasks you explicitly approve.
+            Generate a device credential here, then enter it once in the Hey Suji Android companion. The phone encrypts it with Android Keystore, receives only approved tasks, and shows a notification to tap before opening the approved app or website.
           </p>
           <div style={{ display: "flex", gap: "0.7rem", flexWrap: "wrap", alignItems: "end" }}>
             <div className="admin-form-group" style={{ flex: "1 1 220px", marginBottom: 0 }}>
