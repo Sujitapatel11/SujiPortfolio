@@ -44,25 +44,27 @@ export const stats = [
   { label: 'Education', value: 'B.Tech CSE', icon: 'status' },
 ];
 
-/* Projects — verified implementation data */
+/* Projects — descriptions distinguish implementation from release readiness */
 export const projects = [
   {
     id: 'soulcare',
     number: '01',
     name: 'SoulCare',
-    category: 'Social Creator Platform',
+    category: 'Social & Creator Platform',
     description:
-      'A social creator platform architected around an introspective journaling core, empowering creators to publish authentic long-form reflections, build trusted communities, and monetize content with real-time interactions.',
-    tech: ['Django', 'PostgreSQL', 'Redis', 'React'],
+      'A full-stack social and creator platform built around private journaling, community experiences, and creator workflows. I designed its Django backend and React application, with PostgreSQL persistence and Redis-backed real-time infrastructure. The project is under active development; individual features and production integrations are still being validated.',
+    tech: ['Django', 'Django REST Framework', 'PostgreSQL', 'Redis', 'React', 'Django Channels'],
     github: 'https://github.com/Sujitapatel11/aiDepressionProject',
     isPrivateRepo: true,
     liveDemo: 'https://ai-depression-project.vercel.app',
-    status: 'shipped',
+    status: 'in-development',
     features: [
-      'Core journaling module with personal reflection workflows',
-      'Creator publishing tools and subscriber community feeds',
-      'Identity privacy controls and trust-based community mechanisms',
-      'Real-time interactions, comments, and notification pipeline',
+      'Django REST API with authentication, user identity, and profile workflows',
+      'Community/feed and creator-focused application modules',
+      'Private journaling and AI-assisted reflection modules (end-to-end validation ongoing)',
+      'ASGI/WebSocket architecture with Redis channel-layer support',
+      'SoulTube watch-together room functionality and creator live-session backend components',
+      'Production hardening still required for selected integrations, feature flows, and release checks',
     ],
   },
   {
@@ -165,11 +167,11 @@ export const experience = [
   },
   {
     type: 'project',
-    title: 'SoulCare — Social Creator Platform',
+    title: 'SoulCare — Social & Creator Platform',
     org: 'Featured Engineering Project',
-    period: '2025',
-    description: 'Designed and built a social creator platform with journaling core, trusted community features, and creator monetization using Django, PostgreSQL, Redis, and React.',
-    current: false,
+    period: '2025 — Present',
+    description: 'Building a React and Django platform with PostgreSQL persistence, creator/community modules, private journaling workflows, and Redis-backed real-time infrastructure. The product remains under active development and feature validation.',
+    current: true,
   },
   {
     type: 'project',
