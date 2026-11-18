@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from typing import Annotated
 from urllib.parse import quote_plus, urlsplit
 
+from companion.browser_worker import BrowserWorker
+
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, Field
@@ -79,6 +81,8 @@ def load_saved_value(account: str) -> str:
     except keyring.errors.NoKeyringError:
         return ""
 
+
+BROWSER_WORKER = BrowserWorker()
 
 STATE = Pairing(
     backend_token=load_saved_value(BACKEND_TOKEN_ACCOUNT),
@@ -204,6 +208,28 @@ def execute_approved_command(command: dict) -> tuple[str, str]:
         if not webbrowser.open(args["url"], new=2):
             raise RuntimeError("browser_open_failed")
         return "opened", "Opened the approved URL in the default browser"
+    if tool == "browser.navigate" and set(args) == {"url", "allowed_domains"}:
+        BROWSER_WORKER.start()
+        result = BROWSER_WORKER.navigate(args["url"], args["allowed_domains"])
+        return "navigated", "Controlled browser opened: " + result["title"][:160] + " (" + result["url"][:300] + ")"
+    if tool == "browser.inspect" and set(args) == {"allowed_domains"}:
+        result = BROWSER_WORKER.inspect(args["allowed_domains"])
+        return "inspected", "Page: " + result["title"][:160] + " | URL: " + result["url"][:300] + " | Visible text: " + result["visible_text"][:1200]
+    if tool == "browser.click_text" and set(args) == {"text", "allowed_domains"}:
+        result = BROWSER_WORKER.click_text(args["text"], args["allowed_domains"])
+        return "clicked", "Clicked unique visible text. Current page: " + result["title"][:160] + " (" + result["url"][:300] + ")"
+    if tool == "browser.fill_label" and set(args) == {"label", "value", "allowed_domains"}:
+        result = BROWSER_WORKER.fill_label(args["label"], args["value"], args["allowed_domains"])
+        return "filled", "Filled the uniquely labelled field: " + result["label"][:160]
+    if tool == "browser.scroll" and set(args) == {"direction", "allowed_domains"}:
+        result = BROWSER_WORKER.scroll(args["direction"], args["allowed_domains"])
+        return "scrolled", "Scrolled " + result["scroll"] + " on " + result["url"][:300]
+    if tool == "browser.wait" and set(args) == {"milliseconds", "allowed_domains"}:
+        result = BROWSER_WORKER.wait(args["milliseconds"], args["allowed_domains"])
+        return "waited", "Waited " + str(result["waited_ms"]) + " ms on " + result["url"][:300]
+    if tool == "browser.screenshot" and set(args) in [{"allowed_domains"}, {"name", "allowed_domains"}]:
+        result = BROWSER_WORKER.screenshot(args.get("name"), args["allowed_domains"])
+        return "captured", "Captured screenshot: " + result["path"] + " (" + result["url"][:160] + ")"
     if tool == "desktop.open_application" and set(args) == {"app_id"} and args["app_id"] in {"calculator", "text_editor"}:
         if sys.platform != "win32":
             raise RuntimeError("windows_companion_required")
