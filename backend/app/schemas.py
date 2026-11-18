@@ -19,6 +19,7 @@ class InquiryResponse(BaseModel):
     message: str
     source: str
     created_at: datetime
+    email_notification_sent: bool = False
 
     class Config:
         from_attributes = True
