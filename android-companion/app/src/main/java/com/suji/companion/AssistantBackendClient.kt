@@ -8,6 +8,10 @@ import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
 
+/** Authentication failure means the owner revoked this device credential. */
+internal class DeviceRevokedException :
+    IllegalStateException("This device credential was revoked. Pair it again from the owner dashboard.")
+
 internal object AssistantBackendClient {
     fun validateApiBaseUrl(value: String): String {
         val trimmed = value.trim().trimEnd('/')
