@@ -14,10 +14,19 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.admin.auth import get_current_admin
-from app.assistant.models import AssistantAction, AssistantAuditEvent, AssistantMessage, AssistantSession, AssistantDevice
+from app.assistant.models import (
+    AssistantAction, AssistantAuditEvent, AssistantMessage, AssistantSession,
+    AssistantDevice, AssistantWorkflow, AssistantWorkflowStep, WorkflowExecutionEvent,
+    AssistantWorkProfile,
+)
 from app.assistant.policy import PolicyViolation, build_action_proposal
 from app.assistant.planner import PlannerUnavailable, plan_user_message
 from app.assistant.schemas import ActionProposalRequest
+from app.assistant.trusted_auth import get_current_owner, verify_device_pin, hash_token
+from app.assistant.workflow_engine import (
+    create_workflow, advance_workflow, pause_workflow, resume_workflow, cancel_workflow,
+    get_or_create_work_profile,
+)
 from app.database import get_db
 
 router = APIRouter(prefix="/api/assistant", tags=["personal-assistant"])
@@ -64,6 +73,45 @@ class DeviceResult(BaseModel):
     message: str = Field(min_length=1, max_length=300)
 
 
+class WorkflowCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    goal: str = Field(min_length=3, max_length=2000)
+    device_id: str | None = Field(default=None, max_length=128)
+    allowed_domains: list[str] | None = Field(default=None)
+
+
+class WorkProfileUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    headline: str | None = Field(default=None, max_length=255)
+    bio: str | None = Field(default=None, max_length=3000)
+    skills: list[str] | None = None
+    programming_languages: list[str] | None = None
+    frameworks: list[str] | None = None
+    projects: list[dict] | None = None
+    portfolio_links: list[str] | None = None
+    github_url: str | None = None
+    linkedin_url: str | None = None
+    education: list[dict] | None = None
+    work_experience: list[dict] | None = None
+    preferred_job_categories: list[str] | None = None
+    minimum_budget: str | None = None
+    availability: str | None = None
+    languages: list[str] | None = None
+    excluded_job_categories: list[str] | None = None
+
+
+class DevicePairRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=120)
+    pin: str | None = Field(default=None, pattern="^[0-9]{4}$")
+
+
+class DeviceUnlockRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    device_id: str = Field(min_length=8, max_length=64)
+    pin: str = Field(pattern="^[0-9]{4}$")
+
+
 def _owned_session(db: Session, session_id: str, username: str) -> AssistantSession:
     item = db.query(AssistantSession).filter(
         AssistantSession.id == session_id,
@@ -91,7 +139,7 @@ def _audit(db: Session, session_id: str, action_id: str | None, actor: str, even
 
 
 @router.post("/sessions", status_code=status.HTTP_201_CREATED)
-def create_session(payload: SessionCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def create_session(payload: SessionCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     if payload.device_id:
         device = db.query(AssistantDevice).filter(
             AssistantDevice.id == payload.device_id,
@@ -127,7 +175,7 @@ def create_session(payload: SessionCreate, db: Session = Depends(get_db), curren
 
 
 @router.get("/sessions/{session_id}")
-def get_session(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def get_session(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     item = _owned_session(db, session_id, current_admin["username"])
     return {
         "session_id": item.id,
@@ -140,7 +188,7 @@ def get_session(session_id: str, db: Session = Depends(get_db), current_admin: d
 
 
 @router.post("/sessions/{session_id}/messages", status_code=status.HTTP_201_CREATED)
-def create_message(session_id: str, payload: MessageCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def create_message(session_id: str, payload: MessageCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     item = _owned_session(db, session_id, current_admin["username"])
     now = datetime.now(timezone.utc)
     user_message = AssistantMessage(
@@ -231,7 +279,7 @@ def create_message(session_id: str, payload: MessageCreate, db: Session = Depend
     }
 
 @router.get("/sessions/{session_id}/messages")
-def list_messages(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def list_messages(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     item = _owned_session(db, session_id, current_admin["username"])
     messages = db.query(AssistantMessage).filter(
         AssistantMessage.session_id == item.id
@@ -246,7 +294,7 @@ def list_messages(session_id: str, db: Session = Depends(get_db), current_admin:
 
 
 @router.post("/sessions/{session_id}/actions", status_code=status.HTTP_201_CREATED)
-def propose_action(session_id: str, payload: ActionCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def propose_action(session_id: str, payload: ActionCreate, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     item = _owned_session(db, session_id, current_admin["username"])
     try:
         proposal = build_action_proposal(ActionProposalRequest(tool=payload.tool, arguments=payload.arguments))
@@ -288,7 +336,7 @@ def propose_action(session_id: str, payload: ActionCreate, db: Session = Depends
 
 
 @router.get("/sessions/{session_id}/actions")
-def list_actions(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def list_actions(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     item = _owned_session(db, session_id, current_admin["username"])
     actions = db.query(AssistantAction).filter(
         AssistantAction.session_id == item.id
@@ -307,7 +355,7 @@ def list_actions(session_id: str, db: Session = Depends(get_db), current_admin: 
 
 
 @router.post("/actions/{action_id}/decision")
-def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     action = db.query(AssistantAction).join(AssistantSession).filter(
         AssistantAction.id == action_id,
         AssistantSession.owner_username == current_admin["username"],
@@ -432,7 +480,7 @@ def decide_action(action_id: str, payload: DecisionRequest, db: Session = Depend
 def register_device(
     payload: "DeviceRegister",
     db: Session = Depends(get_db),
-    current_admin: dict = Depends(get_current_admin),
+    current_admin: dict = Depends(get_current_owner),
 ):
     raw_token = secrets.token_urlsafe(48)
     device = AssistantDevice(
@@ -449,7 +497,7 @@ def register_device(
 
 
 @router.get("/devices")
-def list_devices(db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def list_devices(db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     devices = db.query(AssistantDevice).filter(
         AssistantDevice.owner_username == current_admin["username"]
     ).order_by(AssistantDevice.created_at.desc()).all()
@@ -467,7 +515,7 @@ def list_devices(db: Session = Depends(get_db), current_admin: dict = Depends(ge
 def revoke_device(
     device_id: str,
     db: Session = Depends(get_db),
-    current_admin: dict = Depends(get_current_admin),
+    current_admin: dict = Depends(get_current_owner),
 ):
     device = db.query(AssistantDevice).filter(
         AssistantDevice.id == device_id,
@@ -616,7 +664,7 @@ def submit_command_result(
 
 
 @router.get("/sessions/{session_id}/audit")
-def list_audit_events(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_admin)):
+def list_audit_events(session_id: str, db: Session = Depends(get_db), current_admin: dict = Depends(get_current_owner)):
     item = _owned_session(db, session_id, current_admin["username"])
     events = db.query(AssistantAuditEvent).filter(
         AssistantAuditEvent.session_id == item.id
@@ -629,3 +677,317 @@ def list_audit_events(session_id: str, db: Session = Depends(get_db), current_ad
         "details": event.details,
         "created_at": event.created_at,
     } for event in events]
+
+
+# ==============================================================================
+# PHASE 2 & 7: Autonomous Workflow Orchestration Routes
+# ==============================================================================
+
+@router.post("/workflows")
+def start_workflow(
+    payload: WorkflowCreate,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    now = datetime.now(timezone.utc)
+    session = AssistantSession(
+        id=str(uuid4()),
+        owner_username=current_admin["username"],
+        device_id=payload.device_id,
+        status="active",
+        input_mode="voice",
+        created_at=now,
+        updated_at=now,
+        expires_at=now + timedelta(hours=SESSION_TTL_HOURS),
+    )
+    db.add(session)
+    db.commit()
+
+    workflow = create_workflow(
+        db=db,
+        session_id=session.id,
+        owner_username=current_admin["username"],
+        goal=payload.goal,
+        device_id=payload.device_id,
+        allowed_domains=payload.allowed_domains,
+    )
+    res = advance_workflow(db, workflow.id)
+    return {
+        "workflow_id": workflow.id,
+        "session_id": session.id,
+        "status": workflow.status,
+        "goal": workflow.goal,
+        "allowed_domains": workflow.allowed_domains,
+        "current_step_index": workflow.current_step_index,
+        "total_steps": workflow.total_steps,
+        "waiting_reason": workflow.waiting_reason,
+        "evidence": workflow.evidence or [],
+        "context_data": workflow.context_data or {},
+    }
+
+
+@router.get("/workflows")
+def list_workflows(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    workflows = db.query(AssistantWorkflow).filter(
+        AssistantWorkflow.owner_username == current_admin["username"]
+    ).order_by(AssistantWorkflow.created_at.desc()).all()
+    return [{
+        "workflow_id": w.id,
+        "session_id": w.session_id,
+        "goal": w.goal,
+        "status": w.status,
+        "current_step_index": w.current_step_index,
+        "total_steps": w.total_steps,
+        "created_at": w.created_at,
+        "completed_at": w.completed_at,
+    } for w in workflows]
+
+
+@router.get("/workflows/{workflow_id}")
+def get_workflow_details(
+    workflow_id: str,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    workflow = db.query(AssistantWorkflow).filter(
+        AssistantWorkflow.id == workflow_id,
+        AssistantWorkflow.owner_username == current_admin["username"],
+    ).first()
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    steps = db.query(AssistantWorkflowStep).filter(
+        AssistantWorkflowStep.workflow_id == workflow.id
+    ).order_by(AssistantWorkflowStep.step_index.asc()).all()
+
+    return {
+        "workflow_id": workflow.id,
+        "session_id": workflow.session_id,
+        "goal": workflow.goal,
+        "status": workflow.status,
+        "allowed_domains": workflow.allowed_domains,
+        "current_step_index": workflow.current_step_index,
+        "total_steps": workflow.total_steps,
+        "waiting_reason": workflow.waiting_reason,
+        "evidence": workflow.evidence or [],
+        "context_data": workflow.context_data or {},
+        "created_at": workflow.created_at,
+        "updated_at": workflow.updated_at,
+        "completed_at": workflow.completed_at,
+        "steps": [{
+            "id": s.id,
+            "step_index": s.step_index,
+            "title": s.title,
+            "description": s.description,
+            "tool": s.tool,
+            "arguments": s.arguments,
+            "status": s.status,
+            "requires_approval": s.requires_approval,
+            "result": s.result,
+            "evidence_url": s.evidence_url,
+            "evidence_screenshot": s.evidence_screenshot,
+            "started_at": s.started_at,
+            "completed_at": s.completed_at,
+        } for s in steps],
+    }
+
+
+@router.post("/workflows/{workflow_id}/advance")
+def step_advance(
+    workflow_id: str,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    workflow = db.query(AssistantWorkflow).filter(
+        AssistantWorkflow.id == workflow_id,
+        AssistantWorkflow.owner_username == current_admin["username"],
+    ).first()
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    result = advance_workflow(db, workflow.id)
+    return result
+
+
+@router.post("/workflows/{workflow_id}/pause")
+def workflow_pause(
+    workflow_id: str,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    try:
+        w = pause_workflow(db, workflow_id, current_admin["username"])
+        return {"workflow_id": w.id, "status": w.status}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/workflows/{workflow_id}/resume")
+def workflow_resume(
+    workflow_id: str,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    try:
+        w = resume_workflow(db, workflow_id, current_admin["username"])
+        return {"workflow_id": w.id, "status": w.status}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/workflows/{workflow_id}/cancel")
+def workflow_cancel(
+    workflow_id: str,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    try:
+        w = cancel_workflow(db, workflow_id, current_admin["username"])
+        return {"workflow_id": w.id, "status": w.status}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.get("/workflows/{workflow_id}/events")
+def list_workflow_events(
+    workflow_id: str,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    workflow = db.query(AssistantWorkflow).filter(
+        AssistantWorkflow.id == workflow_id,
+        AssistantWorkflow.owner_username == current_admin["username"],
+    ).first()
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    events = db.query(WorkflowExecutionEvent).filter(
+        WorkflowExecutionEvent.workflow_id == workflow.id
+    ).order_by(WorkflowExecutionEvent.created_at.asc()).all()
+
+    return [{
+        "id": e.id,
+        "step_id": e.step_id,
+        "event_type": e.event_type,
+        "message": e.message,
+        "payload": e.payload,
+        "created_at": e.created_at,
+    } for e in events]
+
+
+# ==============================================================================
+# PHASE 6: Personal Work Profile Routes
+# ==============================================================================
+
+@router.get("/profile")
+def get_profile(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    profile = get_or_create_work_profile(db, current_admin["username"])
+    return {
+        "headline": profile.headline,
+        "bio": profile.bio,
+        "skills": profile.skills,
+        "programming_languages": profile.programming_languages,
+        "frameworks": profile.frameworks,
+        "projects": profile.projects,
+        "portfolio_links": profile.portfolio_links,
+        "github_url": profile.github_url,
+        "linkedin_url": profile.linkedin_url,
+        "education": profile.education,
+        "work_experience": profile.work_experience,
+        "preferred_job_categories": profile.preferred_job_categories,
+        "minimum_budget": profile.minimum_budget,
+        "availability": profile.availability,
+        "languages": profile.languages,
+        "excluded_job_categories": profile.excluded_job_categories,
+        "updated_at": profile.updated_at,
+    }
+
+
+@router.put("/profile")
+def update_profile(
+    payload: WorkProfileUpdate,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    profile = get_or_create_work_profile(db, current_admin["username"])
+    update_data = payload.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        if value is not None:
+            setattr(profile, key, value)
+    profile.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(profile)
+    return {"status": "updated", "headline": profile.headline, "updated_at": profile.updated_at}
+
+
+# ==============================================================================
+# PHASE 3: Trusted Local Device Auth Routes
+# ==============================================================================
+
+@router.post("/auth/pair")
+def pair_local_device(
+    payload: DevicePairRequest,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    device_id = str(uuid4())
+    device_token = secrets.token_urlsafe(48)
+    token_digest = hash_token(device_token)
+    now = datetime.now(timezone.utc)
+
+    device = AssistantDevice(
+        id=device_id,
+        owner_username=current_admin["username"],
+        name=payload.name.strip(),
+        token_sha256=token_digest,
+        is_active=True,
+        created_at=now,
+        last_seen_at=now,
+    )
+    db.add(device)
+    db.commit()
+    return {
+        "device_id": device.id,
+        "device_token": device_token,
+        "name": device.name,
+        "status": "paired",
+    }
+
+
+@router.post("/auth/unlock")
+def unlock_device(
+    payload: DeviceUnlockRequest,
+    db: Session = Depends(get_db),
+):
+    device = db.query(AssistantDevice).filter(
+        AssistantDevice.id == payload.device_id,
+        AssistantDevice.is_active.is_(True),
+    ).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found or revoked")
+    verify_device_pin(payload.device_id, payload.pin)
+    return {"status": "unlocked", "device_id": device.id, "owner_username": device.owner_username}
+
+
+@router.delete("/devices/{device_id}")
+def revoke_device(
+    device_id: str,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_owner),
+):
+    device = db.query(AssistantDevice).filter(
+        AssistantDevice.id == device_id,
+        AssistantDevice.owner_username == current_admin["username"],
+    ).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+    device.is_active = False
+    device.revoked_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"status": "revoked", "device_id": device.id}
+

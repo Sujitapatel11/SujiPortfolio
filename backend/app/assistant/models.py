@@ -24,6 +24,7 @@ class AssistantSession(Base):
 
     messages = relationship("AssistantMessage", back_populates="session", cascade="all, delete-orphan")
     actions = relationship("AssistantAction", back_populates="session", cascade="all, delete-orphan")
+    workflows = relationship("AssistantWorkflow", back_populates="session", cascade="all, delete-orphan")
 
 
 class AssistantMessage(Base):
@@ -93,3 +94,95 @@ class AssistantDevice(Base):
     created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
     revoked_at = Column(DateTime(timezone=True), nullable=True)
     last_seen_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class AssistantWorkflow(Base):
+    __tablename__ = "assistant_workflows"
+    __table_args__ = (
+        Index("ix_assistant_workflows_session_status", "session_id", "status"),
+    )
+
+    id = Column(String(36), primary_key=True)
+    session_id = Column(String(36), ForeignKey("assistant_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    owner_username = Column(String(255), nullable=False, index=True)
+    device_id = Column(String(36), ForeignKey("assistant_devices.id", ondelete="SET NULL"), nullable=True, index=True)
+    goal = Column(Text, nullable=False)
+    allowed_domains = Column(JSON, nullable=False, default=list)
+    status = Column(String(32), nullable=False, default="queued", index=True)
+    current_step_index = Column(Integer, nullable=False, default=0)
+    total_steps = Column(Integer, nullable=False, default=0)
+    context_data = Column(JSON, nullable=False, default=dict)
+    waiting_reason = Column(Text, nullable=True)
+    evidence = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    session = relationship("AssistantSession", back_populates="workflows")
+    steps = relationship("AssistantWorkflowStep", back_populates="workflow", cascade="all, delete-orphan", order_by="AssistantWorkflowStep.step_index")
+    events = relationship("WorkflowExecutionEvent", back_populates="workflow", cascade="all, delete-orphan", order_by="WorkflowExecutionEvent.created_at")
+
+
+class AssistantWorkflowStep(Base):
+    __tablename__ = "assistant_workflow_steps"
+    __table_args__ = (
+        Index("ix_assistant_workflow_steps_workflow_status", "workflow_id", "status"),
+    )
+
+    id = Column(String(36), primary_key=True)
+    workflow_id = Column(String(36), ForeignKey("assistant_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    step_index = Column(Integer, nullable=False)
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+    tool = Column(String(100), nullable=False)
+    arguments = Column(JSON, nullable=False, default=dict)
+    status = Column(String(32), nullable=False, default="pending", index=True)
+    requires_approval = Column(Boolean, nullable=False, default=False)
+    action_id = Column(String(36), ForeignKey("assistant_actions.id", ondelete="SET NULL"), nullable=True, index=True)
+    result = Column(JSON, nullable=True)
+    evidence_url = Column(String(500), nullable=True)
+    evidence_screenshot = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+
+    workflow = relationship("AssistantWorkflow", back_populates="steps")
+
+
+class WorkflowExecutionEvent(Base):
+    __tablename__ = "workflow_execution_events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    workflow_id = Column(String(36), ForeignKey("assistant_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    step_id = Column(String(36), ForeignKey("assistant_workflow_steps.id", ondelete="SET NULL"), nullable=True, index=True)
+    event_type = Column(String(64), nullable=False, index=True)
+    message = Column(Text, nullable=False)
+    payload = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+
+    workflow = relationship("AssistantWorkflow", back_populates="events")
+
+
+class AssistantWorkProfile(Base):
+    __tablename__ = "assistant_work_profiles"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    owner_username = Column(String(255), nullable=False, unique=True, index=True)
+    headline = Column(String(255), nullable=False)
+    bio = Column(Text, nullable=False)
+    skills = Column(JSON, nullable=False, default=list)
+    programming_languages = Column(JSON, nullable=False, default=list)
+    frameworks = Column(JSON, nullable=False, default=list)
+    projects = Column(JSON, nullable=False, default=list)
+    portfolio_links = Column(JSON, nullable=False, default=list)
+    github_url = Column(String(255), nullable=True)
+    linkedin_url = Column(String(255), nullable=True)
+    education = Column(JSON, nullable=False, default=list)
+    work_experience = Column(JSON, nullable=False, default=list)
+    preferred_job_categories = Column(JSON, nullable=False, default=list)
+    minimum_budget = Column(String(50), nullable=True)
+    availability = Column(String(100), nullable=True)
+    languages = Column(JSON, nullable=False, default=list)
+    excluded_job_categories = Column(JSON, nullable=False, default=list)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=utc_now)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now)

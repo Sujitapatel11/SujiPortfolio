@@ -23,6 +23,7 @@ logger = logging.getLogger("sujis_world.auth")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
+_DEV_JWT_SECRET: str | None = None
 
 
 def _get_effective_password_hash() -> str:
@@ -67,14 +68,16 @@ def _get_effective_jwt_secret() -> str:
         )
 
     # Development-only: random per-process key
-    import secrets
-    dev_secret = secrets.token_urlsafe(48)
-    logger.warning(
-        "JWT_SECRET_KEY not set — using a random per-process key. "
-        "All sessions will invalidate on server restart. "
-        "Set JWT_SECRET_KEY in .env for persistent sessions."
-    )
-    return dev_secret
+    global _DEV_JWT_SECRET
+    if _DEV_JWT_SECRET is None:
+        import secrets
+        _DEV_JWT_SECRET = secrets.token_urlsafe(48)
+        logger.warning(
+            "JWT_SECRET_KEY not set — using a random per-process key. "
+            "All sessions will invalidate on server restart. "
+            "Set JWT_SECRET_KEY in .env for persistent sessions."
+        )
+    return _DEV_JWT_SECRET
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
