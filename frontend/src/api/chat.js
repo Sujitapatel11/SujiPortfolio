@@ -1,10 +1,11 @@
 /** FastAPI chat client with bounded cold-start detection for sleeping hosts. */
-import { apiUrl } from "./config";
+
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 export async function sendChatMessage(message, conversationId = null) {
   const payload = { message };
   if (conversationId) payload.conversation_id = conversationId;
-  const response = await fetch(apiUrl("/api/chat"), {
+  const response = await fetch(`${API_BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -29,7 +30,7 @@ export async function waitForChatBackend(onStatus = () => {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
     try {
-      const response = await fetch(apiUrl("/api/health"), {
+      const response = await fetch(`${API_BASE}/health`, {
         method: "GET",
         cache: "no-store",
         signal: controller.signal,
