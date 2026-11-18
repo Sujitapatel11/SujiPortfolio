@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - fix/audit-driven-repairs
+      - feat/mvp-production-ready
     paths:
       - "companion/**"
       - "backend/**"
