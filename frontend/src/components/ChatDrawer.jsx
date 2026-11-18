@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, MessageSquare, CheckCircle2, Mic, Volume2, VolumeX } from 'lucide-react';
+import { X, Send, Bot, MessageSquare, CheckCircle2, Mic, Volume2 } from 'lucide-react';
 import { sendChatMessage, getChatStatus, getChatHistory } from '../api/chat';
 import { submitAppointmentRequest } from '../api/appointments';
 import { personalInfo } from '../data/portfolio';
@@ -104,7 +104,9 @@ export default function ChatDrawer({ isOpen, onClose }) {
     getChatStatus()
       .then((data) => {
         if (!active) return;
-        setBackendState(data.provider_configured ? 'configured' : 'degraded');
+        if (!data.provider_configured) setBackendState('degraded');
+        else if (!data.retrieval_configured) setBackendState('missing_index');
+        else setBackendState('configured');
       })
       .catch(() => {
         if (active) setBackendState('offline');
@@ -255,7 +257,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${backendState === 'configured' ? 'bg-emerald-400' : backendState === 'checking' ? 'bg-amber-400' : 'bg-rose-400'}`} />
                 <span className={`font-mono text-[10px] ${backendState === 'configured' ? 'text-emerald-400' : backendState === 'checking' ? 'text-amber-400' : 'text-rose-400'}`} aria-live="polite">
-                  {backendState === 'configured' ? 'Backend online · provider key set' : backendState === 'checking' ? 'Checking backend…' : backendState === 'degraded' ? 'AI service degraded' : 'Backend offline'}
+                  {backendState === 'configured' ? 'Backend online · provider key set' : backendState === 'checking' ? 'Checking backend…' : backendState === 'degraded' ? 'AI service degraded' : backendState === 'missing_index' ? 'Knowledge index empty' : 'Backend offline'}
                 </span>
               </div>
             </div>

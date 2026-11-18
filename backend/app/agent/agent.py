@@ -85,6 +85,7 @@ def _resolve_conversation(
             # Pre-upgrade clients used predictable labels; do not trust or reuse them.
             candidate_id = None
 
+    now = datetime.now(timezone.utc)
     if candidate_id:
         existing = db.query(ChatConversation).filter(ChatConversation.id == candidate_id).first()
         if existing:
@@ -93,12 +94,22 @@ def _resolve_conversation(
             expires_at = existing.expires_at
             if expires_at.tzinfo is None:
                 expires_at = expires_at.replace(tzinfo=timezone.utc)
-            if expires_at <= datetime.now(timezone.utc):
+            if expires_at <= now:
                 raise ConversationExpired("This conversation has expired. Start a new conversation.")
-            existing.updated_at = datetime.now(timezone.utc)
+            existing.updated_at = now
             return existing
 
-    now = datetime.now(timezone.utc)
+    # Lazy bounded retention cleanup: purge up to 100 expired conversations per new session.
+    # Keep the requested identifier untouched so expired-session requests return HTTP 410.
+    expired = db.query(ChatConversation).filter(
+        ChatConversation.expires_at <= now,
+        ChatConversation.id != (candidate_id or ""),
+    ).order_by(ChatConversation.expires_at.asc()).limit(100).all()
+    for expired_conversation in expired:
+        db.delete(expired_conversation)
+    if expired:
+        db.flush()
+
     ttl_days = ADMIN_SESSION_TTL_DAYS if is_admin_context else PUBLIC_SESSION_TTL_DAYS
     conversation = ChatConversation(
         id=candidate_id or str(uuid.uuid4()),
