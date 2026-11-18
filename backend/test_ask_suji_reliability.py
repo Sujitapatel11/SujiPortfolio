@@ -144,7 +144,12 @@ def test_appointment_request_is_pending_time_optional_and_idempotent(test_contex
 def test_public_rag_hides_private_namespaces_and_rejects_irrelevant_chunks(test_context, monkeypatch):
     _, factory = test_context
     query_vector = [1.0] + [0.0] * 383
-    monkeypatch.setattr(retrieval_module, "generate_embedding", lambda query: query_vector)
+    def fake_embedding(query):
+        if "skills" in query:
+            return query_vector
+        return [0.0, 0.0, 1.0] + [0.0] * 381
+
+    monkeypatch.setattr(retrieval_module, "generate_embedding", fake_embedding)
     db = factory()
     try:
         db.add_all([
