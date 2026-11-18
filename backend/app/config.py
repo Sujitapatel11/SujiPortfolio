@@ -65,6 +65,14 @@ TWILIO_WHATSAPP_FROM = os.getenv("TWILIO_WHATSAPP_FROM", "").strip()
 ADMIN_WHATSAPP_NUMBER = os.getenv("ADMIN_WHATSAPP_NUMBER", "").strip()
 ADMIN_DASHBOARD_URL = os.getenv("ADMIN_DASHBOARD_URL", "http://localhost:5173/admin").rstrip("/")
 
+# ── Inquiry email notifications ─────────────────────────────────
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "").strip()
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "").strip()
+SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", SMTP_USERNAME).strip()
+INQUIRY_NOTIFICATION_EMAIL = os.getenv("INQUIRY_NOTIFICATION_EMAIL", "sujitapatel787@gmail.com").strip()
+
 # ── Conversation Memory ─────────────────────────────────────────
 MAX_CONVERSATIONS = int(os.getenv("MAX_CONVERSATIONS", "500"))
 MAX_MESSAGE_HISTORY = 10
