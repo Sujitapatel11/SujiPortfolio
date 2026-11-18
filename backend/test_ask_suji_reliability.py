@@ -110,15 +110,24 @@ def test_expired_conversation_is_rejected(test_context):
     assert history.status_code == 410
 
 
-def test_appointment_request_is_pending_and_time_is_optional(test_context, monkeypatch):
+def test_appointment_request_is_pending_time_optional_and_idempotent(test_context, monkeypatch):
     client, factory = test_context
     monkeypatch.setattr("app.routes.appointments.send_whatsapp_notification", lambda message: False)
     response = client.post(
         "/api/appointments",
         json={"name": "Alex Visitor", "email": "alex@example.com", "purpose": "Discuss an MVP"},
+        headers={"Idempotency-Key": "test-appointment-request-0001"},
     )
     assert response.status_code == 201, response.text
     data = response.json()
+    duplicate = client.post(
+        "/api/appointments",
+        json={"name": "Alex Visitor", "email": "alex@example.com", "purpose": "Discuss an MVP"},
+        headers={"Idempotency-Key": "test-appointment-request-0001"},
+    )
+    assert duplicate.status_code == 201
+    assert duplicate.json()["id"] == data["id"]
+    assert duplicate.json()["duplicate"] is True
     assert data["status"] == "pending"
     assert data["preferred_time"] is None
     assert data["owner_notification_sent"] is False
@@ -127,6 +136,7 @@ def test_appointment_request_is_pending_and_time_is_optional(test_context, monke
     try:
         appointment = db.query(Appointment).filter_by(id=data["id"]).one()
         assert appointment.preferred_time is None
+        assert db.query(Appointment).count() == 1
     finally:
         db.close()
 

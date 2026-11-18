@@ -25,6 +25,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
   const [apptSubmitting, setApptSubmitting] = useState(false);
   const [apptError, setApptError] = useState('');
   const [apptResult, setApptResult] = useState(null);
+  const [apptRequestKey, setApptRequestKey] = useState(() => crypto.randomUUID());
 
   const messagesEndRef = useRef(null);
 
@@ -130,6 +131,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
       setApptSubmitted(false);
       setApptError('');
       setApptResult(null);
+      setApptRequestKey(crypto.randomUUID());
       return;
     }
     handleSend(prompt);
@@ -145,7 +147,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
         email: apptForm.email,
         preferred_time: apptForm.preferred_time || null,
         purpose: apptForm.purpose || null,
-      });
+      }, apptRequestKey);
       setApptResult(result);
       setApptSubmitted(true);
     } catch (err) {

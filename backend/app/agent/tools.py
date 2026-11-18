@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 import re
 import urllib.parse
@@ -9,6 +11,13 @@ from app.models import Inquiry, Appointment, Job, Proposal
 from app.admin.whatsapp import ADMIN_DASHBOARD_URL, send_whatsapp_notification
 
 logger = logging.getLogger("sujis_world.agent.tools")
+
+
+def _submission_key(kind: str, payload: dict) -> str:
+    """Stable digest used to prevent duplicate public submissions without storing raw keys."""
+    canonical = json.dumps({"kind": kind, **payload}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
 
 # --- PUBLIC TOOLS ---
 
@@ -26,14 +35,25 @@ def save_client_inquiry(name: str, email: str, project_type: str, budget: Option
     Call only after the visitor explicitly asks to submit an inquiry and you have name, email and project_type. Budget is optional and must never be guessed.
     """
     db = SessionLocal()
+    key = _submission_key("inquiry", {
+        "name": name.strip().casefold(),
+        "email": email.strip().casefold(),
+        "project_type": project_type.strip().casefold(),
+        "budget": (budget or "").strip().casefold(),
+        "message": (message or "").strip(),
+    })
     try:
+        existing = db.query(Inquiry).filter(Inquiry.idempotency_key == key).first()
+        if existing:
+            return f"SUCCESS: This inquiry was already saved as #{existing.id}; no duplicate was created."
         inquiry = Inquiry(
             name=name,
             email=email,
             project_type=project_type,
             budget=budget,
             message=message or f"Inquiry submitted via 'Ask Suji' AI Intake Agent for {project_type}.",
-            source="chat"
+            source="chat",
+            idempotency_key=key,
         )
         db.add(inquiry)
         db.commit()
@@ -45,10 +65,13 @@ def save_client_inquiry(name: str, email: str, project_type: str, budget: Option
         )
         notification_state = "owner WhatsApp notification sent" if notification_sent else "owner notification was not confirmed"
         return f"SUCCESS: Inquiry #{inquiry.id} was saved to the intake database. Budget: {budget or 'Not specified'}. {notification_state}. This is a recorded inquiry, not a contract."
-    except Exception as e:
-        logger.error(f"Error saving inquiry tool: {e}")
+    except Exception:
+        logger.exception("Error saving inquiry tool.")
         db.rollback()
-        return f"ERROR: Failed to save inquiry due to database error: {str(e)}"
+        existing = db.query(Inquiry).filter(Inquiry.idempotency_key == key).first()
+        if existing:
+            return f"SUCCESS: This inquiry was already saved as #{existing.id}; no duplicate was created."
+        return "ERROR: Failed to save the inquiry. No successful result was recorded."
     finally:
         db.close()
 
@@ -66,13 +89,26 @@ def book_appointment_request(name: str, email: str, preferred_time: Optional[str
     Call only after the visitor explicitly asks to submit a booking request and name/email are available. Preferred time is optional; never invent it.
     """
     db = SessionLocal()
+    key = _submission_key("appointment", {
+        "name": name.strip().casefold(),
+        "email": email.strip().casefold(),
+        "preferred_time": (preferred_time or "").strip().casefold(),
+        "purpose": (purpose or "").strip().casefold(),
+    })
     try:
+        existing = db.query(Appointment).filter(Appointment.idempotency_key == key).first()
+        if existing:
+            return (
+                f"SUCCESS: This appointment request already exists as #{existing.id} with status {existing.status}. "
+                "No duplicate was created and no notification was resent."
+            )
         appt = Appointment(
             name=name,
             email=email,
             preferred_time=preferred_time,
             purpose=purpose or "General Consultation / Project Discussion",
-            status="pending"
+            status="pending",
+            idempotency_key=key,
         )
         db.add(appt)
         db.commit()
@@ -85,16 +121,24 @@ def book_appointment_request(name: str, email: str, preferred_time: Optional[str
             f"Review: {ADMIN_DASHBOARD_URL}/appointments"
         )
         notification_sent = send_whatsapp_notification(notification)
+        appt.owner_notification_sent = notification_sent
+        db.commit()
         notification_state = "owner WhatsApp notification sent" if notification_sent else "owner notification was not confirmed"
         return (
             f"SUCCESS: Appointment request #{appt.id} was saved with status pending. "
             f"Preferred time: {preferred_time or 'Not specified'}. {notification_state}. "
             "This is not a confirmed appointment; the owner must confirm it."
         )
-    except Exception as e:
-        logger.error(f"Error booking appointment: {e}")
+    except Exception:
+        logger.exception("Error booking appointment.")
         db.rollback()
-        return f"ERROR: Failed to record appointment request: {str(e)}"
+        existing = db.query(Appointment).filter(Appointment.idempotency_key == key).first()
+        if existing:
+            return (
+                f"SUCCESS: This appointment request already exists as #{existing.id} with status {existing.status}. "
+                "No duplicate was created."
+            )
+        return "ERROR: Failed to save the appointment request. No successful result was recorded."
     finally:
         db.close()
 

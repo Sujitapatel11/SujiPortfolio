@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON, Index
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON, Index, Boolean
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 from app.database import Base
@@ -70,6 +70,7 @@ class Inquiry(Base):
     budget = Column(String(100), nullable=True)
     message = Column(Text, nullable=False)
     source = Column(String(50), nullable=False, default="form")
+    idempotency_key = Column(String(64), nullable=True, unique=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 class Job(Base):
@@ -120,6 +121,8 @@ class Appointment(Base):
     preferred_time = Column(Text, nullable=True)
     purpose = Column(Text, nullable=True)
     status = Column(String(50), nullable=False, default="pending")
+    idempotency_key = Column(String(64), nullable=True, unique=True)
+    owner_notification_sent = Column(Boolean, nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
 
 
