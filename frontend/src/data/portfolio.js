@@ -56,7 +56,7 @@ export const projects = [
     tech: ['Django', 'Django REST Framework', 'PostgreSQL', 'Redis', 'React', 'Django Channels'],
     github: 'https://github.com/Sujitapatel11/aiDepressionProject',
     isPrivateRepo: true,
-    liveDemo: 'https://ai-depression-project.vercel.app',
+    liveDemo: 'https://soul-care-one.vercel.app',
     status: 'in-development',
     features: [
       'Django REST API with authentication, user identity, and profile workflows',
