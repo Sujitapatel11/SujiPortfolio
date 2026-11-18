@@ -16,14 +16,14 @@ class InquiryToolInput(BaseModel):
     name: str = Field(description="Full name of the visitor/client")
     email: str = Field(description="Email address of the visitor/client")
     project_type: str = Field(description="Type of project requested (e.g. Full-Stack Web App, AI Agent, MVP Building, Backend API)")
-    budget: str = Field(description="Estimated budget range specified by the client (e.g. $5,000 - $10,000, $2,500, or TBD)")
+    budget: Optional[str] = Field(default=None, description="Budget explicitly provided by the visitor; omit when unknown")
     message: Optional[str] = Field(default="", description="Summary of project requirements or details discussed during chat")
 
 @tool("save_client_inquiry", args_schema=InquiryToolInput)
-def save_client_inquiry(name: str, email: str, project_type: str, budget: str, message: str = "") -> str:
+def save_client_inquiry(name: str, email: str, project_type: str, budget: Optional[str] = None, message: str = "") -> str:
     """
     Saves a qualified client lead / inquiry into Sujita's database.
-    Call this tool once you have collected the client's name, email, project_type, and budget.
+    Call only after the visitor explicitly asks to submit an inquiry and you have name, email and project_type. Budget is optional and must never be guessed.
     """
     db = SessionLocal()
     try:
@@ -38,8 +38,13 @@ def save_client_inquiry(name: str, email: str, project_type: str, budget: str, m
         db.add(inquiry)
         db.commit()
         db.refresh(inquiry)
-        logger.info(f"Successfully saved chat inquiry ID {inquiry.id} for {name} ({email})")
-        return f"SUCCESS: Inquiry saved with ID {inquiry.id}. Sujita has received the details for {name} ({email})."
+        logger.info("Chat inquiry %s persisted.", inquiry.id)
+        notification_sent = send_whatsapp_notification(
+            f"New portfolio inquiry #{inquiry.id} from {name} ({email})\\n"
+            f"Project: {project_type}\\nBudget: {budget or 'Not specified'}\\n{message[:1000]}"
+        )
+        notification_state = "owner WhatsApp notification sent" if notification_sent else "owner notification was not confirmed"
+        return f"SUCCESS: Inquiry #{inquiry.id} was saved to the intake database. Budget: {budget or 'Not specified'}. {notification_state}. This is a recorded inquiry, not a contract."
     except Exception as e:
         logger.error(f"Error saving inquiry tool: {e}")
         db.rollback()
@@ -51,14 +56,14 @@ def save_client_inquiry(name: str, email: str, project_type: str, budget: str, m
 class AppointmentToolInput(BaseModel):
     name: str = Field(description="Full name of the visitor/client requesting an appointment")
     email: str = Field(description="Email address of the visitor/client")
-    preferred_time: str = Field(description="Rough preferred date/time (e.g. 'Tomorrow 2pm', 'Next Monday morning', 'Friday 4pm EST')")
+    preferred_time: Optional[str] = Field(default=None, description="Visitor-provided preferred date/time; omit when not supplied")
     purpose: Optional[str] = Field(default="", description="Purpose or topic of the meeting/call")
 
 @tool("book_appointment_request", args_schema=AppointmentToolInput)
-def book_appointment_request(name: str, email: str, preferred_time: str, purpose: str = "") -> str:
+def book_appointment_request(name: str, email: str, preferred_time: Optional[str] = None, purpose: str = "") -> str:
     """
     Saves a new appointment request from a visitor into the database.
-    Call this tool when a visitor wants to talk to Sujita, schedule a call, or discuss a project directly.
+    Call only after the visitor explicitly asks to submit a booking request and name/email are available. Preferred time is optional; never invent it.
     """
     db = SessionLocal()
     try:
@@ -79,9 +84,13 @@ def book_appointment_request(name: str, email: str, preferred_time: str, purpose
             f"Purpose: {purpose or 'General Consultation / Project Discussion'}\n"
             f"Review: {ADMIN_DASHBOARD_URL}/appointments"
         )
-        send_whatsapp_notification(notification)
-        
-        return f"SUCCESS: Appointment request #{appt.id} received for {name} ({email}). Sujita has been notified and will confirm within 24 hours via email."
+        notification_sent = send_whatsapp_notification(notification)
+        notification_state = "owner WhatsApp notification sent" if notification_sent else "owner notification was not confirmed"
+        return (
+            f"SUCCESS: Appointment request #{appt.id} was saved with status pending. "
+            f"Preferred time: {preferred_time or 'Not specified'}. {notification_state}. "
+            "This is not a confirmed appointment; the owner must confirm it."
+        )
     except Exception as e:
         logger.error(f"Error booking appointment: {e}")
         db.rollback()

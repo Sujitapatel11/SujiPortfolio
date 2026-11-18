@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float, JSON, Index
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 from app.database import Base
@@ -19,6 +19,42 @@ class KnowledgeChunk(Base):
     content = Column(Text, nullable=False)
     embedding = Column(Vector(384).with_variant(JSON, "sqlite"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+class ChatConversation(Base):
+    """Capability-protected public chat or owner-only admin chat session."""
+    __tablename__ = "chat_conversations"
+    __table_args__ = (
+        Index("ix_chat_conversations_scope_owner", "scope", "owner_username"),
+        Index("ix_chat_conversations_expires_at", "expires_at"),
+    )
+
+    id = Column(String(36), primary_key=True)
+    scope = Column(String(16), nullable=False)  # public | admin
+    owner_username = Column(String(255), nullable=True)
+    summary = Column(Text, nullable=True)
+    summary_through_message_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    messages = relationship("ChatMessage", back_populates="conversation", cascade="all, delete-orphan")
+
+
+class ChatMessage(Base):
+    """Persisted Ask Suji message; sources are the public-safe RAG citations."""
+    __tablename__ = "chat_messages"
+    __table_args__ = (
+        Index("ix_chat_messages_conversation_created", "conversation_id", "created_at"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    conversation_id = Column(String(36), ForeignKey("chat_conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String(16), nullable=False)
+    content = Column(Text, nullable=False)
+    sources = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    conversation = relationship("ChatConversation", back_populates="messages")
+
 
 class Inquiry(Base):
     """
