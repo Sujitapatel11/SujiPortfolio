@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, MessageSquare, Phone, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
-import { sendChatMessage } from '../api/chat';
+import { sendChatMessage, waitForChatBackend } from '../api/chat';
 import { submitInquiry } from '../api/inquiries';
 import { personalInfo } from '../data/portfolio';
 
@@ -14,6 +14,8 @@ export default function ChatDrawer({ isOpen, onClose }) {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiStatus, setApiStatus] = useState('unknown');
+  const [appointmentError, setAppointmentError] = useState('');
   const [conversationId, setConversationId] = useState(null);
 
   // Appointment collection state
@@ -44,21 +46,27 @@ export default function ChatDrawer({ isOpen, onClose }) {
     setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'user', text }]);
     setInputText('');
     setIsLoading(true);
+    setApiStatus('connecting');
 
     try {
+      await waitForChatBackend(({ state }) => {
+        if (state === 'waking') setApiStatus('waking');
+      });
+      setApiStatus('online');
       const data = await sendChatMessage(text, conversationId);
       if (data.conversation_id) setConversationId(data.conversation_id);
       setMessages((prev) => [
         ...prev,
         { id: (Date.now() + 1).toString(), role: 'assistant', text: data.reply },
       ]);
-    } catch {
+    } catch (error) {
+      setApiStatus('offline');
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          text: `AI backend is currently offline. You can chat directly with Sujita on WhatsApp (${personalInfo.phoneDisplay}) or email sujitapatel787@gmail.com!`,
+          text: `${error.message || 'The AI service is temporarily unavailable.'} You can also contact Sujita on WhatsApp (${personalInfo.phoneDisplay}) or email sujitapatel787@gmail.com.`,
         },
       ]);
     } finally {
@@ -79,6 +87,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
       ]);
       setAppointmentMode(true);
       setApptSubmitted(false);
+      setAppointmentError('');
       return;
     }
     handleSend(prompt);
@@ -87,6 +96,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
   const handleApptSubmit = async (e) => {
     e.preventDefault();
     setApptSubmitting(true);
+    setAppointmentError('');
     try {
       await submitInquiry({
         name: apptForm.name,
@@ -96,11 +106,11 @@ export default function ChatDrawer({ isOpen, onClose }) {
         message: `Preferred Time: ${apptForm.preferred_time}. Summary: ${apptForm.purpose || 'General Consultation'}`,
         source: 'chat_appointment',
       });
+      setApptSubmitted(true);
     } catch (err) {
-      console.warn('Backend intake notice:', err);
+      setAppointmentError(err.message || 'We could not submit your request. Please retry or use WhatsApp.');
     } finally {
       setApptSubmitting(false);
-      setApptSubmitted(true);
     }
   };
 
@@ -141,8 +151,8 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 </span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-mono text-[10px] text-emerald-400">pgvector ready</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${apiStatus === 'online' ? 'bg-emerald-400' : apiStatus === 'offline' ? 'bg-rose-400' : 'bg-amber-400'} ${apiStatus === 'waking' || apiStatus === 'connecting' ? 'animate-pulse' : ''}`} />
+                <span className={`font-mono text-[10px] ${apiStatus === 'online' ? 'text-emerald-400' : apiStatus === 'offline' ? 'text-rose-400' : 'text-amber-400'}`}>{apiStatus === 'online' ? 'API online' : apiStatus === 'waking' ? 'Waking backend…' : apiStatus === 'connecting' ? 'Connecting…' : apiStatus === 'offline' ? 'API unavailable' : 'API checks on first message'}</span>
               </div>
             </div>
           </div>
@@ -231,6 +241,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 value={apptForm.purpose}
                 onChange={(e) => setApptForm({ ...apptForm, purpose: e.target.value })}
               />
+              {appointmentError && <p role="alert" className="text-xs text-rose-400">{appointmentError}</p>}
               <button
                 type="submit"
                 disabled={apptSubmitting}
