@@ -54,7 +54,7 @@ internal object AssistantCommandSecurity {
     ): VerifiedDeviceCommand {
         require(commandId.isNotBlank()) { "command_id_invalid" }
         require(deviceId == expectedDeviceId) { "command_device_mismatch" }
-        require(nonce.length in 32..64) { "command_nonce_invalid" }
+        require(nonce.matches(Regex("^[a-f0-9]{32,64}$"))) { "command_nonce_invalid" }
         require(Instant.parse(expiresAt).isAfter(now)) { "command_expired" }
         require(arguments.size == 1) { "command_arguments_invalid" }
 

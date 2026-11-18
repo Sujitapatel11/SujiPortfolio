@@ -9,7 +9,7 @@ import java.time.Instant
 class AssistantCommandSecurityTest {
     private val now = Instant.parse("2026-11-18T00:00:00Z")
     private val validUntil = "2099-01-01T00:00:00Z"
-    private val nonce = "n".repeat(64)
+    private val nonce = "a".repeat(64)
 
     @Test fun canonicalHashMatchesBackendPayloadFormat() {
         val appHash = AssistantCommandSecurity.sha256Canonical("desktop.open_application", "app_id", "whatsapp")
@@ -61,6 +61,13 @@ class AssistantCommandSecurityTest {
         )
 
         assertTrue(runCatching { verify(deviceId = "other-device") }.isFailure)
+        assertTrue(runCatching {
+            AssistantCommandSecurity.verifyFields(
+                "command-123", "device-123", "n".repeat(64), validUntil,
+                "desktop.open_application", mapOf("app_id" to "whatsapp"),
+                hash, "device-123", now
+            )
+        }.isFailure)
         assertTrue(runCatching { verify(expiry = "2020-01-01T00:00:00Z") }.isFailure)
         assertTrue(runCatching { verify(appId = "unknown_app") }.isFailure)
         assertTrue(runCatching { verify(suppliedHash = "0".repeat(64)) }.isFailure)
