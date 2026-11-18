@@ -73,7 +73,7 @@ export default function Contact() {
     budget: '$5,000 - $10,000',
     message: '',
   });
-  const [status, setStatus] = useState({ loading: false, success: false, error: null });
+  const [status, setStatus] = useState({ loading: false, success: false, error: null, emailSent: false });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -84,7 +84,7 @@ export default function Contact() {
 
     setStatus({ loading: true, success: false, error: null });
     try {
-      await submitInquiry({
+      const result = await submitInquiry({
         name: formData.name.trim(),
         email: formData.email.trim(),
         project_type: formData.project_type,
@@ -92,7 +92,7 @@ export default function Contact() {
         message: formData.message.trim() || 'General inquiry submitted via portfolio form.',
         source: 'form',
       });
-      setStatus({ loading: false, success: true, error: null });
+      setStatus({ loading: false, success: true, error: null, emailSent: Boolean(result.email_notification_sent) });
       setFormData({
         name: '',
         email: '',
@@ -186,11 +186,11 @@ export default function Contact() {
               </div>
               <h3 className="text-xl font-bold text-text-main">Message received</h3>
               <p className="text-xs sm:text-sm text-text-secondary max-w-md mx-auto leading-relaxed">
-                Thank you for reaching out! Your message was submitted successfully. Thank you for sharing the details.
+                Thank you for reaching out! {status.emailSent ? 'Your inquiry was saved and an email notification was sent to Sujita.' : 'Your inquiry was saved, but the email notification could not be confirmed. Please use the direct email or WhatsApp links below.'}
               </p>
               <div className="pt-3">
                 <button
-                  onClick={() => setStatus({ loading: false, success: false, error: null })}
+                  onClick={() => setStatus({ loading: false, success: false, error: null, emailSent: false })}
                   className="btn-ghost text-xs px-4 py-2"
                 >
                   Send Another Inquiry
