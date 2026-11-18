@@ -83,8 +83,8 @@ def create_appointment_request(
         "owner_notification_sent": notification_sent,
         "duplicate": False,
         "message": (
-            "Request saved and awaiting owner confirmation. The WhatsApp provider accepted the notification request; delivery is not verified."
+            "Request saved and awaiting owner confirmation."
             if notification_sent
-            else "Request saved, but the WhatsApp notification request was not accepted. Delivery is not verified; the request is still pending."
+            else "Request saved, but owner notification could not be confirmed. The request is still pending."
         ),
     }

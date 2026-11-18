@@ -27,7 +27,8 @@ app.add_middleware(
 app.include_router(inquiries.router)
 app.include_router(chat.router)
 app.include_router(admin.router)
-app.include_router(assistant.router)\napp.include_router(appointments.router)
+app.include_router(assistant.router)
+app.include_router(appointments.router)
 
 
 @app.get("/api/health")

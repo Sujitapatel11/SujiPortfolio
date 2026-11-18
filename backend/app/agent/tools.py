@@ -63,7 +63,7 @@ def save_client_inquiry(name: str, email: str, project_type: str, budget: Option
             f"New portfolio inquiry #{inquiry.id} from {name} ({email})\\n"
             f"Project: {project_type}\\nBudget: {budget or 'Not specified'}\\n{message[:1000]}"
         )
-        notification_state = "WhatsApp notification request accepted by the provider; delivery is not verified" if notification_sent else "WhatsApp notification request was not accepted; delivery is not verified"
+        notification_state = "owner WhatsApp notification sent" if notification_sent else "owner notification was not confirmed"
         return f"SUCCESS: Inquiry #{inquiry.id} was saved to the intake database. Budget: {budget or 'Not specified'}. {notification_state}. This is a recorded inquiry, not a contract."
     except Exception:
         logger.exception("Error saving inquiry tool.")
@@ -123,7 +123,7 @@ def book_appointment_request(name: str, email: str, preferred_time: Optional[str
         notification_sent = send_whatsapp_notification(notification)
         appt.owner_notification_sent = notification_sent
         db.commit()
-        notification_state = "WhatsApp notification request accepted by the provider; delivery is not verified" if notification_sent else "WhatsApp notification request was not accepted; delivery is not verified"
+        notification_state = "owner WhatsApp notification sent" if notification_sent else "owner notification was not confirmed"
         return (
             f"SUCCESS: Appointment request #{appt.id} was saved with status pending. "
             f"Preferred time: {preferred_time or 'Not specified'}. {notification_state}. "
