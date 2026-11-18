@@ -1,6 +1,7 @@
 """Grounded Ask Suji agent with persistent, role-scoped conversation memory."""
 import logging
 import os
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
@@ -242,11 +243,22 @@ def run_agent_message(
                 successful_tool = next((item for item in reversed(tool_results) if item.startswith("SUCCESS:")), None)
                 if failed_tool:
                     reply = failed_tool
-                elif successful_tool and not is_admin_context:
-                    # Public action confirmations come from the tool's persisted result, not model narration.
+                elif successful_tool:
+                    # All tool-backed confirmations must come from the persisted tool result.
                     reply = successful_tool
                 elif not reply:
                     raise RuntimeError("The AI provider returned an empty response.")
+
+                if not successful_tool and re.search(
+                    r"\b(?:i|we)\s+(?:have\s+|has\s+|'ve\s+)?"
+                    r"(?:successfully\s+)?(?:submitted|recorded|saved|booked|scheduled|sent|notified|executed|triggered|created)\b",
+                    reply,
+                    flags=re.IGNORECASE,
+                ):
+                    reply = (
+                        "I haven't completed or submitted that action. No successful tool result confirms it. "
+                        "Tell me what you want to do and I'll ask for any missing details."
+                    )
                 status = "ok"
         except RetrievalUnavailable as exc:
             logger.error("Ask Suji retrieval unavailable: %s", exc, exc_info=True)

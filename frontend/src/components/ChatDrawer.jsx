@@ -9,7 +9,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
     {
       id: 'welcome',
       role: 'assistant',
-      text: "Hi, I'm Ask Suji — Sujita's autonomous AI intake agent. I can answer questions about her engineering architecture, projects (SoulCare, UrmiNexus, SujiPortfolio), services, and tech stack.",
+      text: "Hi, I'm Ask Suji. I answer questions grounded in Sujita's public portfolio and can help submit consultation or project requests.",
     },
   ]);
   const [inputText, setInputText] = useState('');
@@ -194,7 +194,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className={`w-1.5 h-1.5 rounded-full ${backendState === 'configured' ? 'bg-emerald-400' : backendState === 'checking' ? 'bg-amber-400' : 'bg-rose-400'}`} />
                 <span className={`font-mono text-[10px] ${backendState === 'configured' ? 'text-emerald-400' : backendState === 'checking' ? 'text-amber-400' : 'text-rose-400'}`} aria-live="polite">
-                  {backendState === 'configured' ? 'Backend online · provider key set' : backendState === 'checking' ? 'Checking backend…' : backendState === 'degraded' ? 'AI provider not configured' : 'Backend offline'}
+                  {backendState === 'configured' ? 'Backend online · provider key set' : backendState === 'checking' ? 'Checking backend…' : backendState === 'degraded' ? 'AI service degraded' : 'Backend offline'}
                 </span>
               </div>
             </div>

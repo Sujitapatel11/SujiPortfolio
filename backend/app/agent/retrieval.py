@@ -42,26 +42,29 @@ def retrieve_relevant_chunks(
     try:
         if not query.strip():
             return []
+        if not 0.0 <= min_similarity <= 1.0:
+            raise ValueError("min_similarity must be between 0 and 1")
+
         query_vec = generate_embedding(query)
         base_query = db.query(KnowledgeChunk).filter(KnowledgeChunk.embedding.isnot(None))
         if not is_admin_context:
             # The current public corpus is profile:* only. Unknown/new namespaces default private.
             base_query = base_query.filter(KnowledgeChunk.source.like("profile:%"))
+
         if db.get_bind().dialect.name == "postgresql":
             distance = KnowledgeChunk.embedding.cosine_distance(query_vec)
-            rows = base_query.order_by(distance).limit(top_k).all()
-            scored = []
-            for chunk in rows:
-                similarity = 1.0 - float(db.query(KnowledgeChunk.embedding.cosine_distance(query_vec)).filter(KnowledgeChunk.id == chunk.id).scalar())
+            rows = base_query.add_columns((1.0 - distance).label("similarity")).order_by(distance).limit(top_k).all()
+            results = []
+            for chunk, similarity in rows:
+                similarity = float(similarity)
                 if similarity >= min_similarity:
                     setattr(chunk, "_retrieval_similarity", similarity)
-                    scored.append(chunk)
-            logger.info("RAG retrieved %s public-safe chunks (threshold %.2f)", len(scored), min_similarity)
-            return scored
+                    results.append(chunk)
+            logger.info("RAG returned %s/%s chunks at threshold %.2f", len(results), len(rows), min_similarity)
+            return results
 
-        chunks = base_query.all()
         scored = []
-        for chunk in chunks:
+        for chunk in base_query.all():
             if isinstance(chunk.embedding, list):
                 similarity = _cosine_similarity(query_vec, chunk.embedding)
                 if similarity >= min_similarity:
@@ -69,7 +72,7 @@ def retrieve_relevant_chunks(
                     scored.append(chunk)
         scored.sort(key=lambda item: getattr(item, "_retrieval_similarity", 0.0), reverse=True)
         result = scored[:top_k]
-        logger.info("RAG retrieved %s public-safe chunks (threshold %.2f)", len(result), min_similarity)
+        logger.info("RAG returned %s chunks at threshold %.2f", len(result), min_similarity)
         return result
     except Exception as exc:
         logger.exception("RAG retrieval failed.")
