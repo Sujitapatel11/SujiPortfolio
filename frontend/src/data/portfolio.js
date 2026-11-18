@@ -56,7 +56,7 @@ export const projects = [
     tech: ['Django', 'PostgreSQL', 'Redis', 'React'],
     github: 'https://github.com/Sujitapatel11/aiDepressionProject',
     isPrivateRepo: true,
-    liveDemo: 'https://ai-depression-project.vercel.app',
+    liveDemo: 'https://soul-care-one.vercel.app',
     status: 'shipped',
     features: [
       'Core journaling module with personal reflection workflows',
