@@ -21,7 +21,7 @@ TOOLS = {
     ),
     "desktop.open_application": ToolDefinition(
         name="desktop.open_application",
-        description="Open one application from the paired desktop allowlist.",
+        description="Open one approved application on the selected paired device. Android launches supported installed apps; Windows opens supported web apps or local allowlisted tools.",
         required_arguments=("app_id",),
     ),
 }

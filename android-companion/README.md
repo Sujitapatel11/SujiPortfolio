@@ -1,22 +1,33 @@
-# Suji Android Companion (initial scaffold)
+# Hey Suji Android Companion
 
-This is the first Android-local execution slice for the unified device-aware assistant.
+The Android app is a device executor for the existing FastAPI personal operator. It is not a second AI brain.
 
-## Current scope
-- Native Android app shell.
-- Explicit tap-to-talk using Android speech recognition (Hindi locale).
-- Strictly local allowlisted app launching: WhatsApp, Instagram, Chrome and YouTube.
-- Reports success only after Android resolves and starts the target app.
+## Pair once
 
-## Not implemented yet
-- Hosted backend pairing / device registration.
-- Secure credential storage and revocation.
-- Device-bound command queue and result reporting.
-- AccessibilityService workflows.
-- Background microphone / wake-word operation.
-- Sending WhatsApp messages or other consequential actions.
+1. Sign in to the portfolio admin dashboard and open **Personal Operator Devices**.
+2. Under **Pair an Android phone**, generate a device record and copy the backend URL, device ID and one-time device token.
+3. Open this Android app and paste those three values into the pairing fields.
+4. Tap **Verify and pair this phone**. The app verifies the token against the backend device-status endpoint.
+5. Tap **Start approved-task receiver**. Android displays an ongoing notification while the app polls the backend queue.
 
-The app intentionally does not send messages. Message sending must be a separate, explicit, user-confirmed feature after the secure command protocol is implemented.
+The device token is encrypted at rest using a key held in Android Keystore. It is never stored in browser local storage. Use the dashboard's **Revoke** control to revoke a lost or retired device. Use **Stop receiver** to pause polling locally.
+
+## Supported commands
+
+- Open WhatsApp, Instagram or YouTube if the native Android app is installed.
+- Open a public HTTP(S) URL in the Android default browser.
+- Open the default browser.
+
+Every task is proposed by the hosted assistant and requires explicit owner approval before it is queued. The receiver validates device binding, expiry, nonce, arguments and payload SHA-256 before launching anything. It persists the execution receipt before submitting it, so a temporary network failure does not rerun the app-launch side effect.
+
+## Boundaries
+
+- No background microphone or wake word. Voice capture remains an explicit user action.
+- No sending messages, submitting applications, purchases, shell commands, arbitrary scripts, OTP or CAPTCHA handling.
+- No unrestricted accessibility control.
+- The receiver runs only while its visible foreground-service notification is active.
+- CI build/unit tests do not replace a real-phone pairing and execution test.
 
 ## Build
-Open the `android-companion` folder in Android Studio and build the app. The Android SDK and Gradle toolchain are required.
+
+Open `android-companion` in Android Studio or run `gradle -p android-companion :app:testDebugUnitTest`.

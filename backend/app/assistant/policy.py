@@ -48,7 +48,7 @@ def validate_tool_arguments(tool: str, arguments: dict) -> dict:
         if set(arguments) != {"app_id"} or not isinstance(arguments.get("app_id"), str):
             raise PolicyViolation("desktop.open_application requires exactly one string argument: app_id")
         app_id = arguments["app_id"].strip().lower()
-        if app_id not in {"browser", "calculator", "text_editor"}:
+        if app_id not in {"browser", "calculator", "text_editor", "whatsapp", "instagram", "youtube"}:
             raise PolicyViolation("Application is not in the initial desktop allowlist")
         return {"app_id": app_id}
 

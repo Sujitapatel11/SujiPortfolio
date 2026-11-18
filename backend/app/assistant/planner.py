@@ -1,13 +1,7 @@
-"""Constrained natural-language planner.
-
-The model may only propose one registered tool. This module never executes tools.
-Every model output is parsed and revalidated by deterministic policy code.
-"""
+"""Constrained natural-language planner. The LLM proposes; policy validates; device executes."""
 import json
-
 import httpx
 from pydantic import ValidationError
-
 from app.config import OPENAI_API_KEY
 from app.assistant.schemas import ActionProposalRequest
 
@@ -16,16 +10,18 @@ class PlannerUnavailable(RuntimeError):
     pass
 
 
-SYSTEM_PROMPT = """You are an intent parser for a personal desktop assistant.
+SYSTEM_PROMPT = """You are Hey Suji, a personal device operator.
 Return exactly one JSON object and no markdown.
-Allowed output shapes:
+Allowed shapes:
 1) {"kind":"action","message":"short explanation","tool":"browser.open_url","arguments":{"url":"https://..."}}
-2) {"kind":"action","message":"short explanation","tool":"desktop.open_application","arguments":{"app_id":"browser|calculator|text_editor"}}
+2) {"kind":"action","message":"short explanation","tool":"desktop.open_application","arguments":{"app_id":"browser|calculator|text_editor|whatsapp|instagram|youtube"}}
 3) {"kind":"clarification","message":"one concise question"}
 4) {"kind":"unsupported","message":"brief reason"}
-Never claim an action was executed. Never propose sending messages, payments, purchases, deleting files, submitting forms, shell commands, arbitrary scripts, or tools not listed above.
-If the user asks to open a named website and its canonical public URL is unambiguous, propose browser.open_url. If the user asks to open an application, only use the exact app_id allowlist. If the request is ambiguous, ask one clarification question.
-The application enforces approval separately. Do not make permission decisions."""
+Apps supported by the selected device: browser, calculator, text_editor, whatsapp, instagram and youtube.
+Android launches WhatsApp, Instagram and YouTube natively if installed. Windows opens their official web apps. Both devices can open a public HTTP(S) URL.
+Never claim an action was executed. Never propose sending messages, submitting applications or forms, purchases, payments, deleting files, shell commands, arbitrary scripts, OTP or CAPTCHA handling.
+For a named public website with an unambiguous canonical URL, propose browser.open_url. For an app launch, propose desktop.open_application with one exact app_id from the allowlist.
+If a necessary detail is missing, ask one concise clarification question. The application enforces approval separately; do not make permission decisions."""
 
 
 def _parse_planner_content(content: str) -> dict:
@@ -45,11 +41,7 @@ def _parse_planner_content(content: str) -> dict:
             request = ActionProposalRequest(tool=result["tool"], arguments=result["arguments"])
         except ValidationError as exc:
             raise PlannerUnavailable("The AI planner proposed an unregistered or malformed tool.") from exc
-        return {
-            "kind": "action",
-            "message": message[:1000],
-            "request": request,
-        }
+        return {"kind": "action", "message": message[:1000], "request": request}
     return {"kind": result["kind"], "message": message[:1000]}
 
 
@@ -73,9 +65,7 @@ def plan_user_message(text: str) -> dict:
                 json=payload,
             )
             response.raise_for_status()
-            body = response.json()
-            content = body["choices"][0]["message"]["content"]
+            content = response.json()["choices"][0]["message"]["content"]
     except (httpx.HTTPError, KeyError, IndexError, TypeError) as exc:
         raise PlannerUnavailable("The AI planner could not produce a valid response.") from exc
-
     return _parse_planner_content(content)

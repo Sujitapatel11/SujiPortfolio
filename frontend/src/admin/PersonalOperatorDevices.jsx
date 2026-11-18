@@ -62,6 +62,9 @@ export default function PersonalOperatorDevices({ adminToken }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [connection, setConnection] = useState(null);
+  const [androidDeviceName, setAndroidDeviceName] = useState("Suji Android phone");
+  const [androidCredentials, setAndroidCredentials] = useState(null);
+  const [copyMessage, setCopyMessage] = useState("");
 
   const refresh = useCallback(async () => {
     setError("");
@@ -136,9 +139,39 @@ export default function PersonalOperatorDevices({ adminToken }) {
         method: "POST", body: JSON.stringify({ decision }),
       });
       await refreshActions(sessionId);
-      setMessage(decision === "approve" ? "Approved and queued for the paired laptop." : "Action rejected.");
+      setMessage(decision === "approve" ? "Approved and queued for the selected paired device." : "Action rejected.");
     } catch (err) { setError(err.message); }
     finally { setBusy(false); }
+  };
+
+  const registerAndroidDevice = async () => {
+    setBusy(true); setError(""); setMessage(""); setAndroidCredentials(null); setCopyMessage("");
+    try {
+      const device = await api("/devices", adminToken, {
+        method: "POST",
+        body: JSON.stringify({ name: androidDeviceName.trim() }),
+      });
+      setAndroidCredentials({
+        apiBaseUrl: API_ORIGIN,
+        deviceId: device.device_id,
+        deviceToken: device.device_token,
+      });
+      setMessage("Android device record created. Copy these one-time credentials into the Hey Suji Android app.");
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copyAndroidValue = async (value, label) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyMessage(label + " copied. Paste it into Hey Suji on your phone.");
+    } catch {
+      setCopyMessage("Clipboard access was blocked. Select and copy the value manually.");
+    }
   };
 
   const pairDevice = async (event) => {
@@ -191,11 +224,49 @@ export default function PersonalOperatorDevices({ adminToken }) {
       </div>
       <div style={{ padding: "1.4rem", display: "grid", gap: "1.2rem" }}>
         <div style={{ color: "var(--bp-grey)", fontSize: "0.78rem", lineHeight: 1.7 }}>
-          Pair this Windows computer with your private assistant. Device credentials are sent directly to the local companion and are not saved in browser storage. Commands still require your approval before execution.
+          Pair your Windows computer or Android phone with the private operator. Device credentials remain protected; tasks are not executed until you approve the exact proposal.
         </div>
         {error && <div className="admin-error-banner" role="alert">{error}</div>}
         {message && <div style={{ color: "#22D69A", fontSize: "0.78rem" }} role="status">{message}</div>}
         {connection && <div className="admin-settings-row"><span>Local connection</span><strong>Connected · polling enabled</strong></div>}
+        <div style={{ border: "1px solid var(--bp-grid-line)", borderRadius: "12px", padding: "1rem", display: "grid", gap: "0.7rem" }}>
+          <div className="admin-label">Pair an Android phone</div>
+          <p style={{ color: "var(--bp-grey)", fontSize: "0.75rem", lineHeight: 1.6, margin: 0 }}>
+            Generate a device credential here, then enter it once in the Hey Suji Android companion. The phone encrypts it with Android Keystore and polls only for tasks you explicitly approve.
+          </p>
+          <div style={{ display: "flex", gap: "0.7rem", flexWrap: "wrap", alignItems: "end" }}>
+            <div className="admin-form-group" style={{ flex: "1 1 220px", marginBottom: 0 }}>
+              <label className="admin-label" htmlFor="operator-android-name">Phone name</label>
+              <input id="operator-android-name" className="admin-input" value={androidDeviceName} onChange={(e) => setAndroidDeviceName(e.target.value)} maxLength={120} required />
+            </div>
+            <button className="admin-btn-primary" type="button" onClick={registerAndroidDevice} disabled={busy || !androidDeviceName.trim()}>
+              {busy ? "Generating…" : "Generate Android pairing"}
+            </button>
+          </div>
+          {androidCredentials && (
+            <div style={{ display: "grid", gap: "0.65rem", borderTop: "1px solid var(--bp-grid-line)", paddingTop: "0.8rem" }}>
+              <p style={{ color: "#E7B65A", fontSize: "0.72rem", margin: 0 }}>
+                One-time token: copy it now. It is not stored in browser storage and cannot be recovered after this panel is cleared.
+              </p>
+              {[
+                ["Backend URL", androidCredentials.apiBaseUrl],
+                ["Device ID", androidCredentials.deviceId],
+                ["Device token", androidCredentials.deviceToken],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "grid", gap: "0.3rem" }}>
+                  <span className="admin-label">{label}</span>
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                    <input className="admin-input" readOnly value={value} aria-label={label} />
+                    <button className="admin-btn-secondary" type="button" onClick={() => copyAndroidValue(value, label)}>Copy</button>
+                  </div>
+                </div>
+              ))}
+              <button className="admin-btn-secondary" type="button" onClick={() => { setAndroidCredentials(null); setCopyMessage(""); }}>Hide one-time token</button>
+              {copyMessage && <span role="status" style={{ color: "var(--bp-grey)", fontSize: "0.72rem" }}>{copyMessage}</span>}
+            </div>
+          )}
+        </div>
+
         <form onSubmit={pairDevice} style={{ display: "flex", gap: "0.7rem", flexWrap: "wrap", alignItems: "end" }}>
           <div className="admin-form-group" style={{ flex: "1 1 220px", marginBottom: 0 }}>
             <label className="admin-label" htmlFor="operator-device-name">Device name</label>
