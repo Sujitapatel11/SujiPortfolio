@@ -122,7 +122,7 @@ export default function Contact() {
           description="For project enquiries, collaboration, or a conversation about the systems I’m building, you can reach me here."
         />
 
-        {/* Action / Contact Cards Grid */}        {/* Action / Contact Cards Grid */}
+        {/* Action / Contact Cards Grid */}
         <div className="mx-auto mb-10 grid w-full max-w-[940px] grid-cols-2 gap-3 sm:mb-12 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
           {contactCards.map((card, i) => {
             const Icon = card.icon;
