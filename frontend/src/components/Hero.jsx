@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -28,6 +28,32 @@ const fadeUp = {
 
 export default function Hero() {
   const [viewMode, setViewMode] = useState('portrait'); // 'portrait' | 'workspace'
+  const tabsId = useId();
+  const portraitTabId = `${tabsId}-portrait-tab`;
+  const workspaceTabId = `${tabsId}-workspace-tab`;
+  const portraitPanelId = `${tabsId}-portrait-panel`;
+  const workspacePanelId = `${tabsId}-workspace-panel`;
+  const portraitTabRef = useRef(null);
+  const workspaceTabRef = useRef(null);
+
+  const focusTab = (nextMode) => {
+    setViewMode(nextMode);
+    (nextMode === 'portrait' ? portraitTabRef : workspaceTabRef).current?.focus();
+  };
+
+  const handleTabKeyDown = (event) => {
+    let nextMode = null;
+
+    if (event.key === 'ArrowRight') nextMode = viewMode === 'portrait' ? 'workspace' : 'portrait';
+    if (event.key === 'ArrowLeft') nextMode = viewMode === 'portrait' ? 'workspace' : 'portrait';
+    if (event.key === 'Home') nextMode = 'portrait';
+    if (event.key === 'End') nextMode = 'workspace';
+
+    if (nextMode) {
+      event.preventDefault();
+      focusTab(nextMode);
+    }
+  };
 
   return (
     <section
@@ -217,10 +243,21 @@ export default function Hero() {
           <div className="lg:col-span-5 relative">
             {/* View Switcher: Portrait vs Workspace */}
             <div className="flex items-center justify-end mb-2.5">
-              <div role="tablist" aria-label="Hero visual" className="inline-flex items-center p-1 rounded-xl bg-bg-secondary/90 border border-border text-xs font-mono">
+              <div
+                role="tablist"
+                aria-label="Hero visual"
+                aria-orientation="horizontal"
+                onKeyDown={handleTabKeyDown}
+                className="inline-flex items-center p-1 rounded-xl bg-bg-secondary/90 border border-border text-xs font-mono"
+              >
                 <button
+                  ref={portraitTabRef}
+                  id={portraitTabId}
+                  type="button"
                   role="tab"
                   aria-selected={viewMode === 'portrait'}
+                  aria-controls={portraitPanelId}
+                  tabIndex={viewMode === 'portrait' ? 0 : -1}
                   onClick={() => setViewMode('portrait')}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     viewMode === 'portrait'
@@ -231,8 +268,13 @@ export default function Hero() {
                   Developer Portrait
                 </button>
                 <button
+                  ref={workspaceTabRef}
+                  id={workspaceTabId}
+                  type="button"
                   role="tab"
                   aria-selected={viewMode === 'workspace'}
+                  aria-controls={workspacePanelId}
+                  tabIndex={viewMode === 'workspace' ? 0 : -1}
                   onClick={() => setViewMode('workspace')}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     viewMode === 'workspace'
@@ -294,9 +336,17 @@ export default function Hero() {
                 style={{ transformStyle: 'preserve-3d' }}
                 className="relative rounded-3xl border border-border-accent bg-brand-violet/10 p-1.5 shadow-xl"
               >
-                <div className="relative rounded-[22px] overflow-hidden bg-bg-secondary min-h-[360px] sm:min-h-[440px] flex items-center justify-center">
-                  {viewMode === 'portrait' ? (
-                    <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+                <div className="relative rounded-[22px] overflow-hidden bg-bg-secondary">
+                  <div
+                    id={portraitPanelId}
+                    role="tabpanel"
+                    aria-labelledby={portraitTabId}
+                    tabIndex={0}
+                    className={`w-full min-h-[360px] sm:min-h-[440px] items-center justify-center ${
+                      viewMode === 'portrait' ? 'flex' : 'hidden'
+                    }`}
+                  >
+                    <div className="relative w-full h-full min-h-[360px] sm:min-h-[440px] flex flex-col items-center justify-center p-4">
                       {/* Ambient developer glow behind portrait */}
                       <div className="absolute inset-0 bg-brand-violet/5 pointer-events-none" />
                       <img
@@ -318,9 +368,19 @@ export default function Hero() {
                         </span>
                       </div>
                     </div>
-                  ) : (
+                  </div>
+
+                  <div
+                    id={workspacePanelId}
+                    role="tabpanel"
+                    aria-labelledby={workspaceTabId}
+                    tabIndex={0}
+                    className={`w-full min-h-[360px] sm:min-h-[440px] items-center justify-center ${
+                      viewMode === 'workspace' ? 'flex' : 'hidden'
+                    }`}
+                  >
                     <WorkspaceScene />
-                  )}
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
