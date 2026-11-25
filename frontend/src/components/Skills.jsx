@@ -86,7 +86,7 @@ export default function Skills() {
                   aria-pressed={selected}
                   className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition-all duration-200 sm:text-sm ${
                     selected
-                      ? 'border-brand-pink/60 bg-brand-pink/15 text-text-main shadow-[0_0_18px_rgba(255,46,147,0.16)]'
+                      ? 'border-brand-pink/60 bg-brand-pink/15 text-text-main shadow-[0_0_18px_rgba(118,97,143,0.10)]'
                       : 'border-border bg-bg-card/70 text-text-secondary hover:border-brand-violet/60 hover:text-text-main'
                   }`}
                 >
@@ -130,7 +130,7 @@ export default function Skills() {
                     transition={{ type: 'spring', stiffness: 230, damping: 25, mass: 0.8 }}
                     className={`absolute left-1/2 top-1/2 flex h-[310px] w-[220px] flex-col items-center rounded-3xl border p-5 text-center backdrop-blur-xl sm:h-[350px] sm:w-[260px] sm:p-6 ${
                       isActive
-                        ? 'border-brand-pink/70 bg-bg-card shadow-[0_0_35px_rgba(168,85,247,0.28),0_0_12px_rgba(255,46,147,0.2)]'
+                        ? 'border-brand-pink/70 bg-bg-card shadow-[0_0_35px_rgba(118,97,143,0.16),0_0_12px_rgba(118,97,143,0.10)]'
                         : 'border-border bg-bg-card/85 shadow-xl'
                     }`}
                     style={{ transformStyle: 'preserve-3d', translate: '-50% -50%' }}
@@ -182,7 +182,7 @@ export default function Skills() {
               type="button"
               onClick={() => move(-1)}
               aria-label="Previous technology"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-pink hover:text-brand-pink hover:shadow-[0_0_18px_rgba(255,46,147,0.22)]"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-pink hover:text-brand-pink hover:shadow-[0_0_18px_rgba(118,97,143,0.12)]"
             >
               <ArrowLeft size={19} />
             </button>
@@ -196,7 +196,7 @@ export default function Skills() {
               type="button"
               onClick={() => move(1)}
               aria-label="Next technology"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-pink hover:text-brand-pink hover:shadow-[0_0_18px_rgba(255,46,147,0.22)]"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-pink hover:text-brand-pink hover:shadow-[0_0_18px_rgba(118,97,143,0.12)]"
             >
               <ArrowRight size={19} />
             </button>

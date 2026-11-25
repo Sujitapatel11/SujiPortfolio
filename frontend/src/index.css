@@ -2,63 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ════════════════════════════════════════════════════════════════
-   SUJI — SIGNATURE MIDNIGHT PURPLE & NEON ACCENTS DESIGN SYSTEM
-   Midnight Purple Background: #0A0612 / #0F091F
-   Neon Pink: #FF2E93 · Neon Violet: #A855F7 · Lavender: #C4B5FD
-   ════════════════════════════════════════════════════════════════ */
+/*
+ * SUJI PORTFOLIO — PREMIUM MUTED PURPLE DESIGN SYSTEM
+ * Deep plum · muted purple · soft lavender · ivory
+ * No neon accents, loud gradients, or heavy glow effects.
+ */
 
 :root,
 html.dark {
-  --bg-primary: #0A0614;
-  --bg-secondary: #120B24;
-  --bg-tertiary: #1A1033;
-  --bg-card: rgba(18, 12, 38, 0.72);
-  --bg-card-hover: rgba(28, 18, 56, 0.88);
-  --text-primary: #F8F7FF;
-  --text-secondary: #B8B0D3;
-  --text-muted: #7E749F;
-  --accent: #A855F7;
-  --accent-violet: #A855F7;
-  --accent-neon-pink: #FF2E93;
-  --accent-lavender: #C4B5FD;
-  --accent-hover: #D946EF;
-  --border: rgba(168, 85, 247, 0.22);
-  --border-accent: rgba(255, 46, 147, 0.45);
-  --glass-bg: rgba(18, 11, 36, 0.68);
-  --glass-strong-bg: rgba(13, 8, 26, 0.92);
-  --glass-border: rgba(168, 85, 247, 0.25);
-  --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(168, 85, 247, 0.08);
-  --card-shadow-hover: 0 10px 36px rgba(0, 0, 0, 0.65), 0 0 24px rgba(255, 46, 147, 0.22);
-  --ambient-glow: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(168, 85, 247, 0.24), rgba(255, 46, 147, 0.12), transparent 75%);
-  --scrollbar-thumb: #3B2667;
-  --scrollbar-track: #0A0614;
+  --bg-primary: #17121D;
+  --bg-secondary: #211A29;
+  --bg-tertiary: #2A2233;
+  --bg-card: rgba(33, 26, 41, 0.96);
+  --bg-card-hover: #30263A;
+  --text-primary: #F8F6FA;
+  --text-secondary: #D0C7D8;
+  --text-muted: #A69EAD;
+  --accent: #A895B8;
+  --accent-violet: #76618F;
+  /* Kept as a compatibility alias for existing Tailwind component classes. */
+  --accent-neon-pink: var(--accent);
+  --accent-lavender: #DCD2E8;
+  --accent-hover: #B7A6C8;
+  --border: rgba(220, 210, 232, 0.14);
+  --border-accent: rgba(118, 97, 143, 0.46);
+  --glass-bg: rgba(33, 26, 41, 0.84);
+  --glass-strong-bg: rgba(29, 23, 37, 0.96);
+  --glass-border: rgba(220, 210, 232, 0.16);
+  --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --card-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.22);
+  --ambient-glow: radial-gradient(ellipse 80% 42% at 50% 0%, rgba(118, 97, 143, 0.08), transparent 70%);
+  --scrollbar-thumb: #5B4B68;
+  --scrollbar-track: #17121D;
 }
 
 html.light {
-  --bg-primary: #F8F6FC;
-  --bg-secondary: #EFEBF7;
-  --bg-tertiary: #E3DCF2;
+  --bg-primary: #F8F6FA;
+  --bg-secondary: #F0EDF3;
+  --bg-tertiary: #E7E0ED;
   --bg-card: #FFFFFF;
-  --bg-card-hover: #FAF8FF;
-  --text-primary: #180D2B;
-  --text-secondary: #5C5272;
-  --text-muted: #8E83A8;
-  --accent: #8B5CF6;
-  --accent-violet: #7C3AED;
-  --accent-neon-pink: #EC4899;
-  --accent-lavender: #A78BFA;
-  --accent-hover: #7C3AED;
-  --border: #DCD3EE;
-  --border-accent: rgba(236, 72, 153, 0.35);
+  --bg-card-hover: #F4F0F7;
+  --text-primary: #24212A;
+  --text-secondary: #5D5765;
+  --text-muted: #817986;
+  --accent: #76618F;
+  --accent-violet: #76618F;
+  --accent-neon-pink: var(--accent);
+  --accent-lavender: #DCD2E8;
+  --accent-hover: #5F4B76;
+  --border: #E3DCE8;
+  --border-accent: rgba(118, 97, 143, 0.36);
   --glass-bg: rgba(255, 255, 255, 0.88);
-  --glass-strong-bg: rgba(255, 255, 255, 0.96);
-  --glass-border: rgba(139, 92, 246, 0.18);
-  --card-shadow: 0 4px 18px rgba(32, 12, 60, 0.06);
-  --card-shadow-hover: 0 10px 28px rgba(32, 12, 60, 0.12), 0 0 16px rgba(236, 72, 153, 0.1);
-  --ambient-glow: radial-gradient(ellipse 70% 35% at 50% -5%, rgba(139, 92, 246, 0.12), transparent);
-  --scrollbar-thumb: #C8BEDE;
-  --scrollbar-track: #F8F6FC;
+  --glass-strong-bg: rgba(255, 255, 255, 0.97);
+  --glass-border: rgba(118, 97, 143, 0.16);
+  --card-shadow: 0 8px 24px rgba(36, 33, 42, 0.05);
+  --card-shadow-hover: 0 10px 28px rgba(36, 33, 42, 0.09);
+  --ambient-glow: radial-gradient(ellipse 70% 34% at 50% 0%, rgba(118, 97, 143, 0.05), transparent 72%);
+  --scrollbar-thumb: #C5B9D0;
+  --scrollbar-track: #F8F6FA;
 }
 
 @layer base {
@@ -82,7 +83,6 @@ html.light {
     transition: background-color 0.25s ease, color 0.25s ease;
   }
 
-  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 7px;
   }
@@ -97,59 +97,44 @@ html.light {
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
+    background: var(--accent-violet);
   }
 
   ::selection {
-    background: rgba(255, 46, 147, 0.35);
-    color: #FFFFFF;
+    background: rgba(118, 97, 143, 0.22);
+    color: var(--text-primary);
   }
 }
 
 @layer components {
-
-  /* Minimal glassmorphism card */
   .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--card-shadow);
   }
 
   .glass-strong {
     background: var(--glass-strong-bg);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--border);
     box-shadow: var(--card-shadow);
   }
 
-  /* Neon text gradients */
-  .text-gradient {
-    background: linear-gradient(135deg, #FF2E93 0%, #C084FC 50%, #818CF8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
+  .text-gradient,
   .text-gradient-purple {
-    background: linear-gradient(135deg, #EC4899 0%, #A855F7 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--accent);
+    background: none;
+    -webkit-text-fill-color: currentColor;
   }
 
-  /* Glow card with neon accents */
   .glow-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     box-shadow: var(--card-shadow);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1),
-      border-color 0.25s ease,
-      box-shadow 0.25s ease;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
   }
 
   .glow-card:hover {
@@ -158,43 +143,37 @@ html.light {
     transform: translateY(-2px);
   }
 
-  /* Section heading label */
   .section-label {
     @apply font-mono text-xs tracking-wider uppercase font-semibold;
-    color: var(--accent-neon-pink);
+    color: var(--accent);
   }
 
-  /* Primary Neon button */
   .btn-primary {
     @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer;
-    background: linear-gradient(135deg, #FF2E93 0%, #A855F7 100%);
+    background: var(--accent-violet);
     color: #FFFFFF;
-    box-shadow: 0 4px 18px rgba(255, 46, 147, 0.35);
+    box-shadow: 0 3px 12px rgba(118, 97, 143, 0.18);
   }
 
   .btn-primary:hover {
-    box-shadow: 0 6px 24px rgba(255, 46, 147, 0.55), 0 0 12px rgba(168, 85, 247, 0.4);
+    background: var(--accent-hover);
+    box-shadow: 0 5px 16px rgba(118, 97, 143, 0.22);
     transform: translateY(-1px);
-    filter: brightness(1.08);
   }
 
-  /* Ghost / Outline button */
   .btn-ghost {
     @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer;
     background: var(--bg-card);
     border: 1px solid var(--border);
     color: var(--text-secondary);
-    backdrop-filter: blur(10px);
   }
 
   .btn-ghost:hover {
     color: var(--text-primary);
     border-color: var(--border-accent);
     background: var(--bg-card-hover);
-    box-shadow: 0 0 14px rgba(168, 85, 247, 0.2);
   }
 
-  /* Tech badge */
   .tech-badge {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-mono text-xs font-medium transition-colors;
     background: var(--bg-secondary);
@@ -202,7 +181,6 @@ html.light {
     color: var(--accent-lavender);
   }
 
-  /* Terminal block */
   .terminal {
     @apply font-mono text-sm rounded-xl p-4;
     background: var(--bg-secondary);
@@ -212,8 +190,6 @@ html.light {
 }
 
 @layer utilities {
-
-  /* Ambient background glow */
   .ambient-glow {
     position: fixed;
     inset: 0;
@@ -232,7 +208,6 @@ html.light {
   }
 }
 
-/* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -242,7 +217,6 @@ html.light {
   }
 }
 
-/* Smooth scroll offset for fixed navbar */
 section[id] {
   scroll-margin-top: 80px;
 }

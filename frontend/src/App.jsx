@@ -54,8 +54,8 @@ function PublicPortfolio() {
           onClick={() => setChatOpen(true)}
           className="fixed bottom-6 right-6 z-40 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-105 shadow-xl cursor-pointer"
           style={{
-            background: 'linear-gradient(135deg, #FF2E93 0%, #A855F7 100%)',
-            boxShadow: '0 4px 20px rgba(255, 46, 147, 0.45)',
+            background: 'var(--accent-violet)',
+            boxShadow: '0 4px 16px rgba(118, 97, 143, 0.22)',
             width: '3.5rem',
             height: '3.5rem',
           }}

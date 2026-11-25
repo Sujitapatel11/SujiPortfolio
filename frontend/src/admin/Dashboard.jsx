@@ -476,7 +476,7 @@ export const Dashboard = () => {
                 {/* ═══ JOBS ═══ */}
                 {activeTab === "jobs" && (
                   <>
-                  <section style={{ background: "linear-gradient(135deg, rgba(151,71,255,.12), rgba(255,45,149,.07))", border: "1px solid var(--bp-grid-line)", borderRadius: "16px", padding: "1.2rem", marginBottom: "1rem" }}>
+                  <section style={{ background: "rgba(118, 97, 143, 0.08)", border: "1px solid var(--bp-grid-line)", borderRadius: "16px", padding: "1.2rem", marginBottom: "1rem" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
                       <div>
                         <div style={{ fontFamily: "var(--bp-font-mono)", fontSize: ".68rem", color: "var(--bp-orange)", letterSpacing: ".12em" }}>AUTONOMOUS OPPORTUNITY SCOUT</div>
