@@ -93,7 +93,7 @@ export default function About() {
           accent="Core Foundation"
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Summary Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
