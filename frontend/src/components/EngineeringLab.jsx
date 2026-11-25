@@ -52,7 +52,7 @@ export default function EngineeringLab() {
           icon={Code2}
         />
 
-        <div className="mb-8 flex gap-2 overflow-x-auto px-1 pb-2 no-scrollbar sm:flex-wrap sm:justify-start">        <div className="mb-8 flex gap-2 overflow-x-auto px-1 pb-2 no-scrollbar sm:flex-wrap sm:justify-center">
+        <div className="mb-8 flex gap-2 overflow-x-auto px-1 pb-2 no-scrollbar sm:flex-wrap sm:justify-start">
           {categories.map((category) => { const Icon = category.icon; const selected = activeCategory === category.id; return <button key={category.id} type="button" onClick={() => setActiveCategory(category.id)} aria-pressed={selected} className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-semibold shadow-sm backdrop-blur-md transition sm:text-sm ${selected ? 'border-brand-purple/50 bg-brand-purple/15 text-text-main shadow-[0_0_18px_rgba(118,97,143,0.12)]' : 'border-border bg-bg-card/70 text-text-secondary hover:border-brand-purple/50 hover:text-text-main'}`}><Icon size={16} />{category.label}</button>; })}
         </div>
 
