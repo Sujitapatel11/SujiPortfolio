@@ -161,7 +161,7 @@ export default function PersonalAssistantOrb() {
       </div>
       <p className="mt-2 text-[10px] text-slate-400">The portfolio can plan tasks and request approval. Device actions require a paired, online companion. Wake-word activation is not enabled in this browser.</p>
     </section>}
-    <button onClick={activate} aria-label="Activate Hey Suji" title="Activate Hey Suji" className="flex h-14 w-14 items-center justify-center rounded-full border border-violet-200/50 bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 text-white shadow-xl transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-violet-300">
+    <button onClick={activate} aria-label="Activate Hey Suji" title="Activate Hey Suji" className="flex h-14 w-14 items-center justify-center rounded-full border border-brand-lavender/50 bg-brand-violet text-white shadow-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-lavender">
       {open ? <X size={22}/> : <Sparkles size={24}/>}
     </button>
   </div>;

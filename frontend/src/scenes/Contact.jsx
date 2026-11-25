@@ -14,16 +14,16 @@ export default function Contact() {
 
   return (
     <group position={[0, 0.5, -22]}>
-      {/* Neon Intake Portal Ambient Light */}
-      <pointLight position={[0, 4, 0]} intensity={3.5} color="#ec4899" distance={10} />
-      <pointLight position={[0, -2, 2]} intensity={2.0} color="#f43f5e" distance={8} />
+      {/* Restrained plum ambient lighting */}
+      <pointLight position={[0, 4, 0]} intensity={3.5} color="#76618F" distance={10} />
+      <pointLight position={[0, -2, 2]} intensity={2.0} color="#5F4B76" distance={8} />
 
       <Float speed={2.5} rotationIntensity={0.6} floatIntensity={0.6}>
         <mesh ref={meshRef}>
           <dodecahedronGeometry args={[1.2, 0]} />
           <meshStandardMaterial
-            color="#ec4899"
-            emissive="#9d174d"
+            color="#76618F"
+            emissive="#2A2233"
             emissiveIntensity={0.6}
             roughness={0.2}
             metalness={0.8}
@@ -35,7 +35,7 @@ export default function Contact() {
       <Text
         position={[0, 2.2, 0]}
         fontSize={0.5}
-        color="#f472b6"
+        color="#DCD2E8"
         anchorX="center"
         anchorY="middle"
       >
@@ -44,7 +44,7 @@ export default function Contact() {
       <Text
         position={[0, 1.7, 0]}
         fontSize={0.22}
-        color="#fbcfe8"
+        color="#E7E0ED"
         anchorX="center"
         anchorY="middle"
       >
