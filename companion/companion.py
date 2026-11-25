@@ -204,12 +204,25 @@ def execute_approved_command(command: dict) -> tuple[str, str]:
         if not webbrowser.open(args["url"], new=2):
             raise RuntimeError("browser_open_failed")
         return "opened", "Opened the approved URL in the default browser"
-    if tool == "desktop.open_application" and set(args) == {"app_id"} and args["app_id"] in {"calculator", "text_editor"}:
-        if sys.platform != "win32":
-            raise RuntimeError("windows_companion_required")
-        executable = {"calculator": "calc.exe", "text_editor": "notepad.exe"}[args["app_id"]]
-        subprocess.Popen([executable], shell=False)
-        return "opened", f"Started {args['app_id']}"
+    if tool == "desktop.open_application" and set(args) == {"app_id"}:
+        app_id = args["app_id"]
+        windows_web_apps = {
+            "whatsapp": "https://web.whatsapp.com/",
+            "instagram": "https://www.instagram.com/",
+            "youtube": "https://www.youtube.com/",
+        }
+        if app_id in windows_web_apps:
+            if sys.platform != "win32":
+                raise RuntimeError("windows_companion_required")
+            if not webbrowser.open(windows_web_apps[app_id], new=2):
+                raise RuntimeError("browser_open_failed")
+            return "opened", f"Opened the official {app_id} web app in the default browser"
+        if app_id in {"calculator", "text_editor"}:
+            if sys.platform != "win32":
+                raise RuntimeError("windows_companion_required")
+            executable = {"calculator": "calc.exe", "text_editor": "notepad.exe"}[app_id]
+            subprocess.Popen([executable], shell=False)
+            return "opened", f"Started {app_id}"
     raise ValueError("tool_or_arguments_not_allowed")
 
 
