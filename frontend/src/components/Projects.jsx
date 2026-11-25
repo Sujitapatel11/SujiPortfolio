@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import SectionHeading from './SectionHeading';
 import {
   Github,
   ArrowUpRight,
@@ -244,28 +245,29 @@ export default function Projects() {
   const offsets = showSideCards ? [-1, 0, 1] : [0];
   const cards = offsets.map((offset) => { const index = (active + offset + count) % count; return { project: items[index], index, offset }; }).filter((item, i, arr) => item.project && arr.findIndex((x) => x.index === item.index) === i);
   return (
-    <section id="projects" className="relative isolate overflow-hidden py-20 px-4 sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_18%,rgba(216,180,254,0.24),transparent_56%),radial-gradient(ellipse_at_50%_82%,rgba(244,114,182,0.13),transparent_52%)]" />
+    <section id="projects" className="relative isolate overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_18%,rgba(118,97,143,0.12),transparent_58%),radial-gradient(ellipse_at_50%_82%,rgba(220,210,232,0.045),transparent_55%)]" />
       <div className="mx-auto max-w-7xl">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45 }} className="mb-8 text-center sm:mb-10">
-          <div className="mb-3 flex items-center justify-center gap-2"><span className="section-label">/ My Projects</span><Sparkles size={14} className="text-brand-pink" /></div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-text-main sm:text-5xl">Real-World Projects <span className="text-gradient">I’ve Built</span></h2>
-          <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">A collection of full-stack, AI and product projects — from idea to implementation.</p>
-        </motion.div>
-        <div className="mb-8 flex flex-wrap items-center justify-center gap-2">{filters.map((f) => <button key={f.id} type="button" onClick={() => setFilter(f.id)} aria-pressed={filter === f.id} className={`rounded-full border px-4 py-2 text-xs font-semibold backdrop-blur-md transition sm:text-sm ${filter === f.id ? 'border-brand-purple/50 bg-brand-purple/15 text-text-main shadow-md' : 'border-border bg-bg-card/70 text-text-secondary hover:border-brand-pink/50'}`}>{f.label}</button>)}</div>
+        <SectionHeading
+          eyebrow="/ My Projects"
+          title="Real-World Projects"
+          accent="I’ve Built"
+          description="A focused selection of full-stack, AI and product work — with implementation status kept explicit."
+        />
+        <div className="mb-8 flex flex-wrap items-center justify-start gap-2">{filters.map((f) => <button key={f.id} type="button" onClick={() => setFilter(f.id)} aria-pressed={filter === f.id} className={`rounded-full border px-4 py-2 text-xs font-semibold backdrop-blur-md transition sm:text-sm ${filter === f.id ? 'border-brand-purple/50 bg-brand-purple/15 text-text-main shadow-md' : 'border-border bg-bg-card/70 text-text-secondary hover:border-brand-purple/50'}`}>{f.label}</button>)}</div>
         <div className="relative mx-auto max-w-6xl">
-          <div className="relative h-[650px] overflow-hidden sm:h-[660px] lg:h-[680px] [perspective:1400px]">
+          <div className="relative h-[690px] overflow-hidden sm:h-[690px] lg:h-[680px] [perspective:1400px]">
             <motion.div className="relative h-full w-full cursor-grab touch-pan-y active:cursor-grabbing" drag={count > 1 ? 'x' : false} dragConstraints={{ left: 0, right: 0 }} dragElastic={0.12} onDragEnd={(_, info) => { if (info.offset.x < -Math.max(40, viewportWidth * 0.055)) move(1); if (info.offset.x > Math.max(40, viewportWidth * 0.055)) move(-1); }} role="group" aria-label="Project carousel. Drag with mouse or swipe to browse.">
               {cards.map(({ project, index, offset }) => { const selected = offset === 0; return <motion.div key={project.id} initial={false} animate={{ x: mobile ? 0 : offset * slideDistance, scale: selected ? 1 : sideScale, opacity: selected ? 1 : 0.78, rotateY: mobile ? 0 : offset * -5, zIndex: selected ? 20 : 10 }} transition={{ type: 'spring', stiffness: 190, damping: 25 }} style={{ translate: '-50% 0', transformStyle: 'preserve-3d' }} className={`absolute left-1/2 top-0 w-[calc(100%-8px)] sm:w-[min(92%,640px)] origin-top ${selected ? 'pointer-events-auto' : 'pointer-events-auto cursor-pointer'}`} onClick={() => { if (!selected) setActive(index); }} aria-hidden={!selected}><ProjectCard project={project} index={index} /></motion.div>; })}
             </motion.div>
           </div>
           <div className="relative z-30 -mt-1 flex items-center justify-center gap-5">
-            <button type="button" onClick={() => move(-1)} disabled={count < 2} aria-label="Previous project" className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-purple/40 bg-bg-card/90 text-text-main shadow-lg backdrop-blur-md transition hover:border-brand-pink hover:text-brand-pink disabled:opacity-40"><ChevronDown size={19} className="rotate-90" /></button>
+            <button type="button" onClick={() => move(-1)} disabled={count < 2} aria-label="Previous project" className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-purple/40 bg-bg-card/90 text-text-main shadow-lg backdrop-blur-md transition hover:border-brand-purple hover:text-brand-purple disabled:opacity-40"><ChevronDown size={19} className="rotate-90" /></button>
             <div className="min-w-[92px] text-center"><p className="font-mono text-xs tabular-nums text-text-secondary">{String(active + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}</p><p className="mt-1 text-[10px] text-text-muted">Drag with mouse or swipe</p></div>
-            <button type="button" onClick={() => move(1)} disabled={count < 2} aria-label="Next project" className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-purple/40 bg-bg-card/90 text-text-main shadow-lg backdrop-blur-md transition hover:border-brand-pink hover:text-brand-pink disabled:opacity-40"><ChevronDown size={19} className="-rotate-90" /></button>
+            <button type="button" onClick={() => move(1)} disabled={count < 2} aria-label="Next project" className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-purple/40 bg-bg-card/90 text-text-main shadow-lg backdrop-blur-md transition hover:border-brand-purple hover:text-brand-purple disabled:opacity-40"><ChevronDown size={19} className="-rotate-90" /></button>
           </div>
         </div>
-        <div className="mx-auto mt-8 flex max-w-4xl flex-wrap items-center justify-center gap-x-10 gap-y-4 rounded-2xl border border-border bg-bg-card/65 px-5 py-4 text-sm text-text-secondary shadow-sm backdrop-blur-md"><div className="flex items-center gap-2"><Layers size={17} className="text-brand-pink" /><span className="font-semibold text-text-main">{projects.length} featured projects</span></div><div className="flex items-center gap-2"><Laptop size={17} className="text-brand-purple" /><span>Interactive previews</span></div><div className="flex items-center gap-2"><Compass size={17} className="text-brand-pink" /><span>Explore the builds</span></div></div>
+        <div className="mx-auto mt-8 flex max-w-4xl flex-wrap items-center justify-start gap-x-10 gap-y-4 rounded-2xl border border-border bg-bg-card/65 px-5 py-4 text-sm text-text-secondary shadow-sm backdrop-blur-md"><div className="flex items-center gap-2"><Layers size={17} className="text-brand-purple" /><span className="font-semibold text-text-main">{projects.length} featured projects</span></div><div className="flex items-center gap-2"><Laptop size={17} className="text-brand-purple" /><span>Interactive previews</span></div><div className="flex items-center gap-2"><Compass size={17} className="text-brand-purple" /><span>Explore the builds</span></div></div>
       </div>
     </section>
   );

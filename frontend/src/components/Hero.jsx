@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -28,6 +28,32 @@ const fadeUp = {
 
 export default function Hero() {
   const [viewMode, setViewMode] = useState('portrait'); // 'portrait' | 'workspace'
+  const tabsId = useId();
+  const portraitTabId = `${tabsId}-portrait-tab`;
+  const workspaceTabId = `${tabsId}-workspace-tab`;
+  const portraitPanelId = `${tabsId}-portrait-panel`;
+  const workspacePanelId = `${tabsId}-workspace-panel`;
+  const portraitTabRef = useRef(null);
+  const workspaceTabRef = useRef(null);
+
+  const focusTab = (nextMode) => {
+    setViewMode(nextMode);
+    (nextMode === 'portrait' ? portraitTabRef : workspaceTabRef).current?.focus();
+  };
+
+  const handleTabKeyDown = (event) => {
+    let nextMode = null;
+
+    if (event.key === 'ArrowRight') nextMode = viewMode === 'portrait' ? 'workspace' : 'portrait';
+    if (event.key === 'ArrowLeft') nextMode = viewMode === 'portrait' ? 'workspace' : 'portrait';
+    if (event.key === 'Home') nextMode = 'portrait';
+    if (event.key === 'End') nextMode = 'workspace';
+
+    if (nextMode) {
+      event.preventDefault();
+      focusTab(nextMode);
+    }
+  };
 
   return (
     <section
@@ -213,12 +239,25 @@ export default function Hero() {
             </motion.div>
           </div>
 
-          {/* Right Column: Developer Portrait & Workspace with Floating Status Badges */}
+          {/* Right Column: Portrait & Workspace with Floating Status Badges */}
           <div className="lg:col-span-5 relative">
             {/* View Switcher: Portrait vs Workspace */}
             <div className="flex items-center justify-end mb-2.5">
-              <div className="inline-flex items-center p-1 rounded-xl bg-bg-secondary/90 border border-border text-xs font-mono">
+              <div
+                role="tablist"
+                aria-label="Hero visual"
+                aria-orientation="horizontal"
+                onKeyDown={handleTabKeyDown}
+                className="inline-flex items-center p-1 rounded-xl bg-bg-secondary/90 border border-border text-xs font-mono"
+              >
                 <button
+                  ref={portraitTabRef}
+                  id={portraitTabId}
+                  type="button"
+                  role="tab"
+                  aria-selected={viewMode === 'portrait'}
+                  aria-controls={portraitPanelId}
+                  tabIndex={viewMode === 'portrait' ? 0 : -1}
                   onClick={() => setViewMode('portrait')}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     viewMode === 'portrait'
@@ -229,6 +268,13 @@ export default function Hero() {
                   Developer Portrait
                 </button>
                 <button
+                  ref={workspaceTabRef}
+                  id={workspaceTabId}
+                  type="button"
+                  role="tab"
+                  aria-selected={viewMode === 'workspace'}
+                  aria-controls={workspacePanelId}
+                  tabIndex={viewMode === 'workspace' ? 0 : -1}
                   onClick={() => setViewMode('workspace')}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     viewMode === 'workspace'
@@ -236,7 +282,7 @@ export default function Hero() {
                       : 'text-text-secondary hover:text-text-main'
                   }`}
                 >
-                  3D Workspace
+                  2D Workspace
                 </button>
               </div>
             </div>
@@ -246,10 +292,24 @@ export default function Hero() {
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="relative"
+              className="relative hero-depth-stage"
+              style={{ perspective: 1100, transformStyle: 'preserve-3d' }}
             >
+              {/* Quiet 3D backplate gives the hero visual a little physical depth. */}
+              <div className="hero-depth-backplate" aria-hidden="true" />
+
+              {/* Small, slow-moving plum glass cube — decorative, not a WebGL canvas. */}
+              <div className="hero-depth-cube hidden sm:block" aria-hidden="true">
+                <span className="hero-cube-face hero-cube-front" />
+                <span className="hero-cube-face hero-cube-back" />
+                <span className="hero-cube-face hero-cube-right" />
+                <span className="hero-cube-face hero-cube-left" />
+                <span className="hero-cube-face hero-cube-top" />
+                <span className="hero-cube-face hero-cube-bottom" />
+              </div>
+
               {/* Floating Status Card 1: Top Left */}
-              <div className="absolute -top-4 -left-4 sm:-top-5 sm:-left-6 z-20 bg-bg-card/95 border border-brand-violet/40 p-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-3 animate-float max-w-[210px]">
+              <div className="absolute -top-5 -left-6 z-20 hidden max-w-[210px] items-center gap-3 rounded-2xl border border-brand-violet/30 bg-bg-card/95 p-3 shadow-lg backdrop-blur-md sm:flex animate-float">
                 <div className="w-9 h-9 rounded-xl bg-brand-violet/20 border border-brand-violet/40 flex items-center justify-center text-brand-lavender flex-shrink-0">
                   <Server size={18} />
                 </div>
@@ -266,7 +326,7 @@ export default function Hero() {
               </div>
 
               {/* Floating Status Card 2: Bottom Right */}
-              <div className="absolute -bottom-4 -right-4 sm:-bottom-5 sm:-right-6 z-20 bg-bg-card/95 border border-brand-purple/40 p-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-3 animate-float-slow max-w-[220px]">
+              <div className="absolute -bottom-5 -right-6 z-20 hidden max-w-[220px] items-center gap-3 rounded-2xl border border-brand-purple/30 bg-bg-card/95 p-3 shadow-lg backdrop-blur-md sm:flex animate-float-slow">
                 <div className="w-9 h-9 rounded-xl bg-brand-purple/20 border border-brand-purple/40 flex items-center justify-center text-brand-purple flex-shrink-0">
                   <Sparkles size={18} />
                 </div>
@@ -283,10 +343,23 @@ export default function Hero() {
               </div>
 
               {/* Visual Frame */}
-              <div className="relative rounded-3xl overflow-hidden p-1.5 bg-brand-violet/10 border border-border-accent shadow-2xl">
-                <div className="relative rounded-[22px] overflow-hidden bg-bg-secondary min-h-[380px] sm:min-h-[440px] flex items-center justify-center">
-                  {viewMode === 'portrait' ? (
-                    <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+              <motion.div
+                whileHover={{ rotateX: 2.1, rotateY: -2.8, y: -4 }}
+                transition={{ type: 'spring', stiffness: 150, damping: 24 }}
+                style={{ transformStyle: 'preserve-3d' }}
+                className="relative rounded-3xl border border-border-accent bg-brand-violet/10 p-1.5 shadow-xl"
+              >
+                <div className="relative rounded-[22px] overflow-hidden bg-bg-secondary">
+                  <div
+                    id={portraitPanelId}
+                    role="tabpanel"
+                    aria-labelledby={portraitTabId}
+                    tabIndex={0}
+                    className={`w-full min-h-[360px] sm:min-h-[440px] items-center justify-center ${
+                      viewMode === 'portrait' ? 'flex' : 'hidden'
+                    }`}
+                  >
+                    <div className="relative w-full h-full min-h-[360px] sm:min-h-[440px] flex flex-col items-center justify-center p-4">
                       {/* Ambient developer glow behind portrait */}
                       <div className="absolute inset-0 bg-brand-violet/5 pointer-events-none" />
                       <img
@@ -308,11 +381,21 @@ export default function Hero() {
                         </span>
                       </div>
                     </div>
-                  ) : (
+                  </div>
+
+                  <div
+                    id={workspacePanelId}
+                    role="tabpanel"
+                    aria-labelledby={workspaceTabId}
+                    tabIndex={0}
+                    className={`w-full min-h-[360px] sm:min-h-[440px] items-center justify-center ${
+                      viewMode === 'workspace' ? 'flex' : 'hidden'
+                    }`}
+                  >
                     <WorkspaceScene />
-                  )}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>

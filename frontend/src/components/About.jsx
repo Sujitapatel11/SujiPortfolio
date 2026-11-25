@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import SectionHeading from './SectionHeading';
 import {
   GraduationCap,
   Code2,
@@ -86,22 +87,11 @@ export default function About() {
   return (
     <section id="about" className="relative py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Section Heading */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-          className="mb-12 sm:mb-14"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <span className="section-label">/ Foundation & Background</span>
-            <span className="h-px w-12 bg-border-accent inline-block" />
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-main">
-            Engineering Depth & <span className="text-gradient">Core Foundation</span>
-          </h2>
-        </motion.div>
+        <SectionHeading
+          eyebrow="/ Foundation & Background"
+          title="Engineering Depth &"
+          accent="Core Foundation"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Summary Card */}
@@ -117,7 +107,7 @@ export default function About() {
                 <img
                   src="/sujita.png"
                   alt={personalInfo.fullName}
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-brand-pink shadow-md"
+                  className="w-16 h-16 rounded-2xl object-cover border-2 border-brand-purple shadow-md"
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = '/assets/suji-portrait.jpg';
@@ -128,7 +118,7 @@ export default function About() {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-bold text-text-main">{personalInfo.fullName}</h3>
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-brand-pink/20 text-brand-pink font-semibold">
+                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-brand-purple/20 text-brand-purple font-semibold">
                     SUJI
                   </span>
                 </div>
@@ -141,7 +131,7 @@ export default function About() {
             <div className="space-y-4 pt-2 border-t border-border">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-bg-secondary border border-border">
-                  <GraduationCap size={16} className="text-brand-pink" />
+                  <GraduationCap size={16} className="text-brand-purple" />
                 </div>
                 <div>
                   <p className="font-mono text-[10px] text-text-muted uppercase tracking-wider">
@@ -201,7 +191,7 @@ export default function About() {
                   e.preventDefault();
                   document.querySelector('#skills')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="inline-flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-mono text-brand-pink hover:text-white bg-bg-secondary hover:bg-brand-pink/20 border border-border hover:border-brand-pink/40 transition-all"
+                className="inline-flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-mono text-brand-purple hover:text-white bg-bg-secondary hover:bg-brand-purple/20 border border-border hover:border-brand-purple/40 transition-all"
               >
                 <span>View All 28 Technology Logos</span>
                 <ArrowRight size={13} />
@@ -220,11 +210,11 @@ export default function About() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.35, delay: i * 0.04 }}
-                  className="rounded-3xl p-5 sm:p-6 bg-bg-card/80 border border-border hover:border-brand-pink/40 transition-all duration-200 shadow-md group"
+                  className="rounded-3xl p-5 sm:p-6 bg-bg-card/80 border border-border hover:border-brand-purple/40 transition-all duration-200 shadow-md group"
                 >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-bg-secondary border border-border group-hover:scale-105 transition-transform">
-                      <CategoryIcon size={16} className="text-brand-pink" />
+                      <CategoryIcon size={16} className="text-brand-purple" />
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-text-main">{cat.category}</h3>

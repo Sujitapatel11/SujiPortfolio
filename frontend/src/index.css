@@ -104,6 +104,11 @@ html.light {
     background: rgba(118, 97, 143, 0.22);
     color: var(--text-primary);
   }
+
+  :where(a, button, input, select, textarea):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 }
 
 @layer components {
@@ -217,6 +222,65 @@ html.light {
   }
 }
 
+/* Subtle CSS 3D treatment for the hero visual. No WebGL, canvas, or new runtime dependency. */
+.hero-depth-stage {
+  isolation: isolate;
+  transform-style: preserve-3d;
+}
+
+.hero-depth-backplate {
+  position: absolute;
+  inset: 1.5% -1.5% -1.5% 1.5%;
+  z-index: -1;
+  border: 1px solid rgba(168, 149, 184, 0.2);
+  border-radius: 1.8rem;
+  background: linear-gradient(145deg, rgba(118, 97, 143, 0.12), rgba(220, 210, 232, 0.025));
+  box-shadow: 0 24px 54px rgba(10, 7, 14, 0.12);
+  transform: translate3d(8px, 9px, -22px) rotateY(-3deg) rotateX(1deg);
+  pointer-events: none;
+}
+
+.hero-depth-cube {
+  position: absolute;
+  top: 8%;
+  right: 5%;
+  z-index: 30;
+  width: 30px;
+  height: 30px;
+  transform-style: preserve-3d;
+  transform: rotateX(-22deg) rotateY(34deg);
+  pointer-events: none;
+  opacity: 0.72;
+  animation: hero-cube-drift 9s ease-in-out infinite;
+}
+
+.hero-cube-face {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(220, 210, 232, 0.45);
+  background: linear-gradient(145deg, rgba(220, 210, 232, 0.2), rgba(118, 97, 143, 0.12));
+  box-shadow: inset 0 0 12px rgba(220, 210, 232, 0.06);
+  backface-visibility: visible;
+}
+
+.hero-cube-front { transform: translateZ(15px); }
+.hero-cube-back { transform: rotateY(180deg) translateZ(15px); }
+.hero-cube-right { transform: rotateY(90deg) translateZ(15px); }
+.hero-cube-left { transform: rotateY(-90deg) translateZ(15px); }
+.hero-cube-top { transform: rotateX(90deg) translateZ(15px); }
+.hero-cube-bottom { transform: rotateX(-90deg) translateZ(15px); }
+
+@keyframes hero-cube-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotateX(-22deg) rotateY(34deg); }
+  50% { transform: translate3d(0, -7px, 0) rotateX(-16deg) rotateY(42deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-depth-cube {
+    animation: none;
+  }
+}
+
 section[id] {
-  scroll-margin-top: 80px;
+  scroll-margin-top: 96px;
 }

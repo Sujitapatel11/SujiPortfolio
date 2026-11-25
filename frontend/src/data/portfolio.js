@@ -32,7 +32,6 @@ export const navLinks = [
   { label: 'Skills', href: '#skills' },
   { label: 'Projects', href: '#projects' },
   { label: 'Engineering Lab', href: '#engineering-lab' },
-  { label: 'Job Hunter', href: '#job-hunter' },
   { label: 'Experience', href: '#experience' },
   { label: 'Contact', href: '#contact' },
 ];
@@ -92,7 +91,7 @@ export const projects = [
     name: 'SujiPortfolio',
     category: 'Full-Stack Spatial Portfolio & Intake Platform',
     description:
-      'Production engineering portfolio and autonomous client intake platform featuring a FastAPI backend, vector RAG AI agent ("Ask Suji"), private admin command hub, and midnight purple neon UI.',
+      'Production engineering portfolio with a FastAPI backend, AI-assisted intake experience, private admin workspace, and a restrained muted-purple design system.',
     tech: ['FastAPI', 'React', 'PostgreSQL', 'LangChain', 'Tailwind CSS'],
     github: 'https://github.com/Sujitapatel11/SujiPortfolio',
     isPrivateRepo: false,
@@ -102,7 +101,7 @@ export const projects = [
       'Conversational LangChain RAG AI intake agent with tool execution',
       'Strict context isolation between public intake and private admin tools',
       'FastAPI backend with Alembic migrations and PostgreSQL persistence',
-      'Modern midnight purple architecture with neon pink and violet accents',
+      'Consistent muted-purple design system with restrained depth and accessible contrast',
     ],
   },
 ];

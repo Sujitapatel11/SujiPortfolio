@@ -49,15 +49,17 @@ export default function Footer() {
           >
             <Github size={16} />
           </a>
-          <a
-            href={personalInfo.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-bg-secondary border border-border transition-all"
-            aria-label="LinkedIn"
-          >
-            <Linkedin size={16} />
-          </a>
+          {personalInfo.linkedin && (
+            <a
+              href={personalInfo.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-bg-secondary border border-border transition-all"
+              aria-label="LinkedIn"
+            >
+              <Linkedin size={16} />
+            </a>
+          )}
           <a
             href={`mailto:${personalInfo.email}`}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-bg-secondary border border-border transition-all"
