@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import SectionHeading from './SectionHeading';
 import { ArrowLeft, ArrowRight, Layers3, Sparkles, Terminal } from 'lucide-react';
 import { skillCategories, skillsList } from '../data/skillsData';
 
@@ -53,28 +54,16 @@ export default function Skills() {
 
   return (
     <section id="skills" className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(168,85,247,0.13),transparent_58%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_38%_42%,rgba(118,97,143,0.10),transparent_58%)]" />
       <div className="relative z-10 mx-auto max-w-7xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-          className="mb-10 text-center sm:mb-14"
-        >
-          <div className="mb-3 flex items-center justify-center gap-2">
-            <span className="section-label">/ Tools & Technologies</span>
-            <Sparkles size={14} className="text-brand-purple" />
-          </div>
-          <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-text-main sm:text-5xl">
-            Technologies I <span className="text-gradient">Work With</span>
-          </h2>
-          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">
-            Explore the languages, frameworks, and tools I use while building projects and growing as an engineer.
-          </p>
-        </motion.div>
+        <SectionHeading
+          eyebrow="/ Tools & Technologies"
+          title="Technologies I"
+          accent="Work With"
+          description="Explore the languages, frameworks, and tools I use while building projects and growing as an engineer."
+        />
 
-        <div className="mb-8 flex justify-center">
+        <div className="mb-8 flex justify-start">        <div className="mb-8 flex justify-center">
           <div className="no-scrollbar flex max-w-full gap-2 overflow-x-auto px-1 pb-2">
             {skillCategories.map((category) => {
               const selected = activeCategory === category.id;
