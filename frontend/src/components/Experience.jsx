@@ -33,7 +33,7 @@ export default function Experience() {
         {/* Timeline */}
         <div className="relative pl-8 sm:pl-10">
           {/* Vertical line with gradient glow */}
-          <div className="absolute left-3 sm:left-4 top-2 bottom-2 w-0.5 bg-gradient-to-b from-brand-pink via-brand-violet to-brand-lavender/20" />
+          <div className="absolute left-3 sm:left-4 top-2 bottom-2 w-0.5 bg-brand-violet/40" />
 
           <div className="space-y-6">
             {experience.map((item, i) => {
@@ -54,7 +54,7 @@ export default function Experience() {
                     )}
                     <span
                       className={`w-2 h-2 rounded-full ${
-                        item.current ? 'bg-emerald-400' : 'bg-brand-pink'
+                        item.current ? 'bg-emerald-400' : 'bg-brand-purple'
                       }`}
                     />
                   </div>
@@ -62,7 +62,7 @@ export default function Experience() {
                   <div className="rounded-2xl p-5 sm:p-6 bg-bg-card/85 border border-border hover:border-brand-violet/40 transition-all duration-200 shadow-md">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
-                        <Icon size={16} className="text-brand-pink" />
+                        <Icon size={16} className="text-brand-purple" />
                         <h3 className="text-base font-bold text-text-main">{item.title}</h3>
                       </div>
                       <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-bg-secondary text-brand-lavender border border-border">
