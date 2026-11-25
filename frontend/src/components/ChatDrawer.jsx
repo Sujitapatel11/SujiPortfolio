@@ -144,10 +144,6 @@ export default function ChatDrawer({ isOpen, onClose }) {
                   RAG
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-mono text-[10px] text-emerald-400">pgvector ready</span>
-              </div>
             </div>
           </div>
           <button
