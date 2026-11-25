@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import SectionHeading from './SectionHeading';
 import {
   Github,
   Mail,
@@ -112,28 +113,16 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="relative overflow-hidden py-16 sm:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
+    <section id="contact" className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
       <div className="relative z-10 mx-auto w-full max-w-6xl">
-        {/* Section Heading */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-          className="mx-auto mb-9 max-w-4xl text-center sm:mb-12"
-        >
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <span className="section-label">/ Contact & Intake</span>
-          </div>
-          <h2 className="mb-3 text-[clamp(1.85rem,4.2vw,3.25rem)] font-extrabold leading-[1.12] tracking-tight text-text-main">
-            Let's Engineer Something <span className="text-gradient">Impactful.</span>
-          </h2>
-          <p className="mx-auto max-w-2xl text-sm leading-relaxed text-text-secondary sm:text-base">
-            For project enquiries, collaboration, or a conversation about the systems I’m building, you can reach me here.
-          </p>
-        </motion.div>
+        <SectionHeading
+          eyebrow="/ Contact & Intake"
+          title="Let's Engineer Something"
+          accent="Impactful."
+          description="For project enquiries, collaboration, or a conversation about the systems I’m building, you can reach me here."
+        />
 
-        {/* Action / Contact Cards Grid */}
+        {/* Action / Contact Cards Grid */}        {/* Action / Contact Cards Grid */}
         <div className="mx-auto mb-10 grid w-full max-w-[940px] grid-cols-2 gap-3 sm:mb-12 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
           {contactCards.map((card, i) => {
             const Icon = card.icon;
