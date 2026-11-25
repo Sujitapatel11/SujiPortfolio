@@ -79,7 +79,7 @@ const skillLogoMap = {
   GitHub: { icon: SiGithub, color: '#FFFFFF' },
   Docker: { icon: SiDocker, color: '#2496ED' },
   Vercel: { icon: SiVercel, color: '#FFFFFF' },
-  Railway: { icon: SiRailway, color: '#C084FC' },
+  Railway: { icon: SiRailway, color: '#76618F' },
 };
 
 export default function About() {
@@ -237,7 +237,7 @@ export default function About() {
                     {cat.skills.map((skill) => {
                       const logoMeta = skillLogoMap[skill];
                       const SkillIcon = logoMeta ? logoMeta.icon : Code2;
-                      const brandColor = logoMeta ? logoMeta.color : '#A855F7';
+                      const brandColor = logoMeta ? logoMeta.color : '#76618F';
                       return (
                         <span
                           key={skill}

@@ -34,18 +34,18 @@ export default function WorkspaceScene() {
         </linearGradient>
         {/* Purple glow */}
         <radialGradient id="purpleGlow" cx="50%" cy="40%" r="60%">
-          <stop offset="0%" stopColor="#9747FF" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="#9747FF" stopOpacity="0" />
+          <stop offset="0%" stopColor="#76618F" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#76618F" stopOpacity="0" />
         </radialGradient>
         {/* Violet glow */}
         <radialGradient id="violetGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#C77DFF" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="#C77DFF" stopOpacity="0" />
+          <stop offset="0%" stopColor="#DCD2E8" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#DCD2E8" stopOpacity="0" />
         </radialGradient>
         {/* Neon symbol glow */}
         <linearGradient id="neonGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#9747FF" />
-          <stop offset="100%" stopColor="#C77DFF" />
+          <stop offset="0%" stopColor="#76618F" />
+          <stop offset="100%" stopColor="#DCD2E8" />
         </linearGradient>
         {/* Desk gradient */}
         <linearGradient id="deskGrad" x1="0" y1="0" x2="0" y2="1">
@@ -96,7 +96,7 @@ export default function WorkspaceScene() {
         <rect x="402" y="120" width="22" height="90" rx="2" fill="#1A1535" stroke="rgba(151,71,255,0.2)" strokeWidth="0.5" />
       </g>
       {/* City window lights */}
-      <g fill="#C77DFF" opacity="0.6">
+      <g fill="#DCD2E8" opacity="0.6">
         <rect x="124" y="105" width="3" height="3" rx="0.5" /><rect x="130" y="115" width="3" height="3" rx="0.5" /><rect x="124" y="125" width="3" height="3" rx="0.5" />
         <rect x="186" y="90" width="3" height="3" rx="0.5" /><rect x="192" y="100" width="3" height="3" rx="0.5" /><rect x="186" y="115" width="3" height="3" rx="0.5" /><rect x="198" y="125" width="3" height="3" rx="0.5" />
         <rect x="252" y="80" width="3" height="3" rx="0.5" /><rect x="260" y="95" width="3" height="3" rx="0.5" /><rect x="252" y="110" width="3" height="3" rx="0.5" /><rect x="268" y="120" width="3" height="3" rx="0.5" />
@@ -104,8 +104,8 @@ export default function WorkspaceScene() {
         <rect x="376" y="105" width="3" height="3" rx="0.5" /><rect x="382" y="120" width="3" height="3" rx="0.5" />
       </g>
       {/* Moon glow */}
-      <circle cx="330" cy="85" r="18" fill="#C77DFF" opacity="0.12" filter="url(#softBlur)" />
-      <circle cx="330" cy="85" r="9" fill="#C77DFF" opacity="0.25" />
+      <circle cx="330" cy="85" r="18" fill="#DCD2E8" opacity="0.12" filter="url(#softBlur)" />
+      <circle cx="330" cy="85" r="9" fill="#DCD2E8" opacity="0.25" />
 
       {/* Neon coding symbol floating above monitors */}
       <g style={{ filter: 'drop-shadow(0 0 8px rgba(151,71,255,0.5))' }}>
@@ -131,22 +131,22 @@ export default function WorkspaceScene() {
         <rect x="102" y="267" width="116" height="136" rx="4" fill="url(#screenGrad)" />
         {/* Code lines — left monitor */}
         <g fontFamily="JetBrains Mono, monospace" fontSize="5">
-          <rect x="108" y="275" width="40" height="4" rx="1" fill="#9747FF" opacity="0.7" />
-          <rect x="112" y="283" width="60" height="4" rx="1" fill="#C77DFF" opacity="0.5" />
+          <rect x="108" y="275" width="40" height="4" rx="1" fill="#76618F" opacity="0.7" />
+          <rect x="112" y="283" width="60" height="4" rx="1" fill="#DCD2E8" opacity="0.5" />
           <rect x="116" y="291" width="45" height="4" rx="1" fill="#B8B4C7" opacity="0.4" />
           <rect x="112" y="299" width="80" height="4" rx="1" fill="#22D69A" opacity="0.5" />
-          <rect x="108" y="307" width="35" height="4" rx="1" fill="#9747FF" opacity="0.7" />
-          <rect x="116" y="315" width="70" height="4" rx="1" fill="#C77DFF" opacity="0.5" />
+          <rect x="108" y="307" width="35" height="4" rx="1" fill="#76618F" opacity="0.7" />
+          <rect x="116" y="315" width="70" height="4" rx="1" fill="#DCD2E8" opacity="0.5" />
           <rect x="112" y="323" width="50" height="4" rx="1" fill="#B8B4C7" opacity="0.3" />
-          <rect x="108" y="331" width="90" height="4" rx="1" fill="#9747FF" opacity="0.4" />
-          <rect x="116" y="339" width="55" height="4" rx="1" fill="#C77DFF" opacity="0.5" />
+          <rect x="108" y="331" width="90" height="4" rx="1" fill="#76618F" opacity="0.4" />
+          <rect x="116" y="339" width="55" height="4" rx="1" fill="#DCD2E8" opacity="0.5" />
           <rect x="112" y="347" width="75" height="4" rx="1" fill="#22D69A" opacity="0.4" />
           <rect x="108" y="355" width="40" height="4" rx="1" fill="#B8B4C7" opacity="0.3" />
-          <rect x="116" y="363" width="65" height="4" rx="1" fill="#9747FF" opacity="0.5" />
-          <rect x="112" y="371" width="50" height="4" rx="1" fill="#C77DFF" opacity="0.4" />
+          <rect x="116" y="363" width="65" height="4" rx="1" fill="#76618F" opacity="0.5" />
+          <rect x="112" y="371" width="50" height="4" rx="1" fill="#DCD2E8" opacity="0.4" />
           <rect x="108" y="379" width="85" height="4" rx="1" fill="#B8B4C7" opacity="0.3" />
           <rect x="116" y="387" width="45" height="4" rx="1" fill="#22D69A" opacity="0.4" />
-          <rect x="112" y="395" width="60" height="4" rx="1" fill="#9747FF" opacity="0.5" />
+          <rect x="112" y="395" width="60" height="4" rx="1" fill="#76618F" opacity="0.5" />
         </g>
         {/* Monitor glow */}
         <rect x="95" y="260" width="130" height="150" rx="8" fill="url(#purpleGlow)" opacity="0.3" />
@@ -164,18 +164,18 @@ export default function WorkspaceScene() {
         {/* Code lines — right monitor (terminal style) */}
         <g fontFamily="JetBrains Mono, monospace" fontSize="5">
           <rect x="283" y="290" width="50" height="4" rx="1" fill="#22D69A" opacity="0.6" />
-          <rect x="287" y="298" width="70" height="4" rx="1" fill="#C77DFF" opacity="0.5" />
-          <rect x="283" y="306" width="40" height="4" rx="1" fill="#9747FF" opacity="0.7" />
+          <rect x="287" y="298" width="70" height="4" rx="1" fill="#DCD2E8" opacity="0.5" />
+          <rect x="283" y="306" width="40" height="4" rx="1" fill="#76618F" opacity="0.7" />
           <rect x="291" y="314" width="80" height="4" rx="1" fill="#B8B4C7" opacity="0.3" />
-          <rect x="283" y="322" width="60" height="4" rx="1" fill="#C77DFF" opacity="0.4" />
-          <rect x="287" y="330" width="50" height="4" rx="1" fill="#9747FF" opacity="0.5" />
+          <rect x="283" y="322" width="60" height="4" rx="1" fill="#DCD2E8" opacity="0.4" />
+          <rect x="287" y="330" width="50" height="4" rx="1" fill="#76618F" opacity="0.5" />
           <rect x="283" y="338" width="75" height="4" rx="1" fill="#22D69A" opacity="0.4" />
-          <rect x="291" y="346" width="65" height="4" rx="1" fill="#C77DFF" opacity="0.4" />
+          <rect x="291" y="346" width="65" height="4" rx="1" fill="#DCD2E8" opacity="0.4" />
           <rect x="283" y="354" width="45" height="4" rx="1" fill="#B8B4C7" opacity="0.3" />
-          <rect x="287" y="362" width="70" height="4" rx="1" fill="#9747FF" opacity="0.5" />
-          <rect x="283" y="370" width="55" height="4" rx="1" fill="#C77DFF" opacity="0.4" />
+          <rect x="287" y="362" width="70" height="4" rx="1" fill="#76618F" opacity="0.5" />
+          <rect x="283" y="370" width="55" height="4" rx="1" fill="#DCD2E8" opacity="0.4" />
           <rect x="291" y="378" width="80" height="4" rx="1" fill="#22D69A" opacity="0.3" />
-          <rect x="283" y="386" width="60" height="4" rx="1" fill="#9747FF" opacity="0.4" />
+          <rect x="283" y="386" width="60" height="4" rx="1" fill="#76618F" opacity="0.4" />
           <rect x="287" y="394" width="40" height="4" rx="1" fill="#B8B4C7" opacity="0.3" />
         </g>
         {/* Monitor glow */}
@@ -191,9 +191,9 @@ export default function WorkspaceScene() {
         {/* Head */}
         <circle cx="235" cy="360" r="16" fill="#2A2548" stroke="rgba(151,71,255,0.15)" strokeWidth="1" />
         {/* Headphones */}
-        <path d="M 219 358 Q 235 345 251 358" stroke="#9747FF" strokeWidth="2" fill="none" opacity="0.5" />
-        <circle cx="219" cy="362" r="4" fill="#9747FF" opacity="0.3" />
-        <circle cx="251" cy="362" r="4" fill="#9747FF" opacity="0.3" />
+        <path d="M 219 358 Q 235 345 251 358" stroke="#76618F" strokeWidth="2" fill="none" opacity="0.5" />
+        <circle cx="219" cy="362" r="4" fill="#76618F" opacity="0.3" />
+        <circle cx="251" cy="362" r="4" fill="#76618F" opacity="0.3" />
         {/* Arms reaching to desk */}
         <ellipse cx="205" cy="415" rx="10" ry="20" fill="#1E1640" transform="rotate(-15 205 415)" />
         <ellipse cx="265" cy="415" rx="10" ry="20" fill="#1E1640" transform="rotate(15 265 415)" />
@@ -206,8 +206,8 @@ export default function WorkspaceScene() {
         {/* Leaves */}
         <ellipse cx="94" cy="395" rx="6" ry="22" fill="#22D69A" opacity="0.15" transform="rotate(-20 94 395)" />
         <ellipse cx="88" cy="385" rx="5" ry="18" fill="#22D69A" opacity="0.12" transform="rotate(-35 88 385)" />
-        <ellipse cx="100" cy="390" rx="5" ry="20" fill="#C77DFF" opacity="0.15" transform="rotate(15 100 390)" />
-        <ellipse cx="94" cy="400" rx="6" ry="24" fill="#9747FF" opacity="0.12" />
+        <ellipse cx="100" cy="390" rx="5" ry="20" fill="#DCD2E8" opacity="0.15" transform="rotate(15 100 390)" />
+        <ellipse cx="94" cy="400" rx="6" ry="24" fill="#76618F" opacity="0.12" />
       </g>
 
       {/* Plant — right side */}
@@ -215,46 +215,46 @@ export default function WorkspaceScene() {
         {/* Pot */}
         <path d="M 408 415 L 416 445 L 444 445 L 452 415 Z" fill="#1A1530" stroke="rgba(151,71,255,0.15)" strokeWidth="0.5" />
         {/* Leaves */}
-        <ellipse cx="430" cy="395" rx="6" ry="20" fill="#C77DFF" opacity="0.12" transform="rotate(20 430 395)" />
+        <ellipse cx="430" cy="395" rx="6" ry="20" fill="#DCD2E8" opacity="0.12" transform="rotate(20 430 395)" />
         <ellipse cx="438" cy="385" rx="5" ry="16" fill="#22D69A" opacity="0.12" transform="rotate(35 438 385)" />
-        <ellipse cx="424" cy="390" rx="5" ry="18" fill="#9747FF" opacity="0.12" transform="rotate(-15 424 390)" />
+        <ellipse cx="424" cy="390" rx="5" ry="18" fill="#76618F" opacity="0.12" transform="rotate(-15 424 390)" />
       </g>
 
       {/* Small futuristic robot */}
       <g>
         {/* Antenna */}
-        <line x1="425" y1="385" x2="425" y2="372" stroke="#9747FF" strokeWidth="1.5" opacity="0.6" />
-        <circle cx="425" cy="370" r="3" fill="#C77DFF" opacity="0.7">
+        <line x1="425" y1="385" x2="425" y2="372" stroke="#76618F" strokeWidth="1.5" opacity="0.6" />
+        <circle cx="425" cy="370" r="3" fill="#DCD2E8" opacity="0.7">
           <animate attributeName="opacity" values="0.7;0.3;0.7" dur="2s" repeatCount="indefinite" />
         </circle>
         {/* Body */}
         <rect x="408" y="388" width="34" height="28" rx="8" fill="url(#robotGrad)" stroke="rgba(151,71,255,0.25)" strokeWidth="1" />
         {/* Eyes */}
-        <circle cx="417" cy="398" r="3" fill="#C77DFF">
+        <circle cx="417" cy="398" r="3" fill="#DCD2E8">
           <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
         </circle>
-        <circle cx="431" cy="398" r="3" fill="#C77DFF">
+        <circle cx="431" cy="398" r="3" fill="#DCD2E8">
           <animate attributeName="opacity" values="1;0.4;1" dur="2.5s" repeatCount="indefinite" />
         </circle>
         {/* Mouth */}
-        <rect x="418" y="406" width="12" height="2" rx="1" fill="#9747FF" opacity="0.5" />
+        <rect x="418" y="406" width="12" height="2" rx="1" fill="#76618F" opacity="0.5" />
         {/* Chest light */}
         <circle cx="425" cy="412" r="2" fill="#22D69A" opacity="0.6" />
       </g>
 
       {/* Floating code particles */}
       <g opacity="0.4">
-        <text x="75" y="230" fontFamily="JetBrains Mono, monospace" fontSize="7" fill="#9747FF">{ '{}' }</text>
-        <text x="430" y="250" fontFamily="JetBrains Mono, monospace" fontSize="7" fill="#C77DFF">{ '();' }</text>
-        <text x="455" y="310" fontFamily="JetBrains Mono, monospace" fontSize="6" fill="#9747FF">{'=>'}</text>
-        <text x="50" y="280" fontFamily="JetBrains Mono, monospace" fontSize="6" fill="#C77DFF">const</text>
+        <text x="75" y="230" fontFamily="JetBrains Mono, monospace" fontSize="7" fill="#76618F">{ '{}' }</text>
+        <text x="430" y="250" fontFamily="JetBrains Mono, monospace" fontSize="7" fill="#DCD2E8">{ '();' }</text>
+        <text x="455" y="310" fontFamily="JetBrains Mono, monospace" fontSize="6" fill="#76618F">{'=>'}</text>
+        <text x="50" y="280" fontFamily="JetBrains Mono, monospace" fontSize="6" fill="#DCD2E8">const</text>
       </g>
 
       {/* Bottom ambient glow */}
       <ellipse cx="260" cy="490" rx="200" ry="30" fill="url(#purpleGlow)" opacity="0.4" />
       {/* Top corner glows */}
-      <circle cx="50" cy="50" r="40" fill="#9747FF" opacity="0.05" filter="url(#bigBlur)" />
-      <circle cx="470" cy="530" r="50" fill="#C77DFF" opacity="0.05" filter="url(#bigBlur)" />
+      <circle cx="50" cy="50" r="40" fill="#76618F" opacity="0.05" filter="url(#bigBlur)" />
+      <circle cx="470" cy="530" r="50" fill="#DCD2E8" opacity="0.05" filter="url(#bigBlur)" />
     </svg>
   );
 }

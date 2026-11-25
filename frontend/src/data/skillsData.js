@@ -316,7 +316,7 @@ export const skillsList = [
     category: 'cloud-devops',
     categoryLabel: 'Cloud & DevOps',
     icon: SiRailway,
-    brandColor: '#C084FC',
+    brandColor: '#76618F',
     tag: 'Cloud Backend',
     tooltip: 'Containerized database and FastAPI server hosting in production',
   },

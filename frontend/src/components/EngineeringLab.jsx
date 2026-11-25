@@ -39,9 +39,9 @@ export default function EngineeringLab() {
 
   return (
     <section id="engineering-lab" className="relative isolate overflow-hidden py-20 px-4 sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_12%,rgba(216,180,254,0.24),transparent_58%),radial-gradient(ellipse_at_50%_85%,rgba(244,114,182,0.14),transparent_55%)]" />
-      <div className="pointer-events-none absolute -left-24 top-24 -z-10 h-64 w-64 rounded-full bg-pink-300/15 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 top-36 -z-10 h-72 w-72 rounded-full bg-violet-300/15 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_12%,rgba(118,97,143,0.10),transparent_58%),radial-gradient(ellipse_at_50%_85%,rgba(118,97,143,0.05),transparent_55%)]" />
+      <div className="pointer-events-none absolute -left-24 top-24 -z-10 h-64 w-64 rounded-full bg-brand-purple/10 blur-3xl" />
+      <div className="pointer-events-none absolute -right-24 top-36 -z-10 h-72 w-72 rounded-full bg-brand-lavender/10 blur-3xl" />
       <div className="mx-auto max-w-7xl">
         <motion.div initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45 }} className="mb-8 text-center sm:mb-10">
           <div className="mb-3 flex items-center justify-center gap-2"><Code2 size={17} className="text-brand-purple" /><span className="section-label">Engineering Lab</span><Sparkles size={15} className="text-brand-pink" /></div>

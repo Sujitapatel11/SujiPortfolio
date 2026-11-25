@@ -1,21 +1,21 @@
 /* ════════════════════════════════════════════════════════════════
-   ADMIN DASHBOARD — DARK PURPLE THEME
-   Midnight black · Purple accents · Glassmorphism · Quiet & fast
+   ADMIN DASHBOARD — PREMIUM PLUM & MUTED PURPLE
+   Deep plum surfaces · Muted purple accents · Restrained depth
    ════════════════════════════════════════════════════════════════ */
 
 /* CSS variable aliases — lets existing inline styles in components
    resolve to the new dark theme values */
 :root {
-  --bp-paper: #090812;
-  --bp-ink: #FFFFFF;
-  --bp-orange: #9747FF;
-  --bp-grey: #B8B4C7;
-  --bp-grid-line: rgba(151, 71, 255, 0.1);
+  --bp-paper: #17121D;
+  --bp-ink: #F8F6FA;
+  --bp-orange: #76618F;
+  --bp-grey: #A69EAD;
+  --bp-grid-line: rgba(118, 97, 143, 0.1);
   --bp-font-mono: 'JetBrains Mono', monospace;
   --bp-font-serif: 'Inter', sans-serif;
   --bp-font-body: 'Inter', sans-serif;
-  --bp-blue: #C77DFF;
-  --bp-paper-dark: #121020;
+  --bp-blue: #DCD2E8;
+  --bp-paper-dark: #211A29;
 }
 
 /* ── LOGIN ─────────────────────────────────────────────────────── */
@@ -23,8 +23,8 @@
   margin: 0;
   padding: 0;
   font-family: 'Inter', -apple-system, sans-serif;
-  background-color: #090812;
-  color: #FFFFFF;
+  background-color: #17121D;
+  color: #F8F6FA;
   min-height: 100vh;
 }
 
@@ -37,10 +37,10 @@
 }
 
 .admin-login-card {
-  background: rgba(18, 16, 32, 0.6);
+  background: rgba(33,26,41, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(151, 71, 255, 0.15);
+  border: 1px solid rgba(118, 97, 143, 0.15);
   padding: 0;
   width: 100%;
   max-width: 420px;
@@ -51,7 +51,7 @@
 
 .admin-login-header {
   padding: 1.8rem 2rem 1.2rem;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.12);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.12);
 }
 .admin-login-title {
   font-family: 'JetBrains Mono', monospace;
@@ -59,14 +59,14 @@
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #FFFFFF;
+  color: #F8F6FA;
   margin: 0 0 0.3rem;
 }
 .admin-login-subtitle {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.62rem;
   letter-spacing: 0.12em;
-  color: #6B6780;
+  color: #A69EAD;
   text-transform: uppercase;
   margin: 0;
 }
@@ -75,10 +75,10 @@
 .admin-login-tb {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid rgba(151, 71, 255, 0.12);
+  border-top: 1px solid rgba(118, 97, 143, 0.12);
 }
 .bp-tb-field {
-  border-right: 1px solid rgba(151, 71, 255, 0.12);
+  border-right: 1px solid rgba(118, 97, 143, 0.12);
   padding: 8px 10px;
 }
 .bp-tb-field:last-child { border-right: none; }
@@ -87,7 +87,7 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.55rem;
   letter-spacing: 0.12em;
-  color: #6B6780;
+  color: #A69EAD;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
@@ -96,7 +96,7 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.66rem;
   font-weight: 600;
-  color: #C77DFF;
+  color: #DCD2E8;
   letter-spacing: 0.04em;
 }
 
@@ -109,7 +109,7 @@
   font-size: 0.58rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6B6780;
+  color: #A69EAD;
   margin-bottom: 0.4rem;
 }
 
@@ -117,26 +117,26 @@
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  border: 1px solid rgba(151, 71, 255, 0.15);
+  border: 1px solid rgba(118, 97, 143, 0.15);
   border-radius: 10px;
   font-size: 0.88rem;
-  color: #FFFFFF;
-  background-color: rgba(9, 8, 18, 0.5);
+  color: #F8F6FA;
+  background-color: rgba(23,18,29, 0.5);
   font-family: 'Inter', sans-serif;
   transition: border-color 0.2s;
 }
-.admin-input::placeholder, .admin-textarea::placeholder { color: #6B6780; }
+.admin-input::placeholder, .admin-textarea::placeholder { color: #A69EAD; }
 .admin-input:focus, .admin-select:focus, .admin-textarea:focus {
   outline: none;
-  border-color: #9747FF;
+  border-color: #76618F;
 }
 .admin-textarea { resize: vertical; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.5; }
-.admin-select option { background: #121020; color: #fff; }
+.admin-select option { background: #211A29; color: #fff; }
 
 .admin-error-banner {
-  background: rgba(151, 71, 255, 0.08);
-  border: 1px solid rgba(151, 71, 255, 0.25);
-  color: #C77DFF;
+  background: rgba(118, 97, 143, 0.08);
+  border: 1px solid rgba(118, 97, 143, 0.25);
+  color: #DCD2E8;
   padding: 10px 12px;
   border-radius: 10px;
   font-family: 'JetBrains Mono', monospace;
@@ -148,7 +148,7 @@
 /* ── BUTTONS ────────────────────────────────────────────────────── */
 .admin-btn-primary {
   padding: 10px 18px;
-  background: linear-gradient(135deg, #9747FF, #C77DFF);
+  background: #76618F;
   color: #fff;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.72rem;
@@ -160,24 +160,24 @@
   cursor: pointer;
   transition: all 0.25s ease;
 }
-.admin-btn-primary:hover { box-shadow: 0 4px 20px rgba(151,71,255,0.4); }
+.admin-btn-primary:hover { box-shadow: 0 4px 20px rgba(118,97,143,0.4); }
 .admin-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .admin-btn-secondary {
   padding: 8px 16px;
   background: transparent;
-  color: #B8B4C7;
+  color: #D0C7D8;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border: 1px solid rgba(151, 71, 255, 0.2);
+  border: 1px solid rgba(118, 97, 143, 0.2);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.admin-btn-secondary:hover { background: rgba(151,71,255,0.1); border-color: #9747FF; color: #fff; }
+.admin-btn-secondary:hover { background: rgba(118,97,143,0.1); border-color: #76618F; color: #fff; }
 
 .admin-btn-success {
   padding: 8px 16px;
@@ -193,29 +193,29 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.admin-btn-success:hover { background: #22D69A; color: #090812; }
+.admin-btn-success:hover { background: #22D69A; color: #17121D; }
 
 .admin-btn-danger {
   padding: 8px 16px;
   background: transparent;
-  color: #E879F9;
+  color: #B6A9C4;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border: 1px solid rgba(232, 121, 249, 0.25);
+  border: 1px solid rgba(182, 169, 196, 0.25);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.admin-btn-danger:hover { background: rgba(232,121,249,0.1); border-color: #E879F9; }
+.admin-btn-danger:hover { background: rgba(182,169,196,0.1); border-color: #B6A9C4; }
 
 .admin-btn-logout {
   padding: 6px 14px;
   background: transparent;
-  color: #6B6780;
-  border: 1px solid rgba(151, 71, 255, 0.15);
+  color: #A69EAD;
+  border: 1px solid rgba(118, 97, 143, 0.15);
   border-radius: 10px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.62rem;
@@ -225,20 +225,20 @@
   cursor: pointer;
   transition: all 0.2s;
 }
-.admin-btn-logout:hover { border-color: #9747FF; color: #C77DFF; }
+.admin-btn-logout:hover { border-color: #76618F; color: #DCD2E8; }
 
 /* ── DASHBOARD LAYOUT ───────────────────────────────────────────── */
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background: #090812;
+  background: #17121D;
 }
 
 /* Sidebar */
 .admin-sidebar {
   width: 240px;
-  background: #0D0B1A;
-  border-right: 1px solid rgba(151, 71, 255, 0.1);
+  background: #1D1725;
+  border-right: 1px solid rgba(118, 97, 143, 0.1);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -251,16 +251,16 @@
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #FFFFFF;
+  color: #F8F6FA;
   padding: 1.4rem 1.2rem;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.1);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.1);
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 .admin-brand-dot {
   width: 8px; height: 8px;
-  background: #9747FF;
+  background: #76618F;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -277,7 +277,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1.2rem;
-  color: #6B6780;
+  color: #A69EAD;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
@@ -292,17 +292,17 @@
   text-align: left;
   border-left: 2px solid transparent;
 }
-.admin-nav-item:hover { color: #FFFFFF; background: rgba(151,71,255,0.05); }
+.admin-nav-item:hover { color: #F8F6FA; background: rgba(118,97,143,0.05); }
 .admin-nav-item.active {
-  color: #FFFFFF;
+  color: #F8F6FA;
   font-weight: 600;
-  border-left-color: #9747FF;
-  background: rgba(151,71,255,0.08);
+  border-left-color: #76618F;
+  background: rgba(118,97,143,0.08);
 }
 .admin-nav-item-count {
   font-size: 0.6rem;
-  color: #6B6780;
-  border: 1px solid rgba(151, 71, 255, 0.1);
+  color: #A69EAD;
+  border: 1px solid rgba(118, 97, 143, 0.1);
   padding: 1px 6px;
   border-radius: 4px;
 }
@@ -313,32 +313,32 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #090812;
+  background: #17121D;
 }
 
 .admin-header {
   height: 60px;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.1);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 1.8rem;
-  background: #0D0B1A;
+  background: #1D1725;
 }
 .admin-header-title {
   font-family: 'Inter', sans-serif;
   font-size: 1.3rem;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #F8F6FA;
 }
 .admin-user-menu { display: flex; align-items: center; gap: 1rem; }
 .admin-user-name {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
   letter-spacing: 0.06em;
-  color: #6B6780;
+  color: #A69EAD;
 }
-.admin-user-name strong { color: #C77DFF; font-weight: 600; }
+.admin-user-name strong { color: #DCD2E8; font-weight: 600; }
 
 .admin-content {
   padding: 1.8rem;
@@ -355,17 +355,17 @@
 }
 
 .admin-card {
-  background: rgba(18, 16, 32, 0.5);
+  background: rgba(33,26,41, 0.5);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(151, 71, 255, 0.1);
+  border: 1px solid rgba(118, 97, 143, 0.1);
   padding: 1.2rem 1.4rem;
   position: relative;
   border-radius: 14px;
   transition: all 0.3s ease;
 }
 .admin-card:hover {
-  border-color: rgba(151, 71, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(151,71,255,0.08);
+  border-color: rgba(118, 97, 143, 0.25);
+  box-shadow: 0 4px 20px rgba(118,97,143,0.08);
 }
 
 .admin-card-header {
@@ -373,30 +373,30 @@
   font-size: 0.58rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #6B6780;
+  color: #A69EAD;
   margin-bottom: 0.6rem;
 }
 .admin-card-value {
   font-family: 'Inter', sans-serif;
   font-size: 2.2rem;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #F8F6FA;
   line-height: 1;
 }
-.admin-card-value--orange { color: #C77DFF; }
+.admin-card-value--orange { color: #DCD2E8; }
 
 /* ── DATA PANEL ─────────────────────────────────────────────────── */
 .admin-data-panel {
-  background: rgba(18, 16, 32, 0.4);
+  background: rgba(33,26,41, 0.4);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(151, 71, 255, 0.1);
+  border: 1px solid rgba(118, 97, 143, 0.1);
   margin-bottom: 1.5rem;
   border-radius: 14px;
   overflow: hidden;
 }
 .admin-data-panel-head {
   padding: 1rem 1.4rem;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.1);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -407,7 +407,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #F8F6FA;
 }
 
 /* ── TABLES ─────────────────────────────────────────────────────── */
@@ -418,7 +418,7 @@
   font-family: 'JetBrains Mono', monospace;
   min-width: 640px;
 }
-.admin-table thead tr { background: rgba(151, 71, 255, 0.05); }
+.admin-table thead tr { background: rgba(118, 97, 143, 0.05); }
 .admin-table th {
   padding: 10px 14px;
   text-align: left;
@@ -426,17 +426,17 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 600;
-  color: #C77DFF;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.15);
+  color: #DCD2E8;
+  border-bottom: 1px solid rgba(118, 97, 143, 0.15);
 }
 .admin-table td {
   padding: 12px 14px;
   font-size: 0.78rem;
-  color: #B8B4C7;
-  border-top: 1px solid rgba(151, 71, 255, 0.06);
+  color: #D0C7D8;
+  border-top: 1px solid rgba(118, 97, 143, 0.06);
 }
 .admin-table-tbody tr { transition: background 0.15s ease; cursor: pointer; }
-.admin-table-tbody tr:hover { background: rgba(151, 71, 255, 0.04); }
+.admin-table-tbody tr:hover { background: rgba(118, 97, 143, 0.04); }
 
 /* ── FILTER BAR ─────────────────────────────────────────────────── */
 .admin-filter-bar {
@@ -445,7 +445,7 @@
   gap: 1rem;
   align-items: center;
   padding: 1rem 1.4rem;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.06);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.06);
 }
 .admin-filter-group { display: flex; align-items: center; gap: 0.5rem; }
 .admin-filter-group .admin-label { margin: 0; white-space: nowrap; }
@@ -461,14 +461,14 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 600;
-  border: 1px solid rgba(151, 71, 255, 0.2);
-  color: #B8B4C7;
+  border: 1px solid rgba(118, 97, 143, 0.2);
+  color: #D0C7D8;
   border-radius: 6px;
 }
-.admin-badge-upwork { border-color: #C77DFF; color: #C77DFF; }
-.admin-badge-fiverr { border-color: #9747FF; color: #9747FF; }
-.admin-badge-freelancer { border-color: #6B6780; color: #6B6780; }
-.admin-badge-default { border-color: rgba(151,71,255,0.15); color: #6B6780; }
+.admin-badge-upwork { border-color: #DCD2E8; color: #DCD2E8; }
+.admin-badge-fiverr { border-color: #76618F; color: #76618F; }
+.admin-badge-freelancer { border-color: #A69EAD; color: #A69EAD; }
+.admin-badge-default { border-color: rgba(118,97,143,0.15); color: #A69EAD; }
 
 .admin-score-badge {
   display: inline-flex;
@@ -479,22 +479,22 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
   font-weight: 700;
-  border: 1px solid rgba(151, 71, 255, 0.2);
-  color: #B8B4C7;
+  border: 1px solid rgba(118, 97, 143, 0.2);
+  color: #D0C7D8;
   border-radius: 6px;
 }
-.admin-score-high { border-color: #C77DFF; color: #C77DFF; }
-.admin-score-med { color: #B8B4C7; }
-.admin-score-low { color: #6B6780; border-color: rgba(151,71,255,0.1); }
+.admin-score-high { border-color: #DCD2E8; color: #DCD2E8; }
+.admin-score-med { color: #D0C7D8; }
+.admin-score-low { color: #A69EAD; border-color: rgba(118,97,143,0.1); }
 
-.admin-status-new { border-color: rgba(151,71,255,0.2); color: #C77DFF; }
-.admin-status-applied { background: rgba(151,71,255,0.15); color: #C77DFF; border-color: #9747FF; }
-.admin-status-rejected { border-color: rgba(232,121,249,0.3); color: #E879F9; }
-.admin-status-hired { background: #22D69A; color: #090812; border-color: #22D69A; }
-.admin-status-pending { border-color: #C77DFF; color: #C77DFF; }
+.admin-status-new { border-color: rgba(118,97,143,0.2); color: #DCD2E8; }
+.admin-status-applied { background: rgba(118,97,143,0.15); color: #DCD2E8; border-color: #76618F; }
+.admin-status-rejected { border-color: rgba(182,169,196,0.3); color: #B6A9C4; }
+.admin-status-hired { background: #22D69A; color: #17121D; border-color: #22D69A; }
+.admin-status-pending { border-color: #DCD2E8; color: #DCD2E8; }
 .admin-status-confirmed { background: rgba(34,214,154,0.15); color: #22D69A; border-color: #22D69A; }
-.admin-status-declined { border-color: rgba(232,121,249,0.3); color: #E879F9; }
-.admin-status-rescheduled { border-color: #9747FF; color: #9747FF; }
+.admin-status-declined { border-color: rgba(182,169,196,0.3); color: #B6A9C4; }
+.admin-status-rescheduled { border-color: #76618F; color: #76618F; }
 
 /* ── ACTIVITY LIST ─────────────────────────────────────────────── */
 .admin-activity-list { display: flex; flex-direction: column; }
@@ -503,18 +503,18 @@
   align-items: center;
   gap: 0.8rem;
   padding: 0.8rem 1.4rem;
-  border-top: 1px solid rgba(151, 71, 255, 0.06);
+  border-top: 1px solid rgba(118, 97, 143, 0.06);
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.72rem;
-  color: #B8B4C7;
+  color: #D0C7D8;
 }
 .admin-activity-dot {
   width: 7px; height: 7px;
-  background: #9747FF;
+  background: #76618F;
   border-radius: 50%;
   flex-shrink: 0;
 }
-.admin-activity-time { color: #6B6780; margin-left: auto; font-size: 0.62rem; }
+.admin-activity-time { color: #A69EAD; margin-left: auto; font-size: 0.62rem; }
 
 /* ── QUICK ACTIONS ─────────────────────────────────────────────── */
 .admin-quick-actions { display: flex; gap: 0.8rem; flex-wrap: wrap; }
@@ -523,7 +523,7 @@
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(9, 8, 18, 0.7);
+  background: rgba(23,18,29, 0.7);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -532,8 +532,8 @@
   padding: 20px;
 }
 .admin-modal-content {
-  background: #121020;
-  border: 1px solid rgba(151, 71, 255, 0.15);
+  background: #211A29;
+  border: 1px solid rgba(118, 97, 143, 0.15);
   border-radius: 16px;
   width: 100%;
   max-width: 850px;
@@ -544,7 +544,7 @@
 }
 .admin-modal-header {
   padding: 1.2rem 1.5rem;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.1);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -555,10 +555,10 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #F8F6FA;
 }
 .admin-modal-close {
-  border: 1px solid rgba(151, 71, 255, 0.15);
+  border: 1px solid rgba(118, 97, 143, 0.15);
   width: 30px; height: 30px;
   display: flex;
   align-items: center;
@@ -566,11 +566,11 @@
   font-size: 14px;
   cursor: pointer;
   background: transparent;
-  color: #6B6780;
+  color: #A69EAD;
   border-radius: 8px;
   transition: all 0.2s ease;
 }
-.admin-modal-close:hover { background: rgba(151,71,255,0.1); color: #C77DFF; border-color: #9747FF; }
+.admin-modal-close:hover { background: rgba(118,97,143,0.1); color: #DCD2E8; border-color: #76618F; }
 .admin-modal-body { padding: 1.5rem; overflow-y: auto; }
 
 /* ── ADMIN CHAT ─────────────────────────────────────────────────── */
@@ -578,14 +578,14 @@
   display: flex;
   flex-direction: column;
   height: 640px;
-  border: 1px solid rgba(151, 71, 255, 0.1);
+  border: 1px solid rgba(118, 97, 143, 0.1);
   border-radius: 14px;
   overflow: hidden;
 }
 .admin-chat-head {
   padding: 1rem 1.4rem;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.1);
-  background: rgba(18, 16, 32, 0.4);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.1);
+  background: rgba(33,26,41, 0.4);
 }
 .admin-chat-head h3 {
   font-family: 'JetBrains Mono', monospace;
@@ -593,13 +593,13 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 600;
-  color: #FFFFFF;
+  color: #F8F6FA;
   margin: 0;
 }
 .admin-chat-head p {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.58rem;
-  color: #6B6780;
+  color: #A69EAD;
   margin: 0.3rem 0 0;
   letter-spacing: 0.04em;
 }
@@ -607,7 +607,7 @@
   display: flex;
   gap: 0.5rem;
   padding: 0.7rem 1.4rem;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.06);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.06);
   overflow-x: auto;
 }
 .admin-chat-messages {
@@ -627,19 +627,19 @@
 }
 .admin-chat-msg--user {
   align-self: flex-end;
-  background: linear-gradient(135deg, #9747FF, #C77DFF);
-  color: #FFFFFF;
+  background: #76618F;
+  color: #F8F6FA;
   border-bottom-right-radius: 4px;
 }
 .admin-chat-msg--assistant {
   align-self: flex-start;
-  background: rgba(18, 16, 32, 0.6);
-  border: 1px solid rgba(151, 71, 255, 0.1);
-  color: #B8B4C7;
+  background: rgba(33,26,41, 0.6);
+  border: 1px solid rgba(118, 97, 143, 0.1);
+  color: #D0C7D8;
   border-bottom-left-radius: 4px;
 }
 .admin-chat-msg--assistant a {
-  color: #C77DFF;
+  color: #DCD2E8;
   text-decoration: underline;
   font-weight: 600;
 }
@@ -647,16 +647,16 @@
   align-self: flex-start;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.72rem;
-  color: #6B6780;
+  color: #A69EAD;
   padding: 0.6rem 1rem;
-  border: 1px solid rgba(151, 71, 255, 0.06);
+  border: 1px solid rgba(118, 97, 143, 0.06);
   border-radius: 14px;
 }
 .admin-chat-form {
   display: flex;
   gap: 0.6rem;
   padding: 1rem 1.4rem;
-  border-top: 1px solid rgba(151, 71, 255, 0.1);
+  border-top: 1px solid rgba(118, 97, 143, 0.1);
 }
 .admin-chat-form input { flex: 1; }
 
@@ -665,13 +665,13 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  background: #121020;
-  color: #FFFFFF;
+  background: #211A29;
+  color: #F8F6FA;
   padding: 12px 20px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
-  border: 1px solid rgba(151, 71, 255, 0.2);
+  border: 1px solid rgba(118, 97, 143, 0.2);
   border-radius: 12px;
   z-index: 1100;
   box-shadow: 0 8px 30px rgba(0,0,0,0.4);
@@ -682,13 +682,13 @@
   display: flex;
   gap: 0.6rem;
   padding: 0.8rem 0;
-  border-bottom: 1px solid rgba(151, 71, 255, 0.06);
+  border-bottom: 1px solid rgba(118, 97, 143, 0.06);
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.78rem;
-  color: #6B6780;
+  color: #A69EAD;
 }
-.admin-settings-row strong { color: #FFFFFF; font-weight: 600; }
-.admin-settings-row code { font-family: 'JetBrains Mono', monospace; color: #C77DFF; }
+.admin-settings-row strong { color: #F8F6FA; font-weight: 600; }
+.admin-settings-row code { font-family: 'JetBrains Mono', monospace; color: #DCD2E8; }
 
 /* ── MOBILE SIDEBAR TOGGLE ───────────────────────────────────────── */
 .admin-mobile-toggle {
@@ -700,7 +700,7 @@
 }
 .admin-mobile-toggle span {
   width: 20px; height: 2px;
-  background: #FFFFFF;
+  background: #F8F6FA;
   border-radius: 2px;
 }
 
@@ -720,7 +720,7 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(9, 8, 18, 0.5);
+    background: rgba(23,18,29, 0.5);
     backdrop-filter: blur(2px);
     z-index: 199;
   }

@@ -40,7 +40,7 @@ export const ZONES = {
     mood: {
       ambientIntensity: 0.4,
       fogColor: '#090814',
-      lightColor: '#a855f7',
+      lightColor: '#76618F',
       lightIntensity: 2.2
     }
   },
@@ -81,11 +81,11 @@ export const ZONES = {
     description: 'Start a project or technical consultation with Sujita Patel.',
     cameraPosition: [0, 2.5, -18],
     cameraTarget: [0, 0.5, -22],
-    color: '#ec4899',
+    color: '#76618F',
     mood: {
       ambientIntensity: 0.4,
-      fogColor: '#120710',
-      lightColor: '#f43f5e',
+      fogColor: '#17121D',
+      lightColor: '#5F4B76',
       lightIntensity: 2.0
     }
   }

@@ -26,14 +26,14 @@ export default function AILab() {
   return (
     <group position={[0, 1, -8]}>
       {/* Electric Blue & Violet Glow Lights */}
-      <pointLight position={[0, 3, 0]} intensity={4.0} color="#8b5cf6" distance={10} />
+      <pointLight position={[0, 3, 0]} intensity={4.0} color="#76618F" distance={10} />
       <pointLight position={[0, -2, 2]} intensity={2.5} color="#3b82f6" distance={8} />
 
       <Float speed={3} rotationIntensity={0.8} floatIntensity={0.8}>
         <mesh ref={torusRef}>
           <torusKnotGeometry args={[0.9, 0.28, 128, 32]} />
           <meshStandardMaterial
-            color="#8b5cf6"
+            color="#76618F"
             emissive="#4c1d95"
             emissiveIntensity={0.8}
             roughness={0.1}
@@ -57,7 +57,7 @@ export default function AILab() {
       <Text
         position={[0, 2.2, 0]}
         fontSize={0.5}
-        color="#c084fc"
+        color="#DCD2E8"
         anchorX="center"
         anchorY="middle"
       >
