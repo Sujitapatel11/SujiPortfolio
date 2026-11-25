@@ -60,14 +60,14 @@ export default function Navbar() {
             onClick={(e) => handleNavClick(e, '#home')}
             className="flex items-center gap-2 group"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-pink to-brand-violet flex items-center justify-center text-white font-extrabold text-sm shadow-md group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-brand-violet flex items-center justify-center text-white font-extrabold text-sm shadow-md group-hover:scale-105 transition-transform">
               S
             </div>
             <div className="flex items-center">
-              <span className="font-extrabold text-lg tracking-wider text-text-main group-hover:text-brand-pink transition-colors">
+              <span className="font-extrabold text-lg tracking-wider text-text-main group-hover:text-brand-purple transition-colors">
                 SUJI
               </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-pink ml-1 animate-pulse-glow" />
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-purple ml-1 animate-pulse-glow" />
             </div>
           </a>
 
@@ -91,7 +91,7 @@ export default function Navbar() {
                   {isActive && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-brand-pink/30 to-brand-violet/30 border border-brand-pink/50 -z-10"
+                      className="absolute inset-0 rounded-xl bg-brand-violet/10 border border-brand-violet/30 -z-10"
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                     />
                   )}
@@ -120,7 +120,7 @@ export default function Navbar() {
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-brand-lavender bg-bg-card border border-border hover:border-brand-violet/50 transition-all"
               title="Call Sujita (+977 9815280946)"
             >
-              <Phone size={13} className="text-brand-pink" />
+              <Phone size={13} className="text-brand-purple" />
               <span>Call</span>
             </a>
 
@@ -196,7 +196,7 @@ export default function Navbar() {
                   href={personalInfo.phoneCall}
                   className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-mono text-brand-lavender bg-bg-secondary border border-border"
                 >
-                  <Phone size={14} className="text-brand-pink" />
+                  <Phone size={14} className="text-brand-purple" />
                   Call Directly ({personalInfo.phoneDisplay})
                 </a>
                 <a
