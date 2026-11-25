@@ -130,13 +130,13 @@ export default function ChatDrawer({ isOpen, onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-bg-card/90">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-tr from-brand-pink to-brand-violet text-white shadow-md">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-violet text-white shadow-md">
               <Bot size={20} />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <h3 className="font-bold text-text-main text-sm">Ask Suji AI</h3>
-                <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-brand-pink/20 text-brand-pink font-semibold">
+                <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-brand-purple/20 text-brand-purple font-semibold">
                   RAG
                 </span>
               </div>
@@ -160,7 +160,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
           {messages.map((msg) =>
             msg.role === 'assistant' ? (
               <div key={msg.id} className="flex gap-2.5 max-w-[92%]">
-                <span className="font-mono text-[10px] text-brand-pink flex-shrink-0 pt-1 font-bold">
+                <span className="font-mono text-[10px] text-brand-purple flex-shrink-0 pt-1 font-bold">
                   SUJI:
                 </span>
                 <div className="rounded-2xl rounded-tl-sm px-4 py-2.5 text-xs sm:text-sm text-text-main bg-bg-card/90 border border-border leading-relaxed shadow-sm">
@@ -169,7 +169,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
               </div>
             ) : (
               <div key={msg.id} className="flex justify-end max-w-[85%] ml-auto">
-                <div className="rounded-2xl rounded-tr-sm px-4 py-2.5 text-xs sm:text-sm text-white bg-gradient-to-r from-brand-pink to-brand-violet leading-relaxed shadow-md">
+                <div className="rounded-2xl rounded-tr-sm px-4 py-2.5 text-xs sm:text-sm text-white bg-brand-violet leading-relaxed shadow-md">
                   {msg.text}
                 </div>
               </div>
@@ -182,7 +182,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="w-2 h-2 rounded-full bg-brand-pink/70 animate-bounce"
+                  className="w-2 h-2 rounded-full bg-brand-purple/70 animate-bounce"
                   style={{ animationDelay: `${i * 0.15}s` }}
                 />
               ))}
@@ -196,7 +196,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
               className="rounded-2xl p-4 space-y-2.5 bg-bg-card border border-border-accent shadow-md"
             >
               <div className="flex items-center justify-between pb-2 border-b border-border">
-                <span className="font-mono text-[11px] text-brand-pink font-semibold">
+                <span className="font-mono text-[11px] text-brand-purple font-semibold">
                   CONSULTATION REQUEST
                 </span>
                 <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-bg-secondary text-text-muted border border-border">
@@ -204,14 +204,14 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 </span>
               </div>
               <input
-                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
+                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
                 placeholder="Your name"
                 required
                 value={apptForm.name}
                 onChange={(e) => setApptForm({ ...apptForm, name: e.target.value })}
               />
               <input
-                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
+                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
                 type="email"
                 placeholder="Your email"
                 required
@@ -219,14 +219,14 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 onChange={(e) => setApptForm({ ...apptForm, email: e.target.value })}
               />
               <input
-                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
+                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
                 placeholder="Preferred time (e.g. Tue 3pm IST)"
                 required
                 value={apptForm.preferred_time}
                 onChange={(e) => setApptForm({ ...apptForm, preferred_time: e.target.value })}
               />
               <input
-                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
+                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
                 placeholder="Project topic or summary"
                 value={apptForm.purpose}
                 onChange={(e) => setApptForm({ ...apptForm, purpose: e.target.value })}
@@ -277,7 +277,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
               key={p}
               onClick={() => handleQuickPrompt(p)}
               disabled={isLoading}
-              className="px-2.5 py-1 rounded-lg font-mono text-[11px] text-text-secondary bg-bg-secondary border border-border hover:text-white hover:border-brand-pink/50 transition-all duration-150"
+              className="px-2.5 py-1 rounded-lg font-mono text-[11px] text-text-secondary bg-bg-secondary border border-border hover:text-white hover:border-brand-purple/50 transition-all duration-150"
             >
               {p}
             </button>
@@ -301,7 +301,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
         {/* Input Bar */}
         <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-bg-card">
           <input
-            className="flex-1 px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-text-main text-xs sm:text-sm placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
+            className="flex-1 px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-text-main text-xs sm:text-sm placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
             placeholder="Ask about systems, stack, projects..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}

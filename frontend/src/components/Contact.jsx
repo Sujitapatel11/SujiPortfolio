@@ -32,7 +32,7 @@ const contactCards = [
     icon: Phone,
     href: personalInfo.phoneCall,
     isExternal: false,
-    accentClass: 'text-brand-pink',
+    accentClass: 'text-brand-purple',
     tag: 'Telephone',
   },
   {
@@ -148,7 +148,7 @@ export default function Contact() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.35, delay: i * 0.04 }}
-                className="flex min-h-[126px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-bg-card px-2.5 py-4 text-center shadow-md transition-all duration-200 group hover:-translate-y-1 hover:border-brand-pink/50 sm:min-h-[136px] sm:px-3.5"
+                className="flex min-h-[126px] min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-border bg-bg-card px-2.5 py-4 text-center shadow-md transition-all duration-200 group hover:-translate-y-1 hover:border-brand-purple/50 sm:min-h-[136px] sm:px-3.5"
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-bg-secondary border border-border group-hover:scale-110 transition-transform">
                   <Icon size={18} className={card.accentClass} />
@@ -177,7 +177,7 @@ export default function Contact() {
           className="relative mx-auto w-full max-w-[760px] overflow-hidden rounded-3xl border border-border-accent bg-bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10"
         >
           {/* Ambient card accent */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-brand-pink/15 via-brand-violet/10 to-transparent pointer-events-none rounded-full blur-2xl" />
+          <div className="absolute top-0 right-0 w-48 h-48 bg-brand-violet/5 pointer-events-none rounded-full blur-2xl" />
 
           {status.success ? (
             <div className="text-center py-8 space-y-4">
@@ -201,7 +201,7 @@ export default function Contact() {
             <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2">
-                  <Terminal size={14} className="text-brand-pink" />
+                  <Terminal size={14} className="text-brand-purple" />
                   <span className="font-mono text-xs font-bold text-text-main">
                     INQUIRY_DISPATCHER.fastapi
                   </span>
@@ -247,7 +247,7 @@ export default function Contact() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. Alex Morgan"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
@@ -260,7 +260,7 @@ export default function Contact() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="alex@company.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -273,7 +273,7 @@ export default function Contact() {
                   <select
                     value={formData.project_type}
                     onChange={(e) => setFormData({ ...formData, project_type: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main focus:border-brand-pink focus:outline-none transition-colors cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main focus:border-brand-purple focus:outline-none transition-colors cursor-pointer"
                   >
                     <option value="Full-Stack Web App">Full-Stack Web Application</option>
                     <option value="Backend & High-Throughput API">Backend & High-Throughput API</option>
@@ -289,7 +289,7 @@ export default function Contact() {
                   <select
                     value={formData.budget}
                     onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main focus:border-brand-pink focus:outline-none transition-colors cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main focus:border-brand-purple focus:outline-none transition-colors cursor-pointer"
                   >
                     <option value="< $2,000">&lt; $2,000 (Sprint / Prototype)</option>
                     <option value="$2,000 - $5,000">$2,000 - $5,000 (Core MVP)</option>
@@ -309,7 +309,7 @@ export default function Contact() {
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   placeholder="Tell me about your architectural goals, timeline, and key requirements..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors resize-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-bg-secondary border border-border text-xs sm:text-sm text-text-main placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors resize-none"
                 />
               </div>
 

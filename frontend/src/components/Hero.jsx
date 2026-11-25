@@ -43,11 +43,11 @@ export default function Hero() {
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-bg-secondary/90 border border-brand-violet/30 w-fit font-mono text-xs text-brand-pink shadow-sm"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-bg-secondary/90 border border-brand-violet/30 w-fit font-mono text-xs text-brand-purple shadow-sm"
             >
               <Terminal size={13} className="text-brand-violet" />
               <span>{personalInfo.greeting}</span>
-              <span className="w-1.5 h-3.5 bg-brand-pink animate-blink" />
+              <span className="w-1.5 h-3.5 bg-brand-purple animate-blink" />
             </motion.div>
 
             {/* Brand Title & Hero Headline */}
@@ -81,9 +81,9 @@ export default function Hero() {
               {personalInfo.roles.map((role) => (
                 <span
                   key={role}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs text-text-secondary bg-bg-secondary/70 border border-border hover:border-brand-pink/40 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs text-text-secondary bg-bg-secondary/70 border border-border hover:border-brand-purple/40 transition-colors"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-pink" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-purple" />
                   {role}
                 </span>
               ))}
@@ -110,7 +110,7 @@ export default function Hero() {
             >
               <div className="flex items-center justify-between text-text-muted pb-1 border-b border-border text-[11px]">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-brand-pink" />
+                  <span className="w-2 h-2 rounded-full bg-brand-purple" />
                   <span className="w-2 h-2 rounded-full bg-amber-400" />
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   <span className="ml-1 text-text-secondary">suji-core ~ status</span>
@@ -118,7 +118,7 @@ export default function Hero() {
                 <span className="text-brand-violet text-[10px]">PORTFOLIO</span>
               </div>
               <div className="text-text-secondary">
-                <span className="text-brand-pink">$</span> suji.inspect()
+                <span className="text-brand-purple">$</span> suji.inspect()
               </div>
               <div className="text-text-muted pl-3 text-[11px] leading-relaxed">
                 &#10140; <span className="text-brand-violet font-semibold">Focus:</span> Backend development, data modelling, applied AI
@@ -165,7 +165,7 @@ export default function Hero() {
                 className="btn-ghost inline-flex items-center gap-2 text-brand-lavender hover:text-white"
                 title="Call Sujita directly"
               >
-                <Phone size={14} className="text-brand-pink" />
+                <Phone size={14} className="text-brand-purple" />
                 Call
               </a>
 
@@ -222,7 +222,7 @@ export default function Hero() {
                   onClick={() => setViewMode('portrait')}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     viewMode === 'portrait'
-                      ? 'bg-gradient-to-r from-brand-pink to-brand-violet text-white font-medium shadow-sm'
+                      ? 'bg-brand-violet text-white font-medium shadow-sm'
                       : 'text-text-secondary hover:text-text-main'
                   }`}
                 >
@@ -232,7 +232,7 @@ export default function Hero() {
                   onClick={() => setViewMode('workspace')}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     viewMode === 'workspace'
-                      ? 'bg-gradient-to-r from-brand-pink to-brand-violet text-white font-medium shadow-sm'
+                      ? 'bg-brand-violet text-white font-medium shadow-sm'
                       : 'text-text-secondary hover:text-text-main'
                   }`}
                 >
@@ -254,7 +254,7 @@ export default function Hero() {
                   <Server size={18} />
                 </div>
                 <div>
-                  <p className="font-mono text-[10px] text-brand-pink font-semibold uppercase tracking-wider">
+                  <p className="font-mono text-[10px] text-brand-purple font-semibold uppercase tracking-wider">
                     Core Backend
                   </p>
                   <p className="text-xs font-bold text-text-main">FastAPI & PostgreSQL</p>
@@ -266,8 +266,8 @@ export default function Hero() {
               </div>
 
               {/* Floating Status Card 2: Bottom Right */}
-              <div className="absolute -bottom-4 -right-4 sm:-bottom-5 sm:-right-6 z-20 bg-bg-card/95 border border-brand-pink/40 p-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-3 animate-float-slow max-w-[220px]">
-                <div className="w-9 h-9 rounded-xl bg-brand-pink/20 border border-brand-pink/40 flex items-center justify-center text-brand-pink flex-shrink-0">
+              <div className="absolute -bottom-4 -right-4 sm:-bottom-5 sm:-right-6 z-20 bg-bg-card/95 border border-brand-purple/40 p-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-3 animate-float-slow max-w-[220px]">
+                <div className="w-9 h-9 rounded-xl bg-brand-purple/20 border border-brand-purple/40 flex items-center justify-center text-brand-purple flex-shrink-0">
                   <Sparkles size={18} />
                 </div>
                 <div>
@@ -283,12 +283,12 @@ export default function Hero() {
               </div>
 
               {/* Visual Frame */}
-              <div className="relative rounded-3xl overflow-hidden p-1.5 bg-gradient-to-br from-brand-pink/40 via-brand-violet/30 to-brand-lavender/10 border border-border-accent shadow-2xl">
+              <div className="relative rounded-3xl overflow-hidden p-1.5 bg-brand-violet/10 border border-border-accent shadow-2xl">
                 <div className="relative rounded-[22px] overflow-hidden bg-bg-secondary min-h-[380px] sm:min-h-[440px] flex items-center justify-center">
                   {viewMode === 'portrait' ? (
                     <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
                       {/* Ambient developer glow behind portrait */}
-                      <div className="absolute inset-0 bg-gradient-to-b from-brand-violet/20 via-transparent to-brand-pink/15 pointer-events-none" />
+                      <div className="absolute inset-0 bg-brand-violet/5 pointer-events-none" />
                       <img
                         src="/assets/suji-portrait.jpg"
                         alt="Sujita Patel — Software Engineer & Applied AI"
@@ -303,7 +303,7 @@ export default function Hero() {
                           <p className="text-xs font-bold text-text-main">{personalInfo.fullName}</p>
                           <p className="font-mono text-[11px] text-brand-lavender">B.Tech CSE &#8226; Parul University</p>
                         </div>
-                        <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-brand-pink/20 text-brand-pink border border-brand-pink/40 font-semibold">
+                        <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-brand-purple/20 text-brand-purple border border-brand-purple/40 font-semibold">
                           SUJI
                         </span>
                       </div>

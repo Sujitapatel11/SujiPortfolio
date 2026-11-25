@@ -64,7 +64,7 @@ export default function Skills() {
         >
           <div className="mb-3 flex items-center justify-center gap-2">
             <span className="section-label">/ Tools & Technologies</span>
-            <Sparkles size={14} className="text-brand-pink" />
+            <Sparkles size={14} className="text-brand-purple" />
           </div>
           <h2 className="mb-3 text-3xl font-extrabold tracking-tight text-text-main sm:text-5xl">
             Technologies I <span className="text-gradient">Work With</span>
@@ -86,7 +86,7 @@ export default function Skills() {
                   aria-pressed={selected}
                   className={`shrink-0 rounded-full border px-4 py-2 text-xs font-medium transition-all duration-200 sm:text-sm ${
                     selected
-                      ? 'border-brand-pink/60 bg-brand-pink/15 text-text-main shadow-[0_0_18px_rgba(118,97,143,0.10)]'
+                      ? 'border-brand-purple/60 bg-brand-purple/15 text-text-main shadow-[0_0_18px_rgba(118,97,143,0.10)]'
                       : 'border-border bg-bg-card/70 text-text-secondary hover:border-brand-violet/60 hover:text-text-main'
                   }`}
                 >
@@ -130,7 +130,7 @@ export default function Skills() {
                     transition={{ type: 'spring', stiffness: 230, damping: 25, mass: 0.8 }}
                     className={`absolute left-1/2 top-1/2 flex h-[310px] w-[220px] flex-col items-center rounded-3xl border p-5 text-center backdrop-blur-xl sm:h-[350px] sm:w-[260px] sm:p-6 ${
                       isActive
-                        ? 'border-brand-pink/70 bg-bg-card shadow-[0_0_35px_rgba(118,97,143,0.16),0_0_12px_rgba(118,97,143,0.10)]'
+                        ? 'border-brand-purple/70 bg-bg-card shadow-[0_0_35px_rgba(118,97,143,0.16),0_0_12px_rgba(118,97,143,0.10)]'
                         : 'border-border bg-bg-card/85 shadow-xl'
                     }`}
                     style={{ transformStyle: 'preserve-3d', translate: '-50% -50%' }}
@@ -168,7 +168,7 @@ export default function Skills() {
                     </p>
                     {isActive && (
                       <div className="mt-4 h-1 w-16 overflow-hidden rounded-full bg-bg-tertiary">
-                        <div className="h-full w-full rounded-full bg-gradient-to-r from-brand-pink to-brand-violet" />
+                        <div className="h-full w-full rounded-full bg-brand-violet" />
                       </div>
                     )}
                   </motion.article>
@@ -182,7 +182,7 @@ export default function Skills() {
               type="button"
               onClick={() => move(-1)}
               aria-label="Previous technology"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-pink hover:text-brand-pink hover:shadow-[0_0_18px_rgba(118,97,143,0.12)]"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-purple hover:text-brand-purple hover:shadow-[0_0_18px_rgba(118,97,143,0.12)]"
             >
               <ArrowLeft size={19} />
             </button>
@@ -196,7 +196,7 @@ export default function Skills() {
               type="button"
               onClick={() => move(1)}
               aria-label="Next technology"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-pink hover:text-brand-pink hover:shadow-[0_0_18px_rgba(118,97,143,0.12)]"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-violet/50 bg-bg-card text-text-main transition hover:border-brand-purple hover:text-brand-purple hover:shadow-[0_0_18px_rgba(118,97,143,0.12)]"
             >
               <ArrowRight size={19} />
             </button>
@@ -205,7 +205,7 @@ export default function Skills() {
 
         <div className="mx-auto mt-10 flex max-w-3xl flex-col items-center justify-between gap-3 rounded-2xl border border-border bg-bg-card/65 px-5 py-4 text-xs text-text-secondary backdrop-blur-md sm:flex-row">
           <div className="flex items-center gap-2 text-text-main">
-            <Layers3 size={16} className="text-brand-pink" />
+            <Layers3 size={16} className="text-brand-purple" />
             <span className="font-semibold">{skillsList.length} technologies across {skillCategories.length - 1} categories</span>
           </div>
           <div className="flex items-center gap-2 font-mono text-[10px] text-brand-lavender">
