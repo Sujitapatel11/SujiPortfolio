@@ -292,9 +292,22 @@ export default function Hero() {
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.15 }}
-              className="relative"
-              style={{ perspective: 1200 }}
+              className="relative hero-depth-stage"
+              style={{ perspective: 1100, transformStyle: 'preserve-3d' }}
             >
+              {/* Quiet 3D backplate gives the hero visual a little physical depth. */}
+              <div className="hero-depth-backplate" aria-hidden="true" />
+
+              {/* Small, slow-moving plum glass cube — decorative, not a WebGL canvas. */}
+              <div className="hero-depth-cube hidden sm:block" aria-hidden="true">
+                <span className="hero-cube-face hero-cube-front" />
+                <span className="hero-cube-face hero-cube-back" />
+                <span className="hero-cube-face hero-cube-right" />
+                <span className="hero-cube-face hero-cube-left" />
+                <span className="hero-cube-face hero-cube-top" />
+                <span className="hero-cube-face hero-cube-bottom" />
+              </div>
+
               {/* Floating Status Card 1: Top Left */}
               <div className="absolute -top-5 -left-6 z-20 hidden max-w-[210px] items-center gap-3 rounded-2xl border border-brand-violet/30 bg-bg-card/95 p-3 shadow-lg backdrop-blur-md sm:flex animate-float">
                 <div className="w-9 h-9 rounded-xl bg-brand-violet/20 border border-brand-violet/40 flex items-center justify-center text-brand-lavender flex-shrink-0">
@@ -331,8 +344,8 @@ export default function Hero() {
 
               {/* Visual Frame */}
               <motion.div
-                whileHover={{ rotateX: 1.2, rotateY: -1.6, y: -3 }}
-                transition={{ type: 'spring', stiffness: 160, damping: 22 }}
+                whileHover={{ rotateX: 2.1, rotateY: -2.8, y: -4 }}
+                transition={{ type: 'spring', stiffness: 150, damping: 24 }}
                 style={{ transformStyle: 'preserve-3d' }}
                 className="relative rounded-3xl border border-border-accent bg-brand-violet/10 p-1.5 shadow-xl"
               >
