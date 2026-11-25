@@ -213,12 +213,14 @@ export default function Hero() {
             </motion.div>
           </div>
 
-          {/* Right Column: Developer Portrait & Workspace with Floating Status Badges */}
+          {/* Right Column: Portrait & Workspace with Floating Status Badges */}
           <div className="lg:col-span-5 relative">
             {/* View Switcher: Portrait vs Workspace */}
             <div className="flex items-center justify-end mb-2.5">
-              <div className="inline-flex items-center p-1 rounded-xl bg-bg-secondary/90 border border-border text-xs font-mono">
+              <div role="tablist" aria-label="Hero visual" className="inline-flex items-center p-1 rounded-xl bg-bg-secondary/90 border border-border text-xs font-mono">
                 <button
+                  role="tab"
+                  aria-selected={viewMode === 'portrait'}
                   onClick={() => setViewMode('portrait')}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     viewMode === 'portrait'
@@ -229,6 +231,8 @@ export default function Hero() {
                   Developer Portrait
                 </button>
                 <button
+                  role="tab"
+                  aria-selected={viewMode === 'workspace'}
                   onClick={() => setViewMode('workspace')}
                   className={`px-3 py-1 rounded-lg transition-all ${
                     viewMode === 'workspace'
@@ -236,7 +240,7 @@ export default function Hero() {
                       : 'text-text-secondary hover:text-text-main'
                   }`}
                 >
-                  3D Workspace
+                  2D Workspace
                 </button>
               </div>
             </div>
@@ -247,9 +251,10 @@ export default function Hero() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.15 }}
               className="relative"
+              style={{ perspective: 1200 }}
             >
               {/* Floating Status Card 1: Top Left */}
-              <div className="absolute -top-4 -left-4 sm:-top-5 sm:-left-6 z-20 bg-bg-card/95 border border-brand-violet/40 p-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-3 animate-float max-w-[210px]">
+              <div className="absolute -top-5 -left-6 z-20 hidden max-w-[210px] items-center gap-3 rounded-2xl border border-brand-violet/30 bg-bg-card/95 p-3 shadow-lg backdrop-blur-md sm:flex animate-float">
                 <div className="w-9 h-9 rounded-xl bg-brand-violet/20 border border-brand-violet/40 flex items-center justify-center text-brand-lavender flex-shrink-0">
                   <Server size={18} />
                 </div>
@@ -266,7 +271,7 @@ export default function Hero() {
               </div>
 
               {/* Floating Status Card 2: Bottom Right */}
-              <div className="absolute -bottom-4 -right-4 sm:-bottom-5 sm:-right-6 z-20 bg-bg-card/95 border border-brand-purple/40 p-3 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-3 animate-float-slow max-w-[220px]">
+              <div className="absolute -bottom-5 -right-6 z-20 hidden max-w-[220px] items-center gap-3 rounded-2xl border border-brand-purple/30 bg-bg-card/95 p-3 shadow-lg backdrop-blur-md sm:flex animate-float-slow">
                 <div className="w-9 h-9 rounded-xl bg-brand-purple/20 border border-brand-purple/40 flex items-center justify-center text-brand-purple flex-shrink-0">
                   <Sparkles size={18} />
                 </div>
@@ -283,8 +288,13 @@ export default function Hero() {
               </div>
 
               {/* Visual Frame */}
-              <div className="relative rounded-3xl overflow-hidden p-1.5 bg-brand-violet/10 border border-border-accent shadow-2xl">
-                <div className="relative rounded-[22px] overflow-hidden bg-bg-secondary min-h-[380px] sm:min-h-[440px] flex items-center justify-center">
+              <motion.div
+                whileHover={{ rotateX: 1.2, rotateY: -1.6, y: -3 }}
+                transition={{ type: 'spring', stiffness: 160, damping: 22 }}
+                style={{ transformStyle: 'preserve-3d' }}
+                className="relative rounded-3xl border border-border-accent bg-brand-violet/10 p-1.5 shadow-xl"
+              >
+                <div className="relative rounded-[22px] overflow-hidden bg-bg-secondary min-h-[360px] sm:min-h-[440px] flex items-center justify-center">
                   {viewMode === 'portrait' ? (
                     <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
                       {/* Ambient developer glow behind portrait */}
@@ -312,7 +322,7 @@ export default function Hero() {
                     <WorkspaceScene />
                   )}
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
