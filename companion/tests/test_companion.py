@@ -518,3 +518,42 @@ def test_result_delivery_retries_without_reexecuting_command(monkeypatch):
     assert len(executed) == 1
     assert state.pending_result is None
     assert [item[0] for item in requests] == ["GET", "POST", "POST"]
+
+@pytest.mark.parametrize(
+    ("app_id", "expected_url"),
+    [
+        ("whatsapp", "https://web.whatsapp.com/"),
+        ("instagram", "https://www.instagram.com/"),
+        ("youtube", "https://www.youtube.com/"),
+    ],
+)
+def test_windows_companion_opens_only_fixed_official_web_apps(monkeypatch, app_id, expected_url):
+    opened = []
+    monkeypatch.setattr(companion.sys, "platform", "win32")
+    monkeypatch.setattr(companion.webbrowser, "open", lambda url, **kwargs: opened.append(url) or True)
+
+    result = companion.execute_approved_command({
+        "tool": "desktop.open_application",
+        "arguments": {"app_id": app_id},
+    })
+
+    assert result[0] == "opened"
+    assert opened == [expected_url]
+
+
+def test_windows_companion_rejects_unknown_application(monkeypatch):
+    monkeypatch.setattr(companion.sys, "platform", "win32")
+    with pytest.raises(ValueError, match="tool_or_arguments_not_allowed"):
+        companion.execute_approved_command({
+            "tool": "desktop.open_application",
+            "arguments": {"app_id": "powershell"},
+        })
+
+
+def test_windows_web_app_launch_is_not_enabled_on_non_windows(monkeypatch):
+    monkeypatch.setattr(companion.sys, "platform", "linux")
+    with pytest.raises(RuntimeError, match="windows_companion_required"):
+        companion.execute_approved_command({
+            "tool": "desktop.open_application",
+            "arguments": {"app_id": "whatsapp"},
+        })
