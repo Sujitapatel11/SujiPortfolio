@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, MessageSquare, Phone, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
-import { sendChatMessage } from '../api/chat';
-import { submitInquiry } from '../api/inquiries';
+import { X, Send, Bot, MessageSquare, CheckCircle2, Mic, Volume2 } from 'lucide-react';
+import { sendChatMessage, getChatStatus, getChatHistory } from '../api/chat';
+import { submitAppointmentRequest } from '../api/appointments';
 import { personalInfo } from '../data/portfolio';
 
 export default function ChatDrawer({ isOpen, onClose }) {
@@ -9,18 +9,27 @@ export default function ChatDrawer({ isOpen, onClose }) {
     {
       id: 'welcome',
       role: 'assistant',
-      text: "Hi, I'm Ask Suji — Sujita's autonomous AI intake agent. I can answer questions about her engineering architecture, projects (SoulCare, UrmiNexus, SujiPortfolio), services, and tech stack.",
+      text: "Hi, I'm Ask Suji. I answer questions grounded in Sujita's public portfolio and can help submit consultation or project requests.",
     },
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState(null);
+  const [conversationId, setConversationId] = useState(() => sessionStorage.getItem('ask_suji_conversation_id'));
+  const [backendState, setBackendState] = useState('checking');
+  const [failedMessage, setFailedMessage] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
+  const recognitionRef = useRef(null);
 
   // Appointment collection state
   const [appointmentMode, setAppointmentMode] = useState(false);
   const [apptForm, setApptForm] = useState({ name: '', email: '', preferred_time: '', purpose: '' });
   const [apptSubmitted, setApptSubmitted] = useState(false);
   const [apptSubmitting, setApptSubmitting] = useState(false);
+  const [apptError, setApptError] = useState('');
+  const [apptResult, setApptResult] = useState(null);
+  const [apptRequestKey, setApptRequestKey] = useState(() => crypto.randomUUID());
 
   const messagesEndRef = useRef(null);
 
@@ -33,32 +42,132 @@ export default function ChatDrawer({ isOpen, onClose }) {
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-  useEffect(() => {
-    if (isOpen) scrollToBottom();
-  }, [messages, isOpen, appointmentMode]);
+  const startVoiceInput = () => {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      setVoiceError('Voice input is not supported in this browser. You can still type your message.');
+      return;
+    }
+    try {
+      setVoiceError('');
+      const recognition = new Recognition();
+      recognition.lang = navigator.language || 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = (event) => {
+        const transcript = event.results?.[0]?.[0]?.transcript;
+        if (transcript) setInputText((previous) => previous ? `${previous} ${transcript}` : transcript);
+      };
+      recognition.onerror = (event) => setVoiceError(`Voice input failed: ${event.error || 'unknown error'}.`);
+      recognition.onend = () => setIsListening(false);
+      recognitionRef.current = recognition;
+      setIsListening(true);
+      recognition.start();
+    } catch (error) {
+      setIsListening(false);
+      setVoiceError(error.message || 'Could not start voice input.');
+    }
+  };
 
-  const handleSend = async (textToSend = inputText) => {
+  const speakMessage = (text) => {
+    if (!('speechSynthesis' in window)) {
+      setVoiceError('Voice output is not supported in this browser.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    if (isSpeaking) {
+      setIsSpeaking(false);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = navigator.language || 'en-US';
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setVoiceError('Voice output could not be played.');
+    };
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => () => {
+    recognitionRef.current?.stop?.();
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    scrollToBottom();
+    let active = true;
+    getChatStatus()
+      .then((data) => {
+        if (!active) return;
+        if (!data.provider_configured) setBackendState('degraded');
+        else if (!data.retrieval_configured) setBackendState('missing_index');
+        else setBackendState('configured');
+      })
+      .catch(() => {
+        if (active) setBackendState('offline');
+      });
+    return () => { active = false; };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !conversationId) return;
+    let active = true;
+    getChatHistory(conversationId)
+      .then((history) => {
+        if (active && Array.isArray(history) && history.length) {
+          setMessages([
+            { id: 'welcome', role: 'assistant', text: "Hi, I'm Ask Suji. I can answer questions grounded in Sujita's public portfolio and help submit consultation or project requests." },
+            ...history.map((item, index) => ({
+              id: `history-${index}-${item.created_at || ''}`,
+              role: item.role,
+              text: item.text,
+              sources: item.sources || [],
+            })),
+          ]);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          sessionStorage.removeItem('ask_suji_conversation_id');
+          setConversationId(null);
+        }
+      });
+    return () => { active = false; };
+  }, [isOpen, conversationId]);
+
+  const handleSend = async (textToSend = inputText, appendUser = true) => {
     const text = textToSend.trim();
     if (!text || isLoading) return;
 
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'user', text }]);
+    if (appendUser) setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'user', text }]);
+    setFailedMessage('');
     setInputText('');
     setIsLoading(true);
 
     try {
       const data = await sendChatMessage(text, conversationId);
-      if (data.conversation_id) setConversationId(data.conversation_id);
+      if (data.conversation_id) {
+        setConversationId(data.conversation_id);
+        sessionStorage.setItem('ask_suji_conversation_id', data.conversation_id);
+      }
+      if (data.status === 'degraded') setBackendState('degraded');
       setMessages((prev) => [
         ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', text: data.reply },
+        { id: (Date.now() + 1).toString(), role: 'assistant', text: data.reply, sources: data.sources || [], degraded: data.status === 'degraded' },
       ]);
-    } catch {
+    } catch (error) {
+      setFailedMessage(text);
+      setBackendState('offline');
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          text: `AI backend is currently offline. You can chat directly with Sujita on WhatsApp (${personalInfo.phoneDisplay}) or email sujitapatel787@gmail.com!`,
+          text: error.message || 'Ask Suji could not reach the backend. Your request was not confirmed.',
+          degraded: true,
         },
       ]);
     } finally {
@@ -79,6 +188,9 @@ export default function ChatDrawer({ isOpen, onClose }) {
       ]);
       setAppointmentMode(true);
       setApptSubmitted(false);
+      setApptError('');
+      setApptResult(null);
+      setApptRequestKey(crypto.randomUUID());
       return;
     }
     handleSend(prompt);
@@ -87,20 +199,20 @@ export default function ChatDrawer({ isOpen, onClose }) {
   const handleApptSubmit = async (e) => {
     e.preventDefault();
     setApptSubmitting(true);
+    setApptError('');
     try {
-      await submitInquiry({
+      const result = await submitAppointmentRequest({
         name: apptForm.name,
         email: apptForm.email,
-        project_type: 'Consultation Appointment',
-        budget: 'Consultation',
-        message: `Preferred Time: ${apptForm.preferred_time}. Summary: ${apptForm.purpose || 'General Consultation'}`,
-        source: 'chat_appointment',
-      });
+        preferred_time: apptForm.preferred_time || null,
+        purpose: apptForm.purpose || null,
+      }, apptRequestKey);
+      setApptResult(result);
+      setApptSubmitted(true);
     } catch (err) {
-      console.warn('Backend intake notice:', err);
+      setApptError(err.message || 'The request could not be saved. Nothing has been submitted.');
     } finally {
       setApptSubmitting(false);
-      setApptSubmitted(true);
     }
   };
 
@@ -141,8 +253,10 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 </span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-mono text-[10px] text-emerald-400">pgvector ready</span>
+                <span className={`w-1.5 h-1.5 rounded-full ${backendState === 'configured' ? 'bg-emerald-400' : backendState === 'checking' ? 'bg-amber-400' : 'bg-rose-400'}`} />
+                <span className={`font-mono text-[10px] ${backendState === 'configured' ? 'text-emerald-400' : backendState === 'checking' ? 'text-amber-400' : 'text-rose-400'}`} aria-live="polite">
+                  {backendState === 'configured' ? 'Backend online · provider key set' : backendState === 'checking' ? 'Checking backend…' : backendState === 'degraded' ? 'AI service degraded' : backendState === 'missing_index' ? 'Knowledge index empty' : 'Backend offline'}
+                </span>
               </div>
             </div>
           </div>
@@ -165,6 +279,24 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 </span>
                 <div className="rounded-2xl rounded-tl-sm px-4 py-2.5 text-xs sm:text-sm text-text-main bg-bg-card/90 border border-border leading-relaxed shadow-sm">
                   {msg.text}
+                  <button
+                    type="button"
+                    onClick={() => speakMessage(msg.text)}
+                    className="mt-2 inline-flex items-center gap-1 text-[10px] font-mono text-text-muted hover:text-brand-pink"
+                    aria-label="Read this reply aloud"
+                  >
+                    <Volume2 size={12} /> Read aloud
+                  </button>
+                  {msg.sources?.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-border/70 space-y-1">
+                      <p className="font-mono text-[9px] text-text-muted">GROUNDED SOURCES</p>
+                      {msg.sources.map((source, index) => (
+                        <p key={`${source.source}-${index}`} className="font-mono text-[10px] text-text-secondary">
+                          {source.source} · {Math.round((source.similarity || 0) * 100)}% match
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -189,6 +321,19 @@ export default function ChatDrawer({ isOpen, onClose }) {
             </div>
           )}
 
+          {failedMessage && (
+            <div className="flex justify-start px-2">
+              <button
+                type="button"
+                onClick={() => handleSend(failedMessage, false)}
+                disabled={isLoading}
+                className="text-[11px] font-mono text-brand-pink underline disabled:opacity-50"
+              >
+                Retry last message
+              </button>
+            </div>
+          )}
+
           {/* Appointment collection form */}
           {appointmentMode && !apptSubmitted && (
             <form
@@ -200,7 +345,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
                   CONSULTATION REQUEST
                 </span>
                 <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-bg-secondary text-text-muted border border-border">
-                  DRAFT
+                  REQUEST FORM
                 </span>
               </div>
               <input
@@ -220,8 +365,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
               />
               <input
                 className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-pink focus:outline-none transition-colors"
-                placeholder="Preferred time (e.g. Tue 3pm IST)"
-                required
+                placeholder="Preferred time (optional)"
                 value={apptForm.preferred_time}
                 onChange={(e) => setApptForm({ ...apptForm, preferred_time: e.target.value })}
               />
@@ -231,6 +375,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 value={apptForm.purpose}
                 onChange={(e) => setApptForm({ ...apptForm, purpose: e.target.value })}
               />
+              {apptError && <p role="alert" className="text-xs text-rose-400">{apptError}</p>}
               <button
                 type="submit"
                 disabled={apptSubmitting}
@@ -247,10 +392,10 @@ export default function ChatDrawer({ isOpen, onClose }) {
               <div className="flex items-center justify-between pb-2 border-b border-border mb-2.5">
                 <span className="font-mono text-[11px] text-emerald-400 font-semibold flex items-center gap-1.5">
                   <CheckCircle2 size={13} />
-                  CONSULTATION QUEUED
+                  REQUEST SAVED · PENDING
                 </span>
                 <span className="font-mono text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  DISPATCHED
+                  {apptResult?.owner_notification_sent ? 'NOTIFICATION ACCEPTED' : 'DELIVERY UNVERIFIED'}
                 </span>
               </div>
               <div className="space-y-1 font-mono text-xs text-text-secondary">
@@ -261,7 +406,10 @@ export default function ChatDrawer({ isOpen, onClose }) {
                   <strong className="text-text-main">Email:</strong> {apptForm.email}
                 </p>
                 <p>
-                  <strong className="text-text-main">Time:</strong> {apptForm.preferred_time}
+                  <strong className="text-text-main">Time:</strong> {apptForm.preferred_time || 'Not specified'}
+                </p>
+                <p><strong className="text-text-main">Request:</strong> #{apptResult?.id}</p>
+                <p className="text-text-muted">{apptResult?.message || 'Awaiting owner confirmation.'}
                 </p>
               </div>
             </div>
@@ -309,6 +457,16 @@ export default function ChatDrawer({ isOpen, onClose }) {
             disabled={isLoading}
           />
           <button
+            type="button"
+            onClick={startVoiceInput}
+            disabled={isListening || isLoading}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center border border-border disabled:opacity-40 flex-shrink-0 ${isListening ? 'text-rose-400 border-rose-400' : 'text-text-secondary hover:text-brand-pink'}`}
+            aria-label="Start voice input"
+            title="Use voice input"
+          >
+            <Mic size={16} />
+          </button>
+          <button
             onClick={() => handleSend()}
             disabled={!inputText.trim() || isLoading}
             className="w-10 h-10 rounded-xl flex items-center justify-center text-white btn-primary p-0 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
@@ -317,6 +475,9 @@ export default function ChatDrawer({ isOpen, onClose }) {
             <Send size={16} />
           </button>
         </div>
+        {voiceError && (
+          <p role="status" className="px-4 pb-2 text-[10px] text-rose-400" aria-live="polite">{voiceError}</p>
+        )}
       </div>
     </>
   );
