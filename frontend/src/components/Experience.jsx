@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import SectionHeading from './SectionHeading';
 import { GraduationCap, FolderGit2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { experience } from '../data/portfolio';
 
@@ -13,24 +14,13 @@ export default function Experience() {
   return (
     <section id="experience" className="relative py-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        {/* Section Heading */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-          className="mb-12 sm:mb-14"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <span className="section-label">/ Timeline & Projects</span>
-            <span className="h-px w-12 bg-border-accent inline-block" />
-          </div>
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-text-main">
-            Engineering Journey & <span className="text-gradient">Key Milestones</span>
-          </h2>
-        </motion.div>
+        <SectionHeading
+          eyebrow="/ Timeline & Projects"
+          title="Engineering Journey &"
+          accent="Key Milestones"
+        />
 
-        {/* Timeline */}
+        {/* Timeline */}        {/* Timeline */}
         <div className="relative pl-8 sm:pl-10">
           {/* Vertical line with gradient glow */}
           <div className="absolute left-3 sm:left-4 top-2 bottom-2 w-0.5 bg-brand-violet/40" />
