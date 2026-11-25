@@ -21,6 +21,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
   const [apptForm, setApptForm] = useState({ name: '', email: '', preferred_time: '', purpose: '' });
   const [apptSubmitted, setApptSubmitted] = useState(false);
   const [apptSubmitting, setApptSubmitting] = useState(false);
+  const [apptError, setApptError] = useState('');
 
   const messagesEndRef = useRef(null);
 
@@ -79,6 +80,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
       ]);
       setAppointmentMode(true);
       setApptSubmitted(false);
+      setApptError('');
       return;
     }
     handleSend(prompt);
@@ -86,6 +88,7 @@ export default function ChatDrawer({ isOpen, onClose }) {
 
   const handleApptSubmit = async (e) => {
     e.preventDefault();
+    setApptError('');
     setApptSubmitting(true);
     try {
       await submitInquiry({
@@ -96,11 +99,12 @@ export default function ChatDrawer({ isOpen, onClose }) {
         message: `Preferred Time: ${apptForm.preferred_time}. Summary: ${apptForm.purpose || 'General Consultation'}`,
         source: 'chat_appointment',
       });
+      // Only show confirmation after the API confirms that the inquiry was saved.
+      setApptSubmitted(true);
     } catch (err) {
-      console.warn('Backend intake notice:', err);
+      setApptError(err?.message || "We couldn't save your request. Please try again or contact Sujita directly.");
     } finally {
       setApptSubmitting(false);
-      setApptSubmitted(true);
     }
   };
 
@@ -203,15 +207,22 @@ export default function ChatDrawer({ isOpen, onClose }) {
                   DRAFT
                 </span>
               </div>
+              {apptError && (
+                <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300" role="alert">
+                  {apptError}
+                </div>
+              )}
               <input
-                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
+                disabled={apptSubmitting}
+                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors disabled:opacity-60"
                 placeholder="Your name"
                 required
                 value={apptForm.name}
                 onChange={(e) => setApptForm({ ...apptForm, name: e.target.value })}
               />
               <input
-                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
+                disabled={apptSubmitting}
+                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors disabled:opacity-60"
                 type="email"
                 placeholder="Your email"
                 required
@@ -219,14 +230,16 @@ export default function ChatDrawer({ isOpen, onClose }) {
                 onChange={(e) => setApptForm({ ...apptForm, email: e.target.value })}
               />
               <input
-                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
+                disabled={apptSubmitting}
+                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors disabled:opacity-60"
                 placeholder="Preferred time (e.g. Tue 3pm IST)"
                 required
                 value={apptForm.preferred_time}
                 onChange={(e) => setApptForm({ ...apptForm, preferred_time: e.target.value })}
               />
               <input
-                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors"
+                disabled={apptSubmitting}
+                className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-main text-xs placeholder-text-muted focus:border-brand-purple focus:outline-none transition-colors disabled:opacity-60"
                 placeholder="Project topic or summary"
                 value={apptForm.purpose}
                 onChange={(e) => setApptForm({ ...apptForm, purpose: e.target.value })}
@@ -247,12 +260,15 @@ export default function ChatDrawer({ isOpen, onClose }) {
               <div className="flex items-center justify-between pb-2 border-b border-border mb-2.5">
                 <span className="font-mono text-[11px] text-emerald-400 font-semibold flex items-center gap-1.5">
                   <CheckCircle2 size={13} />
-                  CONSULTATION QUEUED
+                  REQUEST SAVED
                 </span>
                 <span className="font-mono text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  DISPATCHED
+                  SAVED
                 </span>
               </div>
+              <p className="mb-3 text-xs leading-5 text-text-secondary">
+                Your request was saved to the intake dashboard. This is a consultation request, not a confirmed appointment.
+              </p>
               <div className="space-y-1 font-mono text-xs text-text-secondary">
                 <p>
                   <strong className="text-text-main">Name:</strong> {apptForm.name}
