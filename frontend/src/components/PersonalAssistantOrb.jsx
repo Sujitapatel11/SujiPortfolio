@@ -127,39 +127,39 @@ export default function PersonalAssistantOrb() {
   };
 
   return <div className="fixed bottom-6 left-6 z-[71]">
-    {open && <section className="mb-4 w-[min(94vw,380px)] rounded-3xl border border-violet-400/30 bg-slate-950/95 p-4 text-white shadow-2xl backdrop-blur-xl" aria-label="Hey Suji assistant">
+    {open && <section className="mb-4 w-[min(94vw,380px)] rounded-3xl border border-border-accent bg-bg-card p-4 text-text-main shadow-2xl backdrop-blur-xl" aria-label="Hey Suji assistant">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2"><Bot size={20}/><div><p className="text-sm font-semibold">HEY SUJI</p><p className="text-[10px] text-violet-200">PERSONAL AI OPERATOR · OWNER ONLY</p></div></div>
+        <div className="flex items-center gap-2"><Bot size={20}/><div><p className="text-sm font-semibold">HEY SUJI</p><p className="text-[10px] text-brand-lavender">PERSONAL AI OPERATOR · OWNER ONLY</p></div></div>
         <button onClick={() => { recognitionRef.current?.stop(); setListening(false); setOpen(false); }} aria-label="Close assistant"><X size={18}/></button>
       </header>
-      <p className="mt-3 text-xs leading-5 text-slate-300">{status}</p>
-      {token() && <label className="mt-3 flex items-center gap-2 text-xs text-slate-300"><Smartphone size={14}/> Execute on
-        <select value={deviceId} onChange={event => { setDeviceId(event.target.value); sessionRef.current = null; }} className="min-w-0 flex-1 rounded-lg border border-white/15 bg-slate-900 px-2 py-2 text-xs text-white">
+      <p className="mt-3 text-xs leading-5 text-text-secondary">{status}</p>
+      {token() && <label className="mt-3 flex items-center gap-2 text-xs text-text-secondary"><Smartphone size={14}/> Execute on
+        <select value={deviceId} onChange={event => { setDeviceId(event.target.value); sessionRef.current = null; }} className="min-w-0 flex-1 rounded-lg border border-border bg-bg-secondary px-2 py-2 text-xs text-white">
           <option value="">No paired device (chat only)</option>
           {devices.map(device => <option key={device.device_id} value={device.device_id}>{device.name}</option>)}
         </select>
       </label>}
-      {reply && <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs leading-5 whitespace-pre-wrap">{reply}</div>}
+      {reply && <div className="mt-3 rounded-xl border border-border bg-bg-secondary p-3 text-xs leading-5 whitespace-pre-wrap">{reply}</div>}
       {proposal && <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 p-3">
         <p className="flex items-center gap-2 text-xs font-semibold"><ShieldCheck size={14}/> Approval required</p>
         <p className="mt-2 text-xs">{proposal.summary}</p>
         <div className="mt-3 flex gap-2">
-          <button disabled={busy} onClick={() => decide("approve")} className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold disabled:opacity-50">Approve</button>
+          <button disabled={busy} onClick={() => decide("approve")} className="rounded-lg bg-brand-violet px-3 py-2 text-xs font-semibold disabled:opacity-50">Approve</button>
           <button disabled={busy} onClick={() => decide("reject")} className="rounded-lg border border-white/20 px-3 py-2 text-xs disabled:opacity-50">Reject</button>
         </div>
       </div>}
       <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); void submitTask(input); }}>
-        <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Tell me what to do…" className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs outline-none focus:border-violet-400" />
-        <button type="submit" disabled={busy || !input.trim()} aria-label="Send task" className="rounded-xl bg-violet-600 p-2 disabled:opacity-50"><Send size={16}/></button>
+        <input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Tell me what to do…" className="min-w-0 flex-1 rounded-xl border border-border bg-bg-secondary px-3 py-2 text-xs outline-none focus:border-brand-purple" />
+        <button type="submit" disabled={busy || !input.trim()} aria-label="Send task" className="rounded-xl bg-brand-violet p-2 disabled:opacity-50"><Send size={16}/></button>
       </form>
       <div className="mt-2 flex gap-2">
-        <button onClick={startListening} disabled={busy} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-violet-300/30 px-3 py-2 text-xs disabled:opacity-50">
+        <button onClick={startListening} disabled={busy} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border-accent px-3 py-2 text-xs disabled:opacity-50">
           {busy ? <Loader2 size={14} className="animate-spin"/> : listening ? <MicOff size={14}/> : <Mic size={14}/>}
           {listening ? "Stop listening" : "Speak"}
         </button>
-        {!token() && <a href="/admin/login" className="flex items-center gap-1 rounded-xl border border-white/15 px-3 py-2 text-xs"><LogIn size={14}/> Owner sign in</a>}
+        {!token() && <a href="/admin/login" className="flex items-center gap-1 rounded-xl border border-border px-3 py-2 text-xs"><LogIn size={14}/> Owner sign in</a>}
       </div>
-      <p className="mt-2 text-[10px] text-slate-400">The portfolio can plan tasks and request approval. Device actions require a paired, online companion. Wake-word activation is not enabled in this browser.</p>
+      <p className="mt-2 text-[10px] text-text-muted">The portfolio can plan tasks and request approval. Device actions require a paired, online companion. Wake-word activation is not enabled in this browser.</p>
     </section>}
     <button onClick={activate} aria-label="Activate Hey Suji" title="Activate Hey Suji" className="flex h-14 w-14 items-center justify-center rounded-full border border-brand-lavender/50 bg-brand-violet text-white shadow-lg transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brand-lavender">
       {open ? <X size={22}/> : <Sparkles size={24}/>}
