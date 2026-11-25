@@ -8,13 +8,13 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-brand-pink to-brand-violet flex items-center justify-center text-white font-extrabold text-xs shadow-sm">
+          <div className="w-7 h-7 rounded-lg bg-brand-violet flex items-center justify-center text-white font-extrabold text-xs shadow-sm">
             S
           </div>
           <span className="font-extrabold text-base tracking-wider text-text-main">
             SUJI
           </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-pink ml-0.5" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-purple ml-0.5" />
           <span className="text-text-muted text-xs font-mono ml-2">
             Engineering Ideas into Experiences.
           </span>
@@ -34,7 +34,7 @@ export default function Footer() {
           </a>
           <a
             href={personalInfo.phoneCall}
-            className="w-9 h-9 rounded-xl flex items-center justify-center text-brand-pink hover:text-brand-pink hover:bg-brand-pink/10 border border-border transition-all"
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-brand-purple hover:text-brand-purple hover:bg-brand-purple/10 border border-border transition-all"
             aria-label="Call"
             title="Call: +977 9815280946"
           >
