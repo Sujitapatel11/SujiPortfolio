@@ -43,7 +43,7 @@ def test_browser_open_url_fails_closed_when_dns_resolution_fails(monkeypatch):
         validate_tool_arguments("browser.open_url", {"url": "https://unresolvable.example"})
 
 
-@pytest.mark.parametrize("app_id", ["browser", "calculator", "text_editor"])
+@pytest.mark.parametrize("app_id", ["browser", "calculator", "text_editor", "whatsapp", "instagram", "youtube"])
 def test_desktop_open_application_accepts_allowlisted_apps(app_id):
     assert validate_tool_arguments(
         "desktop.open_application", {"app_id": app_id}
