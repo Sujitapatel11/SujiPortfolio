@@ -20,7 +20,7 @@ export default function Experience() {
           accent="Key Milestones"
         />
 
-        {/* Timeline */}        {/* Timeline */}
+        {/* Timeline */}
         <div className="relative pl-8 sm:pl-10">
           {/* Vertical line with gradient glow */}
           <div className="absolute left-3 sm:left-4 top-2 bottom-2 w-0.5 bg-brand-violet/40" />
