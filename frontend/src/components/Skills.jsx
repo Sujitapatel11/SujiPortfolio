@@ -63,7 +63,7 @@ export default function Skills() {
           description="Explore the languages, frameworks, and tools I use while building projects and growing as an engineer."
         />
 
-        <div className="mb-8 flex justify-start">        <div className="mb-8 flex justify-center">
+        <div className="mb-8 flex justify-start">
           <div className="no-scrollbar flex max-w-full gap-2 overflow-x-auto px-1 pb-2">
             {skillCategories.map((category) => {
               const selected = activeCategory === category.id;
