@@ -58,9 +58,9 @@ export default function Hero() {
   return (
     <section
       id="home"
-      className="relative min-h-[92vh] flex items-center pt-28 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden"
+      className="portfolio-section relative flex min-h-[92vh] items-center overflow-hidden pt-28 pb-16"
     >
-      <div className="max-w-7xl mx-auto w-full relative z-10">
+      <div className="site-container relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           {/* Left Column: Headline, Bio & Primary CTAs */}
           <div className="lg:col-span-7 flex flex-col gap-6">

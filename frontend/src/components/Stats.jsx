@@ -12,13 +12,13 @@ const iconMap = {
 
 export default function Stats() {
   return (
-    <section className="relative px-4 sm:px-6 lg:px-8 -mt-6 z-20">
+    <section className="relative z-20 -mt-6 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="max-w-5xl mx-auto rounded-2xl p-5 sm:p-7 glow-card"
+        className="surface-card mx-auto max-w-5xl rounded-2xl p-5 sm:p-7"
       >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 lg:gap-8">
           {stats.map((stat, i) => {

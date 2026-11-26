@@ -53,12 +53,12 @@ export default function Navbar() {
           scrolled ? 'glass-strong py-3 shadow-lg' : 'py-5 bg-transparent'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="site-container flex items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           {/* Logo / Brand */}
           <a
             href="#home"
             onClick={(e) => handleNavClick(e, '#home')}
-            className="flex items-center gap-2 group"
+            className="group flex shrink-0 items-center gap-2"
           >
             <div className="w-8 h-8 rounded-xl bg-brand-violet flex items-center justify-center text-white font-extrabold text-sm shadow-md group-hover:scale-105 transition-transform">
               S
@@ -72,7 +72,7 @@ export default function Navbar() {
           </a>
 
           {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-1 bg-bg-secondary/70 border border-border px-3 py-1.5 rounded-2xl backdrop-blur-md">
+          <div className="hidden min-w-0 items-center gap-0.5 rounded-2xl border border-border bg-bg-secondary/80 px-2 py-1.5 backdrop-blur-md xl:flex">
             {navLinks.map((link) => {
               const id = link.href.replace('#', '');
               const isActive = active === id;
@@ -81,17 +81,17 @@ export default function Navbar() {
                   key={link.label}
                   href={link.href}
                   onClick={(e) => handleNavClick(e, link.href)}
-                  className={`relative px-3.5 py-1 text-xs font-mono font-medium transition-colors duration-200 ${
+                  className={`relative isolate shrink-0 rounded-xl px-2.5 py-2 text-[11px] font-mono font-medium transition-colors duration-200 2xl:px-3 2xl:text-xs ${
                     isActive
-                      ? 'text-white font-semibold'
+                      ? 'text-text-main font-semibold'
                       : 'text-text-secondary hover:text-text-main'
                   }`}
                 >
-                  {link.label}
+                  <span className="relative z-10 whitespace-nowrap">{link.label}</span>
                   {isActive && (
                     <motion.span
                       layoutId="nav-active"
-                      className="absolute inset-0 rounded-xl bg-brand-violet/10 border border-brand-violet/30 -z-10"
+                      className="absolute inset-0 z-0 rounded-xl border border-brand-violet/25 bg-brand-violet/10"
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                     />
                   )}
@@ -107,7 +107,7 @@ export default function Navbar() {
               href={personalInfo.whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
+              className="hidden 2xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all"
               title="Chat on WhatsApp (+977 9815280946)"
             >
               <MessageSquare size={13} />
@@ -117,7 +117,7 @@ export default function Navbar() {
             {/* Direct Call Button */}
             <a
               href={personalInfo.phoneCall}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-brand-lavender bg-bg-card border border-border hover:border-brand-violet/50 transition-all"
+              className="hidden 2xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-text-secondary bg-bg-card border border-border hover:border-brand-violet/50 transition-all"
               title="Call Sujita (+977 9815280946)"
             >
               <Phone size={13} className="text-brand-purple" />
@@ -150,7 +150,7 @@ export default function Navbar() {
 
             {/* Mobile menu toggle */}
             <button
-              className="md:hidden p-2 text-text-secondary hover:text-text-main transition-colors"
+              className="xl:hidden p-2 text-text-secondary hover:text-text-main transition-colors"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
             >
@@ -168,7 +168,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 top-[68px] z-40 bg-bg-card/95 border-b border-border p-5 backdrop-blur-xl md:hidden shadow-2xl"
+            className="fixed inset-x-0 top-[68px] z-40 border-b border-border bg-bg-card/95 p-5 shadow-2xl backdrop-blur-xl xl:hidden"
           >
             <div className="flex flex-col gap-2">
               {navLinks.map((link) => (

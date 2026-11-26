@@ -12,8 +12,8 @@ const typeIcons = {
 
 export default function Experience() {
   return (
-    <section id="experience" className="relative py-24 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <section id="experience" className="portfolio-section relative">
+      <div className="site-container max-w-4xl">
         <SectionHeading
           eyebrow="/ Timeline & Projects"
           title="Engineering Journey &"
@@ -49,7 +49,7 @@ export default function Experience() {
                     />
                   </div>
 
-                  <div className="rounded-2xl p-5 sm:p-6 bg-bg-card/85 border border-border hover:border-brand-violet/40 transition-all duration-200 shadow-md">
+                  <div className="surface-card min-w-0 rounded-2xl p-5 transition-all duration-200 hover:border-brand-violet/40 sm:p-6">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
                         <Icon size={16} className="text-brand-purple" />

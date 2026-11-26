@@ -39,11 +39,11 @@ export default function EngineeringLab() {
   const visibleTopics = useMemo(() => engineeringTopics.filter((topic) => activeCategory === 'all' || topicMeta[topic.title]?.category === activeCategory), [activeCategory]);
 
   return (
-    <section id="engineering-lab" className="relative isolate overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
+    <section id="engineering-lab" className="portfolio-section relative isolate overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_12%,rgba(118,97,143,0.10),transparent_58%),radial-gradient(ellipse_at_50%_85%,rgba(118,97,143,0.05),transparent_55%)]" />
       <div className="pointer-events-none absolute -left-24 top-24 -z-10 h-64 w-64 rounded-full bg-brand-purple/10 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 top-36 -z-10 h-72 w-72 rounded-full bg-brand-lavender/10 blur-3xl" />
-      <div className="mx-auto max-w-7xl">
+      <div className="site-container">
         <SectionHeading
           eyebrow="/ Engineering Lab"
           title="Engineering"
@@ -59,7 +59,7 @@ export default function EngineeringLab() {
         <motion.div layout className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           {visibleTopics.map((topic, index) => {
             const meta = topicMeta[topic.title] || {}; const Icon = meta.icon || Code2; const Visual = meta.visual || Icon;
-            return <motion.article layout key={topic.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, delay: index * 0.025 }} className="group relative flex min-h-[154px] items-center gap-4 overflow-hidden rounded-3xl border border-brand-purple/25 bg-bg-card/75 p-4 shadow-[0_5px_24px_rgba(39,31,48,0.08)] backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-brand-purple/50 hover:shadow-[0_12px_32px_rgba(118,97,143,0.14)] sm:min-h-[166px] sm:gap-5 sm:p-5">
+            return <motion.article layout key={topic.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.25, delay: index * 0.025 }} className="surface-card group relative flex min-h-[154px] min-w-0 items-center gap-4 overflow-hidden p-4 backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-brand-purple/40 sm:min-h-[166px] sm:gap-5 sm:p-5">
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-purple/5 via-transparent to-brand-purple/10 opacity-70" />
               <div className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-brand-purple/25 bg-bg-secondary/80 text-brand-purple shadow-[0_4px_16px_rgba(118,97,143,0.10)] transition group-hover:scale-105 group-hover:text-brand-purple sm:h-16 sm:w-16"><Icon size={27} strokeWidth={1.8} /></div>
               <div className="relative z-10 min-w-0 flex-1">

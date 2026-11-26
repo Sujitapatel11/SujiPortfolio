@@ -12,7 +12,7 @@ export default function SectionHeading({ eyebrow, title, accent, description, ic
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-48px' }}
       transition={{ duration: 0.42, ease: 'easeOut' }}
-      className="mb-10 max-w-3xl sm:mb-12"
+      className="mb-8 max-w-3xl text-left sm:mb-10"
     >
       <div className="mb-3 flex items-center gap-2">
         {Icon && <Icon size={15} className="shrink-0 text-brand-purple" aria-hidden="true" />}
