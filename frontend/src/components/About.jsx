@@ -93,16 +93,16 @@ export default function About() {
           accent="Core Foundation"
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)]">
           {/* Profile Summary Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.45 }}
-            className="glow-card rounded-3xl p-6 sm:p-7 flex h-full flex-col gap-6 self-stretch bg-bg-card/90 border border-border-accent shadow-xl backdrop-blur-xl"
+            className="glow-card h-fit min-w-0 self-start rounded-3xl border border-border-accent bg-bg-card/90 p-5 text-left shadow-xl backdrop-blur-xl sm:p-6"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-4">
               <div className="relative">
                 <img
                   src="/sujita.png"
@@ -115,30 +115,30 @@ export default function About() {
                 />
                 <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-bg-card" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-text-main">{personalInfo.fullName}</h3>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <h3 className="text-base font-bold leading-tight text-text-main sm:text-lg">{personalInfo.fullName}</h3>
                   <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-brand-purple/20 text-brand-purple font-semibold">
                     SUJI
                   </span>
                 </div>
-                <p className="text-xs font-mono text-brand-lavender mt-0.5">
+                <p className="mt-1 text-xs font-mono leading-relaxed text-text-secondary sm:text-sm">
                   Full-Stack & Applied AI
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4 pt-2 border-t border-border">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-bg-secondary border border-border">
+            <div className="mt-6 space-y-5 border-t border-border pt-5">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-border bg-bg-secondary">
                   <GraduationCap size={16} className="text-brand-purple" />
                 </div>
-                <div>
-                  <p className="font-mono text-[10px] text-text-muted uppercase tracking-wider">
+                <div className="min-w-0 flex-1 space-y-0.5 text-left">
+                  <p className="font-mono text-[10px] uppercase leading-4 tracking-[0.14em] text-text-muted">
                     Education
                   </p>
-                  <p className="text-sm text-text-main font-semibold">B.Tech CSE</p>
-                  <p className="text-xs text-text-secondary">Parul University (2023 — Present)</p>
+                  <p className="text-sm font-semibold leading-5 text-text-main">B.Tech CSE</p>
+                  <p className="text-xs leading-relaxed text-text-secondary">Parul University (2023 — Present)</p>
                 </div>
               </div>
 
@@ -150,8 +150,8 @@ export default function About() {
                   <p className="font-mono text-[10px] text-text-muted uppercase tracking-wider">
                     Core Specialization
                   </p>
-                  <p className="text-sm text-text-main font-semibold">Scalable Backends & AI</p>
-                  <p className="text-xs text-text-secondary">
+                  <p className="text-sm font-semibold leading-5 text-text-main">Scalable Backends & AI</p>
+                  <p className="break-words text-xs leading-relaxed text-text-secondary">
                     FastAPI, Django, pgvector RAG, PostgreSQL, Redis
                   </p>
                 </div>
@@ -169,13 +169,13 @@ export default function About() {
                     href={personalInfo.whatsapp}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-mono text-emerald-400 hover:underline block"
+                    className="block break-words text-xs font-mono leading-relaxed text-emerald-500 hover:underline"
                   >
                     WhatsApp: {personalInfo.phoneDisplay}
                   </a>
                   <a
                     href={`mailto:${personalInfo.email}`}
-                    className="text-xs font-mono text-brand-lavender hover:underline block mt-0.5"
+                    className="mt-1 block break-all text-xs font-mono leading-relaxed text-text-secondary hover:text-brand-purple hover:underline"
                   >
                     {personalInfo.email}
                   </a>
@@ -184,14 +184,14 @@ export default function About() {
             </div>
 
             {/* Quick jump to complete skills section */}
-            <div className="pt-2 border-t border-border">
+            <div className="mt-6 border-t border-border pt-5">
               <a
                 href="#skills"
                 onClick={(e) => {
                   e.preventDefault();
                   document.querySelector('#skills')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="inline-flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-mono text-brand-purple hover:text-white bg-bg-secondary hover:bg-brand-purple/20 border border-border hover:border-brand-purple/40 transition-all"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-bg-secondary px-3 py-2.5 text-center text-xs font-medium text-brand-purple transition-all hover:border-brand-purple/40 hover:bg-brand-purple/10"
               >
                 <span>View All 28 Technology Logos</span>
                 <ArrowRight size={13} />
@@ -200,7 +200,7 @@ export default function About() {
           </motion.div>
 
           {/* Categorized Skills Grid with Official SVG Logos */}
-          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
             {skillCategories.map((cat, i) => {
               const CategoryIcon = categoryIcons[cat.icon] || Code2;
               return (
@@ -210,20 +210,20 @@ export default function About() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.35, delay: i * 0.04 }}
-                  className="rounded-3xl p-5 sm:p-6 bg-bg-card/80 border border-border hover:border-brand-purple/40 transition-all duration-200 shadow-md group"
+                  className="group min-w-0 rounded-2xl border border-border bg-bg-card/80 p-5 shadow-md transition-all duration-200 hover:border-brand-purple/40"
                 >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-bg-secondary border border-border group-hover:scale-105 transition-transform">
                       <CategoryIcon size={16} className="text-brand-purple" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-text-main">{cat.category}</h3>
+                      <h3 className="text-sm font-bold leading-5 text-text-main">{cat.category}</h3>
                       <span className="font-mono text-[10px] text-text-muted">
                         Official Stack
                       </span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {cat.skills.map((skill) => {
                       const logoMeta = skillLogoMap[skill];
                       const SkillIcon = logoMeta ? logoMeta.icon : Code2;
@@ -231,7 +231,7 @@ export default function About() {
                       return (
                         <span
                           key={skill}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl font-mono text-xs text-text-main bg-bg-secondary border border-border/80 hover:border-brand-violet/50 hover:bg-bg-tertiary transition-all group/item shadow-sm"
+                          className="group/item inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-xl border border-border/80 bg-bg-secondary px-2.5 py-1.5 font-mono text-xs leading-4 text-text-main shadow-sm transition-all hover:border-brand-violet/50 hover:bg-bg-tertiary"
                           title={`${skill} (Official Technology)`}
                         >
                           <SkillIcon
