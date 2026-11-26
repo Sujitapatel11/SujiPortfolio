@@ -284,3 +284,51 @@ html.light {
 section[id] {
   scroll-margin-top: 96px;
 }
+
+
+/* Shared editorial grid and surface system. */
+@layer components {
+  .portfolio-section {
+    position: relative;
+    padding: clamp(4.25rem, 6vw, 6rem) clamp(1rem, 3vw, 2rem);
+  }
+
+  .site-container {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+  }
+
+  .surface-card {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: var(--bg-card);
+    box-shadow: var(--card-shadow);
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+
+  .surface-card:hover {
+    border-color: var(--border-accent);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .surface-card :where(p, h1, h2, h3, h4, span, a, li) {
+    overflow-wrap: anywhere;
+  }
+
+  .section-label {
+    letter-spacing: 0.16em;
+  }
+
+  .content-measure {
+    max-width: 68ch;
+  }
+}
+
+@media (min-width: 1440px) {
+  .portfolio-section {
+    padding-inline: max(2rem, calc((100vw - 80rem) / 2));
+  }
+}
+
