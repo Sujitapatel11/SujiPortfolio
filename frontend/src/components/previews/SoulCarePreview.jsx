@@ -1,134 +1,120 @@
 import React, { useState } from 'react';
-import { BookOpen, Sparkles, Heart, MessageSquare, Shield, Send } from 'lucide-react';
+import { Bell, Compass, Heart, MessageCircle, Play, Radio, Sparkles, Users, Video, Waves } from 'lucide-react';
 
-export default function SoulCarePreview({ isVisible }) {
-  const [activeTab, setActiveTab] = useState('journal');
-  const [mood, setMood] = useState('Deep Reflection');
-  const [sampleText, setSampleText] = useState(
-    'Architecture note: decoupled journaling ingestion from social feeds to ensure creator privacy by default...'
-  );
-  const [savedCount, setSavedCount] = useState(42);
+const modules = [
+  {
+    id: 'community',
+    label: 'Community',
+    icon: Users,
+    eyebrow: 'COMMUNITY FEED',
+    title: 'Shared spaces for people and ideas',
+    description: 'Community posts, creator discovery, peer connections, reactions, and moderation foundations.',
+    tags: ['Posts', 'Peer connections', 'Discovery'],
+  },
+  {
+    id: 'creators',
+    label: 'Creator Studio',
+    icon: Sparkles,
+    eyebrow: 'CREATOR WORKSPACE',
+    title: 'Create, publish, and build an audience',
+    description: 'Creator identity, publishing workflows, profiles, and creator-facing management surfaces.',
+    tags: ['Creator profiles', 'Publishing', 'Analytics foundation'],
+  },
+  {
+    id: 'soultube',
+    label: 'SoulTube',
+    icon: Play,
+    eyebrow: 'WATCH TOGETHER',
+    title: 'Synchronized rooms with shared playback',
+    description: 'Room-based watch experiences with shared playback state, participant presence, and room chat.',
+    tags: ['Watch rooms', 'Playback sync', 'Room chat'],
+  },
+  {
+    id: 'live',
+    label: 'Creator Live',
+    icon: Radio,
+    eyebrow: 'LIVE EXPERIENCES',
+    title: 'A foundation for creator-led live sessions',
+    description: 'Live-session backend and provider integration exist; production configuration and the full web experience still need validation.',
+    tags: ['LiveKit integration', 'Host & participant flows', 'Validation pending'],
+  },
+];
 
-  const moodTags = ['Deep Reflection', 'Creative Flow', 'Mindful Pause', 'Gratitude'];
+export default function SoulCarePreview() {
+  const [active, setActive] = useState('community');
+  const selected = modules.find((module) => module.id === active) || modules[0];
+  const SelectedIcon = selected.icon;
 
   return (
-    <div className="w-full h-[320px] bg-bg-card rounded-xl overflow-hidden border border-border flex flex-col font-sans select-none">
-      {/* Simulation Banner Notice */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border text-[11px] font-mono">
-        <span className="flex items-center gap-1.5 text-brand-purple font-semibold">
-          <Sparkles size={12} />
-          ILLUSTRATIVE SIMULATION
-        </span>
-        <span className="text-[10px] text-text-muted">Journaling Core & Creator Feed</span>
+    <div className="flex min-h-[320px] w-full flex-col bg-bg-card font-sans">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-bg-secondary/70 px-3.5 py-2.5">
+        <div className="flex items-center gap-2 text-xs font-semibold text-text-main">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-brand-purple/20 bg-brand-purple/10 text-brand-purple">
+            <Waves size={14} />
+          </span>
+          SoulCare · Social & creator ecosystem
+        </div>
+        <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-500">In development</span>
       </div>
 
-      {/* Internal Navigation */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-bg-card/60">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab('journal')}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'journal'
-                ? 'bg-brand-purple text-white'
-                : 'text-text-secondary hover:text-text-main bg-bg-secondary'
-            }`}
-          >
-            Private Journal Core
-          </button>
-          <button
-            onClick={() => setActiveTab('creator')}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'creator'
-                ? 'bg-brand-purple text-white'
-                : 'text-text-secondary hover:text-text-main bg-bg-secondary'
-            }`}
-          >
-            Creator Circle Feed
-          </button>
-        </div>
-        <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-          <Shield size={12} />
-          <span>Encrypted Vault</span>
-        </div>
-      </div>
+      <div className="grid flex-1 grid-cols-1 sm:grid-cols-[148px_minmax(0,1fr)]">
+        <nav aria-label="SoulCare product modules" className="flex gap-1 overflow-x-auto border-b border-border bg-bg-secondary/35 p-2 sm:flex-col sm:border-b-0 sm:border-r sm:p-3">
+          {modules.map((module) => {
+            const Icon = module.icon;
+            const selectedTab = module.id === active;
+            return (
+              <button
+                key={module.id}
+                type="button"
+                onClick={() => setActive(module.id)}
+                aria-pressed={selectedTab}
+                className={`flex shrink-0 items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] font-medium transition sm:w-full ${selectedTab ? 'border border-brand-purple/25 bg-brand-purple/10 text-brand-purple' : 'text-text-secondary hover:bg-bg-card hover:text-text-main'}`}
+              >
+                <Icon size={13} />
+                {module.label}
+              </button>
+            );
+          })}
+          <div className="mt-auto hidden border-t border-border px-2 pt-3 text-[10px] leading-relaxed text-text-muted sm:block">
+            Journal and Insights are retired in the audited main branch and are not shown as active product modules.
+          </div>
+        </nav>
 
-      {/* Main Simulation Body */}
-      <div className="flex-1 p-3.5 overflow-y-auto no-scrollbar flex flex-col justify-between">
-        {activeTab === 'journal' ? (
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-1.5 items-center">
-              <span className="text-[11px] text-text-muted font-mono">Mood Vector:</span>
-              {moodTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setMood(tag)}
-                  className={`text-[10px] px-2 py-0.5 rounded-full transition-colors font-mono ${
-                    mood === tag
-                      ? 'bg-brand-lavender/20 text-brand-purple border border-brand-purple/40 font-semibold'
-                      : 'bg-bg-secondary text-text-secondary border border-border'
-                  }`}
-                >
-                  {tag}
-                </button>
+        <div className="flex min-w-0 flex-col justify-between gap-5 p-4 sm:p-5">
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <span className="font-mono text-[9px] font-semibold tracking-[0.16em] text-brand-purple">{selected.eyebrow}</span>
+              <span className="inline-flex items-center gap-1 text-[10px] text-text-muted"><Bell size={11} /> Product module</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-bg-secondary text-brand-purple">
+                <SelectedIcon size={18} />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-sm font-bold leading-snug text-text-main sm:text-base">{selected.title}</h4>
+                <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-text-secondary">{selected.description}</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {selected.tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-border bg-bg-secondary px-2.5 py-1 text-[10px] text-text-secondary">{tag}</span>
               ))}
             </div>
-
-            <div className="relative">
-              <textarea
-                value={sampleText}
-                onChange={(e) => setSampleText(e.target.value)}
-                rows={3}
-                className="w-full text-xs p-2.5 rounded-lg bg-bg-secondary border border-border text-text-main focus:outline-none focus:border-brand-purple/50 resize-none font-mono"
-                placeholder="Write an authentic thought..."
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-xs pt-1">
-              <span className="text-[11px] text-text-muted font-mono">
-                Status: Verified creator draft
-              </span>
-              <button
-                onClick={() => setSavedCount((c) => c + 1)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium btn-primary"
-              >
-                <Send size={11} />
-                Publish to Community ({savedCount})
-              </button>
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-3 text-[10px] text-text-muted">
+              <span className="inline-flex items-center gap-1.5"><Compass size={11} /> Product direction overview</span>
+              <span className="inline-flex items-center gap-1.5"><Heart size={11} /> Community-first</span>
             </div>
           </div>
-        ) : (
-          <div className="space-y-2.5">
-            <div className="p-2.5 rounded-lg bg-bg-secondary border border-border space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-text-main">@sujita · Founder Entry</span>
-                <span className="text-[10px] font-mono text-text-muted">2h ago</span>
-              </div>
-              <p className="text-xs text-text-secondary leading-relaxed">
-                "Writing daily helps untangle complex distributed system problems before writing code. SoulCare was born from this exact habit."
-              </p>
-              <div className="flex items-center gap-4 pt-1 text-[11px] text-text-muted font-mono">
-                <span className="flex items-center gap-1 text-rose-500">
-                  <Heart size={12} fill="currentColor" /> 128
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageSquare size={12} /> 34 discussions
-                </span>
-              </div>
-            </div>
-
-            <div className="p-2 rounded-lg bg-bg-secondary/60 border border-border text-xs text-text-muted text-center font-mono text-[11px]">
-              Creator monetization & subscriber tipping enabled
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Footer Simulation Tag */}
-      <div className="px-3 py-1 bg-bg-secondary/60 border-t border-border text-[10px] font-mono text-text-muted flex justify-between">
-        <span>Framework: Django · PostgreSQL · Redis · React</span>
-        <span>Interactive mock preview</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border bg-bg-secondary/50 px-3.5 py-2 text-[9px] text-text-muted">
+        <span>React · Django REST Framework · PostgreSQL · Redis · Channels</span>
+        <span className="inline-flex items-center gap-1"><MessageCircle size={10} /> Illustrative preview</span>
       </div>
     </div>
   );
 }
-
