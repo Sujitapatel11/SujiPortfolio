@@ -82,6 +82,15 @@ export const projects = [
         ],
       },
       {
+        title: 'Not shipped / release blockers',
+        status: 'missing',
+        items: [
+          'Account deletion and user data export are not implemented as complete user-facing/API workflows in the audited repository.',
+          'A native Android client is not present in the audited repository; treat it as future work, not a shipped app.',
+          'The master product documentation does not mark SoulCare production-ready. Security, media, live-session, backup/restore, and end-to-end release checks remain.',
+        ],
+      },
+      {
         title: 'Product boundary',
         status: 'retired',
         items: [
