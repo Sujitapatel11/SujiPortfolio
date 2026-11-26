@@ -163,7 +163,7 @@ export const projects = [
       },
     ],
   },
-];;
+];
 
 /* Engineering Lab topics */
 export const engineeringTopics = [
