@@ -53,9 +53,9 @@ export default function Skills() {
   const ActiveIcon = activeSkill?.icon;
 
   return (
-    <section id="skills" className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
+    <section id="skills" className="portfolio-section relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_38%_42%,rgba(118,97,143,0.10),transparent_58%)]" />
-      <div className="relative z-10 mx-auto max-w-7xl">
+      <div className="site-container relative z-10">
         <SectionHeading
           eyebrow="/ Tools & Technologies"
           title="Technologies I"
@@ -86,10 +86,10 @@ export default function Skills() {
           </div>
         </div>
 
-        <div className="relative mx-auto max-w-5xl">
+        <div className="relative mx-auto w-full max-w-5xl">
           <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-[min(78vw,760px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-violet/10 blur-3xl" />
 
-          <div className="relative flex h-[400px] items-center justify-center overflow-hidden sm:h-[460px] [perspective:1200px]">
+          <div className="relative flex h-[400px] w-full items-center justify-center overflow-hidden rounded-3xl border border-border/70 bg-bg-card/35 sm:h-[460px] [perspective:1200px]">
             <motion.div
               className="relative h-full w-full touch-pan-y"
               drag="x"
