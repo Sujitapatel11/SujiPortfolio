@@ -113,8 +113,8 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
-      <div className="relative z-10 mx-auto w-full max-w-6xl">
+    <section id="contact" className="portfolio-section relative overflow-hidden">
+      <div className="site-container relative z-10 max-w-6xl">
         <SectionHeading
           eyebrow="/ Contact & Intake"
           title="Let's Engineer Something"
@@ -163,7 +163,7 @@ export default function Contact() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.45 }}
-          className="relative mx-auto w-full max-w-[760px] overflow-hidden rounded-3xl border border-border-accent bg-bg-card/90 p-5 shadow-2xl backdrop-blur-xl sm:p-8 lg:p-10"
+          className="surface-card relative mx-auto w-full max-w-[760px] overflow-hidden rounded-3xl border-border-accent p-5 backdrop-blur-xl sm:p-8 lg:p-10"
         >
           {/* Ambient card accent */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-brand-violet/5 pointer-events-none rounded-full blur-2xl" />
